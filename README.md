@@ -1,6 +1,6 @@
-# libpq-async-cpp
+# db-postgres-cpp
 
-> A fully asynchonous PostgreSQL library in Modern C++
+> A PostgreSQL client written in Modern C++ supporting synchonous and asynchronous processing.
 
 ```cpp
 auto cnx = std::make_shared(db::postgres::Connection());
