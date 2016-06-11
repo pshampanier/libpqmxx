@@ -33,5 +33,12 @@ namespace db {
       }
     };
 
+    class ExecutionException : public std::runtime_error {
+    public:
+      ExecutionException(const std::string &what)
+      : std::runtime_error(what) {
+      }
+    };
+
   } // namespace postgres
 }   // namespace db

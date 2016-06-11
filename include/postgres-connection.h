@@ -22,6 +22,7 @@
 #pragma once
 
 #include "libpq-fe.h"
+#include "postgres-params.h"
 #include "postgres-result.h"
 
 #include <functional>
@@ -30,15 +31,21 @@
 namespace db {
   namespace postgres {
     
-    class Connection;
-        
-    void bind(Connection &c, int i);
-    void bind(Connection &c, const std::string &s);
+    enum state {
+      not_connected = 0,
+      ready,
+      execute,
+      no_tuples_available,
+      tuples_available
+    };
 
     class Connection : public std::enable_shared_from_this<Connection> {
+
+      friend class Result;
+
       public:
       
-        Connection() = default;
+        Connection();
 
         /**
          * Destructor.
@@ -67,8 +74,17 @@ namespace db {
       
         template<typename... Args>
         Connection &execute(const char *sql, Args... args) {
-          bind(*this, args...);
+          Params params(sizeof...(args));
+          params.bind(args...);
+          execute(sql, params);
           return *this;
+        }
+
+        /**
+         * Access to the result of the last execution.
+         **/
+        Result &result() {
+          return result_;
         }
       
         Connection &once(std::function<bool (const Result &result)> callback);
@@ -111,9 +127,15 @@ namespace db {
          **/
         int socket() const noexcept;
       
+        std::string lastError() const;
+
       private:
-        PGconn *conn_ = nullptr;
+        PGconn *pgconn_ = nullptr;
+        Result  result_;
         bool async_ = false;
+        state state_ = not_connected;
+
+        void execute(const char *sql, const Params &params);
       
         /**
          * Callbacks for asynchonous operations in non bloking mode.
@@ -123,6 +145,10 @@ namespace db {
         std::function<void (std::exception_ptr)> error_;
         std::function<void ()>                   always_;
       
+        operator PGconn *() {
+          return pgconn_;
+        }
+
         Connection(const Connection&) = delete;
         Connection(const Connection&&) = delete;
         Connection& operator = (const Connection&) = delete;

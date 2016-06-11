@@ -28,8 +28,11 @@ cnx.connect("postgres://").done([cnx]() {
 ```
 
 
-See also https://github.com/purpleKarrot/async-db
+# See also
+1. https://github.com/purpleKarrot/async-db
+2. https://www.postgresql.org/docs/current/static/libpq-example.html
 
+# Build
 ```
 cmake -G Xcode \
   -DPostgreSQL_INCLUDE_DIRS=../dist/lib-postgresql-9.5.3/include/ \

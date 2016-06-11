@@ -28,42 +28,41 @@
 
 namespace db {
   namespace postgres {
-    
-    void bind(Connection &c, int i) {
-      return;
+
+    // -------------------------------------------------------------------------
+    // Constructor.
+    // -------------------------------------------------------------------------
+    Connection::Connection()
+      : result_(*this) {
     }
-    
-    void bind(Connection &c, const std::string &s) {
-      return;
-    }
-        
+
     // -------------------------------------------------------------------------
     // Destructor.
     // -------------------------------------------------------------------------
     Connection::~Connection() {
-      PQfinish(conn_);
+      PQfinish(pgconn_);
     }
     
     // -------------------------------------------------------------------------
     // Open a connection to the database.
     // -------------------------------------------------------------------------
     Connection &Connection::connect(const char *connInfo, bool async) {
-      assert(conn_ == nullptr);
+      assert(pgconn_ == nullptr);
       async_ = async;
-      conn_ = PQconnectdb(connInfo);
+      pgconn_ = PQconnectdb(connInfo);
       
-      if( PQstatus(conn_) != CONNECTION_OK ) {
-        std::string err(PQerrorMessage(conn_));
-        PQfinish(conn_);
-        conn_ = nullptr;
-        throw ConnectionException(err);
+      if( PQstatus(pgconn_) != CONNECTION_OK ) {
+        PQfinish(pgconn_);
+        pgconn_ = nullptr;
+        throw ConnectionException(std::string(PQerrorMessage(pgconn_)));
       }
       
-      if (PQsetnonblocking(conn_, async_) != 0) {
+      if (PQsetnonblocking(pgconn_, async_) != 0) {
         // ## TODO
         return *this;
       }
       
+      state_ = ready;
       return *this;
     }
     
@@ -71,16 +70,45 @@ namespace db {
     // Close the database connection.
     // -------------------------------------------------------------------------
     void Connection::close() noexcept {
-      assert(conn_);
-      PQfinish(conn_);
-      conn_ = nullptr;
+      assert(pgconn_);
+      PQfinish(pgconn_);
+      pgconn_ = nullptr;
+    }
+
+    // -------------------------------------------------------------------------
+    // Last error message on the connection.
+    // -------------------------------------------------------------------------
+    std::string Connection::lastError() const {
+      return std::string(PQerrorMessage(pgconn_));
+    }
+
+    // -------------------------------------------------------------------------
+    // Execute an SQL statement.
+    // -------------------------------------------------------------------------
+    void Connection::execute(const char *sql, const Params &params) {
+
+      result_.clear();
+
+      int success = PQsendQueryParams(pgconn_, sql, params.size_, params.types_,
+                                      params.values_, params.lengths_,
+                                      params.formats_, 1 /* binary results */);
+
+      if (!success) {
+        throw ExecutionException(lastError());
+      }
+
+      // Switch to the single row mode to avoid loading the all result in memory.
+      success = PQsetSingleRowMode(pgconn_);
+      assert(success);
+
+      result_.first();
     }
     
     // -------------------------------------------------------------------------
     // Get the native socket identifier.
     // -------------------------------------------------------------------------
     int Connection::socket() const noexcept {
-      return PQsocket(conn_);
+      return PQsocket(pgconn_);
     }
     
     Connection &Connection::once(std::function<bool (const Result &)> cb) {

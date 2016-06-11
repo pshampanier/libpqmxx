@@ -24,10 +24,108 @@
 namespace db {
   namespace postgres {
     
-    class Result {
+    class Connection;
+    class Result;
+
+    class Row {
+
+      friend class Result;
+
+    public:
+      Row(Result &result);
+
+      template<typename T>
+      T get(int column) const;
+
+    private:
+      Result &result_;
+
+      Row(const Row&) = delete;
+      Row& operator = (const Row&) = delete;
+      Row(const Row&&) = delete;
+      Row& operator = (const Row&&) = delete;
+    };
+
+    class Result : public Row {
+
+      friend class Connection;
+      friend class Row;
+
+    public:
+
+      Result(Connection &conn);
+      ~Result();
       
       size_t count() const;
       
+      /**
+       * iterator - Support of the range-based for loops.
+       *
+       *
+       * ```
+       *  for (auto &row: result) {
+       *    ...
+       *  }
+       * ```
+       *
+       **/
+      class iterator {
+      public:
+
+        iterator(Row *ptr): ptr_(ptr) {}
+        iterator operator ++();
+        bool operator != (const iterator &other) { return ptr_ != other.ptr_; }
+        Row &operator *() { return *ptr_; }
+
+      private:
+        Row *ptr_;
+      };
+
+      iterator begin();
+      iterator end();
+
+    private:
+
+      /**
+       * The current result.
+       **/
+      PGresult *pgresult_;
+
+      /**
+       * The next result.
+       *
+       * Used for SELECT statements to detect if the current result is the last
+       * one.
+       **/
+      PGresult *pgnext_;
+
+      Connection &conn_;
+      Row begin_, end_;
+
+      ExecStatusType status_ = PGRES_EMPTY_QUERY;
+
+      void operator = (PGresult *pgresult);
+
+      operator const PGresult *() const {
+        return pgresult_;
+      }
+
+      /**
+       * Get the first result from the server.
+       **/
+      void first();
+
+      void next();
+
+      /**
+       * Clear the previous result of the connection.
+       **/
+      void clear();
+
+      Result(const Result&) = delete;
+      Result(const Result&&) = delete;
+      Result& operator = (const Result&) = delete;
+      Result& operator = (const Result&&) = delete;
     };
     
   } // namespace postgres

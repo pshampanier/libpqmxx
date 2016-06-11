@@ -25,11 +25,56 @@
 
 using namespace db::postgres;
 
-TEST(Synchronous, Connect) {
+TEST(Synchronous, connect) {
   
   Connection cnx;
   EXPECT_NO_THROW(cnx.connect("postgresql://postgres@localhost").close());
   EXPECT_THROW(cnx.connect("postgresql://invalid_user@localhost"), ConnectionException);
   
+  // cnx.execute("SELECT $1", 23);
+}
+
+TEST(Synchronous, execute_select_no_row) {
+
+  Connection cnx;
+  cnx.connect("postgresql://postgres@localhost");
+
+  int32_t actual = 0;
+
+  auto &result = cnx.execute("SELECT 1 WHERE 1=2").result();
+  for (auto &row: result) {
+    actual += row.get<int32_t>(0);
+  }
+
+  EXPECT_EQ(actual, 0);
+
+}
+
+TEST(Synchronous, execute_select_multiple_rows) {
+
+  Connection cnx;
+  cnx.connect("postgresql://postgres@localhost");
+
+  int32_t actual = 0;
+
+  auto &result = cnx.execute("SELECT generate_series(1, 3)").result();
+  for (auto &row: result) {
+    actual += row.get<int32_t>(0);
+  }
+
+  EXPECT_EQ(actual, 6);
+
+}
+
+TEST(Synchronous, execute_result_datatypes) {
+
+  Connection cnx;
+  cnx.connect("postgresql://postgres@localhost");
+
+  EXPECT_EQ(cnx.execute("SELECT 1000").result().get<int32_t>(0), 1000);
+  EXPECT_EQ(cnx.execute("SELECT true").result().get<bool>(0), true);
+  EXPECT_EQ(cnx.execute("SELECT false").result().get<bool>(0), false);
+  return;
+
   // cnx.execute("SELECT $1", 23);
 }
