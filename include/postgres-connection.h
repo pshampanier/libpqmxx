@@ -30,14 +30,6 @@
 
 namespace db {
   namespace postgres {
-    
-    enum state {
-      not_connected = 0,
-      ready,
-      execute,
-      no_tuples_available,
-      tuples_available
-    };
 
     class Connection : public std::enable_shared_from_this<Connection> {
 
@@ -72,9 +64,14 @@ namespace db {
         Connection &commit();
         Connection &rollback();
       
+        /**
+         * Cancel queries in progress.
+         **/
+        Connection &cancel();
+
         template<typename... Args>
         Connection &execute(const char *sql, Args... args) {
-          Params params(sizeof...(args));
+          Params params;
           params.bind(args...);
           execute(sql, params);
           return *this;
@@ -133,7 +130,6 @@ namespace db {
         PGconn *pgconn_ = nullptr;
         Result  result_;
         bool async_ = false;
-        state state_ = not_connected;
 
         void execute(const char *sql, const Params &params);
       

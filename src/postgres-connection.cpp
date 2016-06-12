@@ -61,8 +61,7 @@ namespace db {
         // ## TODO
         return *this;
       }
-      
-      state_ = ready;
+
       return *this;
     }
     
@@ -89,9 +88,12 @@ namespace db {
 
       result_.clear();
 
-      int success = PQsendQueryParams(pgconn_, sql, params.size_, params.types_,
-                                      params.values_, params.lengths_,
-                                      params.formats_, 1 /* binary results */);
+      int success = PQsendQueryParams(pgconn_, sql, params.values_.size(),
+                                      params.types_.data(),
+                                      params.values_.data(),
+                                      params.lengths_.data(),
+                                      params.formats_.data(),
+                                      1 /* binary results */);
 
       if (!success) {
         throw ExecutionException(lastError());
@@ -104,6 +106,16 @@ namespace db {
       result_.first();
     }
     
+    // -------------------------------------------------------------------------
+    // Cancel queries in progress.
+    // -------------------------------------------------------------------------
+    Connection &Connection::cancel() {
+      // ##
+      // ## TO DO
+      // ##
+      return *this;
+    }
+
     // -------------------------------------------------------------------------
     // Get the native socket identifier.
     // -------------------------------------------------------------------------

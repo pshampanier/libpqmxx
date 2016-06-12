@@ -91,20 +91,10 @@ namespace db {
        **/
       PGresult *pgresult_;
 
-      /**
-       * The next result.
-       *
-       * Used for SELECT statements to detect if the current result is the last
-       * one.
-       **/
-      PGresult *pgnext_;
-
       Connection &conn_;
       Row begin_, end_;
 
       ExecStatusType status_ = PGRES_EMPTY_QUERY;
-
-      void operator = (PGresult *pgresult);
 
       operator const PGresult *() const {
         return pgresult_;

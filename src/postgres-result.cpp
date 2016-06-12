@@ -26,7 +26,7 @@
 #include <cassert>
 
 #ifndef NDEBUG
-  #include "debug/pg_type.h"
+  #include "libpq/pg_type.h"
 #endif
 
 #ifdef __linux__
@@ -37,6 +37,8 @@
   #define be32toh(x) OSSwapBigToHostInt32(x)
   #define be64toh(x) OSSwapBigToHostInt64(x)
 #elif defined (__WINDOWS__)
+  #include <winsock2.h>
+  #include <sys/param.h>
   #define be16toh(x) ntohs(x)
   #define be32toh(x) ntohl(x)
   #define be64toh(x) ntohll(x)
@@ -52,19 +54,18 @@ namespace db {
     : result_(result) {
     }
 
-    // -------------------------------------------------------------------------
-    // Row contructor
-    // -------------------------------------------------------------------------
-    /*
-    Row::Row(Row &row)
-    : result_(row.result_) {
-    }*/
-
     template<>
     bool Row::get<bool>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == BOOLOID);
       return *reinterpret_cast<bool *>(PQgetvalue(result_, 0, column));
+    }
+
+    template<>
+    int16_t Row::get<int16_t>(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      assert(PQftype(result_, column) == INT2OID);
+      return be16toh(*reinterpret_cast<int16_t*>(PQgetvalue(result_, 0, column)));
     }
 
     template<>
@@ -74,13 +75,29 @@ namespace db {
       return be32toh(*reinterpret_cast<int32_t*>(PQgetvalue(result_, 0, column)));
     }
 
+    template<>
+    int64_t Row::get<int64_t>(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      assert(PQftype(result_, column) == INT8OID);
+      return be64toh(*reinterpret_cast<int64_t*>(PQgetvalue(result_, 0, column)));
+    }
+
+
+
+    template<>
+    std::string Row::get<std::string>(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      assert(PQftype(result_, column) == BPCHAROID ||
+             PQftype(result_, column) == VARCHAROID);
+      return std::string(PQgetvalue(result_, 0, column));
+    }
+
     // -------------------------------------------------------------------------
     // Result contructor
     // -------------------------------------------------------------------------
     Result::Result(Connection &conn)
       : Row(*this), conn_(conn), begin_(*this), end_(*this) {
       pgresult_ = nullptr;
-      pgnext_ = nullptr;
       status_ = PGRES_EMPTY_QUERY;
     }
 
@@ -90,9 +107,6 @@ namespace db {
     Result::~Result() {
       if (pgresult_) {
         PQclear(pgresult_);
-      }
-      if (pgnext_) {
-        PQclear(pgnext_);
       }
     }
 
@@ -116,87 +130,43 @@ namespace db {
     // -------------------------------------------------------------------------
     Result::iterator Result::iterator::operator ++() {
       ptr_->result_.next();
-      if (ptr_->result_.pgnext_ == nullptr) {
-        // This is the last one
+      if (ptr_->result_.pgresult_ == nullptr) {
+        // We've reached the end
         ptr_ = &ptr_->result_.end_;
       }
       return iterator (ptr_);
-    }
-
-    void Result::operator = (PGresult *pgresult) {
-      clear();
-      pgresult_ = pgresult;
-      status_ = PQresultStatus(pgresult_);
-      switch (status_) {
-        case PGRES_BAD_RESPONSE:
-        case PGRES_FATAL_ERROR:
-          throw ExecutionException(conn_.lastError());
-          break;
-
-        case PGRES_TUPLES_OK:
-        case PGRES_SINGLE_TUPLE:
-          if (PQntuples(pgresult_) == 0) {
-            // A SELECT statement has produced zero result, we can free the result
-            PQclear(pgresult_);
-            pgresult_ = PQgetResult(conn_);
-            assert(pgresult_ == nullptr);
-          }
-          else {
-            // Get the next result to ckeck if the current result is the last
-            // one of the resultset.
-            pgnext_ = PQgetResult(conn_);
-            int nextStatus = PQresultStatus(pgnext_);
-            if (nextStatus == PGRES_TUPLES_OK) {
-
-
-            }
-          }
-          break;
-
-        default:
-          break;
-      }
     }
 
     // -------------------------------------------------------------------------
     // Get the first result from the server.
     // -------------------------------------------------------------------------
     void Result::first() {
-      assert(pgresult_ == nullptr && pgnext_ == nullptr);
+      assert(pgresult_ == nullptr);
+      next();
+    }
+
+    // -------------------------------------------------------------------------
+    // Get the next result from the server.
+    // -------------------------------------------------------------------------
+    void Result::next() {
+
+      if (pgresult_) {
+        assert(status_ == PGRES_SINGLE_TUPLE);
+        PQclear(pgresult_);
+      }
+
       pgresult_ = PQgetResult(conn_);
       assert(pgresult_);
       status_ = PQresultStatus(pgresult_);
       switch (status_) {
         case PGRES_SINGLE_TUPLE:
           assert(PQntuples(pgresult_) == 1);
-          pgnext_ = PQgetResult(conn_);
-          assert(pgnext_);
-          switch (PQresultStatus(pgnext_)) {
-            case PGRES_SINGLE_TUPLE:
-              assert(PQntuples(pgnext_) == 1);
-              break;
-
-            case PGRES_TUPLES_OK:
-              // After the last row, a zero-row object with status PGRES_TUPLES_OK is
-              // returned; this is the signal that no more rows are expected.
-              assert(PQntuples(pgnext_) == 0);
-              pgnext_ = PQgetResult(conn_);
-              assert(pgnext_ == nullptr);
-              break;
-
-            case PGRES_BAD_RESPONSE:
-            case PGRES_FATAL_ERROR:
-              throw ExecutionException(conn_.lastError());
-              break;
-
-            default:
-              assert(true);
-              break;
-          }
           break;
 
         case PGRES_TUPLES_OK:
-          // The SELECT statement did not return any row.
+          // The SELECT statement did not return any row or after the last row,
+          // a zero-row object with status PGRES_TUPLES_OK is returned; this is
+          // the signal that no more rows are expected.
           assert(PQntuples(pgresult_) == 0);
           PQclear(pgresult_);
           pgresult_ = PQgetResult(conn_);
@@ -210,43 +180,8 @@ namespace db {
           break;
 
         default:
+          assert(true);
           break;
-      }
-
-
-    }
-
-    // -------------------------------------------------------------------------
-    // Get the next result from the server.
-    // -------------------------------------------------------------------------
-    void Result::next() {
-
-      assert(pgresult_);
-      PQclear(pgresult_);
-      pgresult_ = pgnext_;
-      if (pgresult_) {
-        pgnext_ = PQgetResult(conn_);
-        auto nextStatus = PQresultStatus(pgnext_);
-        switch (nextStatus) {
-          case PGRES_TUPLES_OK:
-            // After the last row, a zero-row object with status PGRES_TUPLES_OK is
-            // returned; this is the signal that no more rows are expected.
-            assert(PQntuples(pgnext_) == 0);
-            pgnext_ = PQgetResult(conn_);
-            assert(pgnext_ == nullptr);
-            break;
-
-          case PGRES_BAD_RESPONSE:
-          case PGRES_FATAL_ERROR:
-            throw ExecutionException(conn_.lastError());
-            break;
-
-          default:
-            assert(nextStatus == PGRES_SINGLE_TUPLE);
-        }
-      }
-      else {
-        status_ = PGRES_EMPTY_QUERY;
       }
 
     }
@@ -258,14 +193,16 @@ namespace db {
 
       switch (status_) {
         case PGRES_SINGLE_TUPLE:
-          PQclear(pgresult_);
-          if (pgnext_ != nullptr) {
-            // The previous query is still in progress, we need to cancel it.
-            PQclear(pgnext_);
-            pgnext_ = nullptr;
-            // ## TO DO: conn_.cancel();
+          next();
+          if (status_ == PGRES_SINGLE_TUPLE) {
+            // All results of the previous query have not been processed, we
+            // need to cancel it.
+            conn_.cancel();
           }
-          pgresult_ = nullptr;
+          assert(pgresult_ == nullptr);
+          break;
+
+        case PGRES_EMPTY_QUERY:
           break;
 
         default:

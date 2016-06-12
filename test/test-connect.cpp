@@ -19,35 +19,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  **/
-#pragma once
+#include "gtest/gtest.h"
+#include "postgres-connection.h"
+#include "postgres-exceptions.h"
 
-#include <string>
-#include <vector>
+using namespace db::postgres;
 
-namespace db {
-  namespace postgres {
+TEST(connect, sync) {
 
-    class Params {
+  Connection cnx;
+  EXPECT_NO_THROW(cnx.connect("postgresql://postgres@localhost").close());
+  EXPECT_THROW(cnx.connect("postgresql://invalid_user@localhost"), ConnectionException);
 
-      friend class Connection;
-
-    public:
-      ~Params();
-
-      void bind() const {}
-      void bind(const std::string &s);
-
-      template<typename T>
-      void bind(T v);
-
-    private:
-      std::vector<Oid>    types_;
-      std::vector<char *> values_;
-      std::vector<int>    lengths_;
-      std::vector<int>    formats_;
-
-      void bind(Oid type, char *value, int length);
-    };
-
-  } // namespace postgres
-}   // namespace db
+}

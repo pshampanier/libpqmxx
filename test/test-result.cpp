@@ -19,35 +19,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  **/
-#pragma once
+#include "gtest/gtest.h"
+#include "postgres-connection.h"
+#include "postgres-exceptions.h"
 
-#include <string>
-#include <vector>
+using namespace db::postgres;
 
-namespace db {
-  namespace postgres {
+TEST(result, sync_datatypes) {
 
-    class Params {
+  Connection cnx;
+  cnx.connect("postgresql://postgres@localhost");
 
-      friend class Connection;
+  EXPECT_EQ(cnx.execute("SELECT true").result().get<bool>(0), true);
+  EXPECT_EQ(cnx.execute("SELECT false").result().get<bool>(0), false);
+  EXPECT_EQ(cnx.execute("SELECT CAST(32767 AS SMALLINT)").result().get<int16_t>(0), 32767);
+  EXPECT_EQ(cnx.execute("SELECT 2147483647").result().get<int32_t>(0), 2147483647);
+  EXPECT_EQ(cnx.execute("SELECT 9223372036854775807").result().get<int64_t>(0), 9223372036854775807);
+  EXPECT_STREQ(cnx.execute("SELECT CAST('hello' AS CHAR(10))").result().get<std::string>(0).c_str(), "hello     ");
+  EXPECT_STREQ(cnx.execute("SELECT CAST('hello' AS VARCHAR(10))").result().get<std::string>(0).c_str(), "hello");
 
-    public:
-      ~Params();
+  return;
 
-      void bind() const {}
-      void bind(const std::string &s);
-
-      template<typename T>
-      void bind(T v);
-
-    private:
-      std::vector<Oid>    types_;
-      std::vector<char *> values_;
-      std::vector<int>    lengths_;
-      std::vector<int>    formats_;
-
-      void bind(Oid type, char *value, int length);
-    };
-
-  } // namespace postgres
-}   // namespace db
+  // cnx.execute("SELECT $1", 23);
+}
