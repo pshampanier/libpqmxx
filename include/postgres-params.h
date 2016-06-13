@@ -32,10 +32,12 @@ namespace db {
       friend class Connection;
 
     public:
+      Params(int size);
       ~Params();
 
       void bind() const {}
       void bind(const std::string &s);
+      void bind(const std::vector<uint8_t> &d);
 
       template<typename T>
       void bind(T v);

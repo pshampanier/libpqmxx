@@ -24,6 +24,7 @@
 #include "postgres-exceptions.h"
 
 #include <cassert>
+#include <cstdlib>
 
 #ifndef NDEBUG
   #include "libpq/pg_type.h"
@@ -54,6 +55,10 @@ namespace db {
     : result_(result) {
     }
 
+    int Row::num() const noexcept {
+      return result_.num_;
+    }
+
     template<>
     bool Row::get<bool>(int column) const {
       assert(result_.pgresult_ != nullptr);
@@ -82,14 +87,59 @@ namespace db {
       return be64toh(*reinterpret_cast<int64_t*>(PQgetvalue(result_, 0, column)));
     }
 
+    template<>
+    float Row::get<float>(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      assert(PQftype(result_, column) == FLOAT4OID);
+      uint32_t v = be32toh(*reinterpret_cast<int32_t*>(PQgetvalue(result_, 0, column)));
+      return *reinterpret_cast<float*>(&v);
+    }
 
+    // -------------------------------------------------------------------------
+    // double precision
+    // -------------------------------------------------------------------------
+    template<>
+    double Row::get<double>(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      assert(PQftype(result_, column) == FLOAT8OID);
+      uint64_t v = be64toh(*reinterpret_cast<int64_t*>(PQgetvalue(result_, 0, column)));
+      return *reinterpret_cast<double*>(&v);
+    }
 
+    // -------------------------------------------------------------------------
+    // char, varchar, text
+    // -------------------------------------------------------------------------
     template<>
     std::string Row::get<std::string>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == BPCHAROID ||
-             PQftype(result_, column) == VARCHAROID);
+             PQftype(result_, column) == VARCHAROID ||
+             PQftype(result_, column) == NAMEOID ||
+             PQftype(result_, column) == TEXTOID);
       return std::string(PQgetvalue(result_, 0, column));
+    }
+
+    // -------------------------------------------------------------------------
+    // "char"
+    // -------------------------------------------------------------------------
+    template<>
+    char Row::get<char>(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      assert(PQftype(result_, column) == CHAROID);
+      char c = *PQgetvalue(result_, 0, column);
+      return c;
+    }
+
+    // -------------------------------------------------------------------------
+    // bytea
+    // -------------------------------------------------------------------------
+    template<>
+    std::vector<uint8_t> Row::get<std::vector<uint8_t>>(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      assert(PQftype(result_, column) == BYTEAOID);
+      int length = PQgetlength(result_, 0, column);
+      uint8_t *data = reinterpret_cast<uint8_t *>(PQgetvalue(result_, 0, column));
+      return std::vector<uint8_t>(data, data + length);
     }
 
     // -------------------------------------------------------------------------
@@ -138,10 +188,21 @@ namespace db {
     }
 
     // -------------------------------------------------------------------------
+    // Number of rows affected by the SQL command
+    // -------------------------------------------------------------------------
+    uint64_t Result::count() const noexcept {
+      assert(pgresult_);
+      const char *count = PQcmdTuples(pgresult_);
+      char *end;
+      return std::strtoull(count, &end, 10);
+    }
+
+    // -------------------------------------------------------------------------
     // Get the first result from the server.
     // -------------------------------------------------------------------------
     void Result::first() {
       assert(pgresult_ == nullptr);
+      num_ = 0;
       next();
     }
 
@@ -161,6 +222,7 @@ namespace db {
       switch (status_) {
         case PGRES_SINGLE_TUPLE:
           assert(PQntuples(pgresult_) == 1);
+          num_++;
           break;
 
         case PGRES_TUPLES_OK:
@@ -179,8 +241,11 @@ namespace db {
           throw ExecutionException(conn_.lastError());
           break;
 
+        case PGRES_COMMAND_OK:
+          break;
+
         default:
-          assert(true);
+          assert(false);
           break;
       }
 
@@ -192,6 +257,12 @@ namespace db {
     void Result::clear() {
 
       switch (status_) {
+        case PGRES_COMMAND_OK:
+          PQclear(pgresult_);
+          pgresult_ = PQgetResult(conn_);
+          assert(pgresult_ == nullptr);
+          break;
+
         case PGRES_SINGLE_TUPLE:
           next();
           if (status_ == PGRES_SINGLE_TUPLE) {

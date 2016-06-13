@@ -25,72 +25,12 @@
 
 using namespace db::postgres;
 
-TEST(iterator, sync_no_row) {
+TEST(result, sync_statements) {
 
   Connection cnx;
   cnx.connect("postgresql://postgres@localhost");
 
-  int32_t actual = 0;
-
-  auto &result = cnx.execute("SELECT 1 WHERE 1=2").result();
-  for (auto &row: result) {
-    actual += row.get<int32_t>(0);
-  }
-
-  EXPECT_EQ(actual, 0);
-
-}
-
-TEST(iterator, sync_one_row) {
-
-  Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
-
-  int32_t actual = 0;
-
-  auto &result = cnx.execute("SELECT 42").result();
-  for (auto &row: result) {
-    actual += row.get<int32_t>(0);
-  }
-
-  EXPECT_EQ(actual, 42);
-
-}
-
-TEST(iterator, sync_multiple_rows) {
-
-  Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
-
-  int32_t actual = 0;
-
-  auto &result = cnx.execute("SELECT generate_series(1, 3)").result();
-  for (auto &row: result) {
-    actual += row.get<int32_t>(0);
-  }
-
-  EXPECT_EQ(actual, 6);
-
-}
-
-TEST(iterator, sync_rownum) {
-
-  Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
-
-  int32_t actual = 0;
-
-  auto &result = cnx.execute("SELECT generate_series(1, 3)").result();
-  for (auto &row: result) {
-    actual += row.num();
-  }
-
-  // rownum should reset for the next query
-  auto &result2 = cnx.execute("SELECT generate_series(1, 3)").result();
-  for (auto &row: result2) {
-    actual += row.num();
-  }
-
-  EXPECT_EQ(actual, 12);
+  EXPECT_EQ(cnx.execute("SELECT generate_series(1, 3) INTO tmp").result().count(), 3);
+  EXPECT_EQ(cnx.execute("DROP TABLE tmp").result().count(), 0);
 
 }

@@ -1,17 +1,17 @@
 # Bindings
 
-   OID           | OID NUM  | SQL Type                    | C++ Param | C++ Result 
-  ---------------+----------+-----------------------------+-----------+-----------
-  BOOLOID        |       16 | boolean                     | bool      | bool
-  BYTEAOID       |       17 | bytea        
-  CHAROID        |       18 | "char"
-  NAMEOID        |       19 | name
-  INT8OID        |       20 | bigint                      | int64_t   | int64_t
-  INT2OID        |       21 | smallint
+   OID           | OID NUM  | SQL Type                    | C++ Param             | C++ Result 
+  ---------------|----------|-----------------------------|-----------------------|-----------
+  BOOLOID        |       16 | boolean                     | bool                  | bool
+  BYTEAOID       |       17 | bytea                       | std::vector\<uint_8\> | std::vector\<uint_8\>
+  CHAROID        |       18 | "char"                      | char                  | char
+  NAMEOID        |       19 | name                        | const char *          | std::string
+  INT8OID        |       20 | bigint                      | int64_t               | int64_t
+  INT2OID        |       21 | smallint                    | int16_t               | int16_t  
   INT2VECTOROID  |       22 | int2vector
-  INT4OID        |       23 | integer                     | int32_t   | int32_t
+  INT4OID        |       23 | integer                     | int32_t               | int32_t
   REGPROCOID     |       24 | regproc
-  TEXTOID        |       25 | text
+  TEXTOID        |       25 | text                        | const char *          | std::string
   OIDOID         |       26 | oid
   TIDOID         |       27 | tid
   XIDOID         |       28 | xid
@@ -24,8 +24,8 @@
   BOXOID         |      603 | box
   POLYGONOID     |      604 | polygon
   LINEOID        |      628 | line
-  FLOAT4OID      |      700 | real
-  FLOAT8OID      |      701 | double precision
+  FLOAT4OID      |      700 | real                        | float                 | float
+  FLOAT8OID      |      701 | double precision            | double                | double
   ABSTIMEOID     |      702 | abstime
   RELTIMEOID     |      703 | reltime
   TINTERVALOID   |      704 | tinterval
@@ -34,8 +34,8 @@
   CASHOID        |      790 | money
   INETOID        |      869 | inet
   CIDROID        |      650 | cidr
-  BPCHAROID      |     1042 | character                 | const char * | std::string
-  VARCHAROID     |     1043 | character varying         | const char * | std::string
+  BPCHAROID      |     1042 | character                 | const char *            | std::string
+  VARCHAROID     |     1043 | character varying         | const char *            | std::string
   DATEOID        |     1082 | date
   TIMEOID        |     1083 | time without time zone
   TIMESTAMPOID   |     1114 | timestamp without time zone
@@ -45,8 +45,18 @@
   ZPBITOID       |     1560 | bit
   VARBITOID      |     1562 | bit varying
   NUMERICOID     |     1700 | numeric
+
+## Other bindings
+
+SQL Type      | C++ Param | C++ Result 
+--------------|-----------|-----------------
+smallserial   | n/a       | int16_t
+serial        | n/a       | int32_t
+bigserial     | n/a       | int64_t
   
 ## TODO
+
+
 
 ### Warning
 ```

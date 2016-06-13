@@ -71,7 +71,7 @@ namespace db {
 
         template<typename... Args>
         Connection &execute(const char *sql, Args... args) {
-          Params params;
+          Params params(sizeof...(args));
           params.bind(args...);
           execute(sql, params);
           return *this;

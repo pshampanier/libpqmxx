@@ -37,6 +37,15 @@ namespace db {
       template<typename T>
       T get(int column) const;
 
+      /**
+       * Row number.
+       *
+       * @return For each row returned by a query, `num()` returns a number
+       *         indicating the order of the row in the result. The first row
+       *         selected has a `num()` of 1, the second has 2, and so on.
+       **/
+      int num() const noexcept;
+
     private:
       Result &result_;
 
@@ -56,7 +65,18 @@ namespace db {
       Result(Connection &conn);
       ~Result();
       
-      size_t count() const;
+      /**
+       * Number of rows affected by the SQL command.
+       *
+       * This function can only be used following the execution of a SELECT,
+       * CREATE TABLE AS, INSERT, UPDATE, DELETE, MOVE, FETCH, or COPY statement,
+       * or an EXECUTE of a prepared query that contains an INSERT, UPDATE, or
+       * DELETE statement. If the command that generated the PGresult was
+       * anything else, `count()` returns 0.
+       *
+       * @return The number of rows affected by the SQL statement.
+       **/
+      uint64_t count() const noexcept;
       
       /**
        * iterator - Support of the range-based for loops.
@@ -94,8 +114,13 @@ namespace db {
       Connection &conn_;
       Row begin_, end_;
 
+      int num_;
+
       ExecStatusType status_ = PGRES_EMPTY_QUERY;
 
+      /**
+       * Cast to the native PostgreSQL result.
+       **/
       operator const PGresult *() const {
         return pgresult_;
       }
@@ -105,6 +130,9 @@ namespace db {
        **/
       void first();
 
+      /**
+       * Get the next result from the server.
+       **/
       void next();
 
       /**

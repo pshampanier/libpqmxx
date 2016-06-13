@@ -40,3 +40,10 @@ cmake -G Xcode \
   -DOPENSSL_LIBRARIES="../dist/lib-openssl-1.0.2h/libs/Release/libssl.a;../dist/lib-openssl-1.0.2h/libs/Release/libcrypto.a" \
   ../
 ```
+
+# Notes
+
+```
+SELECT  700::oid::regtype -- real
+```
+

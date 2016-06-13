@@ -37,12 +37,23 @@
 namespace db {
   namespace postgres {
 
+    Params::Params(int size) {
+      types_.reserve(size);
+      values_.reserve(size);
+      lengths_.reserve(size);
+      formats_.reserve(size);
+    }
+
     Params::~Params() {
       for (int i=types_.size(); i > 0; --i) {
         switch (types_[i]) {
+          case INT2OID:
           case INT4OID:
           case INT8OID:
+          case FLOAT4OID:
+          case FLOAT8OID:
           case BOOLOID:
+          case CHAROID:
             delete [] values_[i];
             break;
 
@@ -57,9 +68,13 @@ namespace db {
       int format = 1; /* binary */
 
       switch (type) {
+        case INT2OID:
         case INT4OID:
         case INT8OID:
+        case FLOAT4OID:
+        case FLOAT8OID:
         case BOOLOID:
+        case CHAROID:
           char *copy = new char[length];
           std::memcpy(copy, value, length);
           value = copy;
@@ -73,7 +88,7 @@ namespace db {
     }
 
     //--------------------------------------------------------------------------
-    // bool binding
+    // bool
     //--------------------------------------------------------------------------
     template<>
     void Params::bind(bool b) {
@@ -81,7 +96,7 @@ namespace db {
     }
 
     //--------------------------------------------------------------------------
-    // smallint binding
+    // smallint
     //--------------------------------------------------------------------------
     template<>
     void Params::bind(int16_t i) {
@@ -90,7 +105,7 @@ namespace db {
     }
 
     //--------------------------------------------------------------------------
-    // integer binding
+    // integer
     //--------------------------------------------------------------------------
     template<>
     void Params::bind(int32_t i) {
@@ -99,7 +114,7 @@ namespace db {
     }
 
     //--------------------------------------------------------------------------
-    // bigint binding
+    // bigint
     //--------------------------------------------------------------------------
     template<>
     void Params::bind(int64_t i) {
@@ -108,7 +123,33 @@ namespace db {
     }
 
     //--------------------------------------------------------------------------
-    // varchar binding
+    // float
+    //--------------------------------------------------------------------------
+    template<>
+    void Params::bind(float f) {
+      uint32_t v = htonl(*reinterpret_cast<uint32_t *>(&f));
+      bind(FLOAT4OID, (char *)&v, sizeof(v));
+    }
+
+    //--------------------------------------------------------------------------
+    // double precision
+    //--------------------------------------------------------------------------
+    template<>
+    void Params::bind(double d) {
+      uint64_t v = htonll(*reinterpret_cast<uint64_t *>(&d));
+      bind(FLOAT8OID, (char *)&v, sizeof(v));
+    }
+
+    //--------------------------------------------------------------------------
+    // bool
+    //--------------------------------------------------------------------------
+    template<>
+    void Params::bind(char c) {
+      bind(CHAROID, &c, sizeof(c));
+    }
+
+    //--------------------------------------------------------------------------
+    // varchar
     //--------------------------------------------------------------------------
     template<>
     void Params::bind(const char *sz) {
@@ -117,6 +158,13 @@ namespace db {
 
     void Params::bind(const std::string &s) {
       bind(VARCHAROID, (char *)s.c_str(), s.length());
+    }
+
+    //--------------------------------------------------------------------------
+    // bytea
+    //--------------------------------------------------------------------------
+    void Params::bind(const std::vector<uint8_t> &d) {
+      bind(BYTEAOID, (char *)d.data(), d.size());
     }
 
   } // namespace postgres
