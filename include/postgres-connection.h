@@ -60,8 +60,30 @@ namespace db {
          **/
         void close() noexcept;
       
+        /**
+         * Transactions
+         *
+         * Helper methods to deal with transactions. The main benefit of using
+         * those methods rather than executing the SQL commands is on nested
+         * transactions. If a code start a transaction and call another code
+         * also starting a transaction, thoses methods will create only one
+         * transaction started at the first all to `begin()` and commited at the
+         * last call to `commit()`.
+         **/
+
+        /**
+         * Start a transaction.
+         **/
         Connection &begin();
+
+        /**
+         * Commit a transaction.
+         **/
         Connection &commit();
+
+        /**
+         * Rollback a transaction.
+         **/
         Connection &rollback();
       
         /**
@@ -127,9 +149,19 @@ namespace db {
         std::string lastError() const;
 
       private:
-        PGconn *pgconn_ = nullptr;
+        PGconn *pgconn_;
         Result  result_;
-        bool async_ = false;
+        bool async_;
+
+        /**
+         * Current transaction level.
+         *
+         * 0 → no transaction in progress.
+         * 1 → one transaction in progress.
+         * 2 → one transaction in progress + 1 nested transaction.
+         * n → one transaction in progress + (n-1) nested transactions.
+         **/
+        int transaction_;
 
         void execute(const char *sql, const Params &params);
       

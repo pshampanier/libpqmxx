@@ -172,7 +172,7 @@ namespace db {
     // -------------------------------------------------------------------------
     Result::iterator Result::end() {
       // If there is no result available then end() = begin()
-      return Result::iterator(pgresult_ ? &end_ : &begin_);
+      return Result::iterator(status_ == PGRES_SINGLE_TUPLE ? &end_ : &begin_);
     }
 
     // -------------------------------------------------------------------------
@@ -180,8 +180,9 @@ namespace db {
     // -------------------------------------------------------------------------
     Result::iterator Result::iterator::operator ++() {
       ptr_->result_.next();
-      if (ptr_->result_.pgresult_ == nullptr) {
+      if (ptr_->result_.status_ != PGRES_SINGLE_TUPLE) {
         // We've reached the end
+        assert(ptr_->result_.status_ == PGRES_TUPLES_OK);
         ptr_ = &ptr_->result_.end_;
       }
       return iterator (ptr_);
@@ -230,10 +231,6 @@ namespace db {
           // a zero-row object with status PGRES_TUPLES_OK is returned; this is
           // the signal that no more rows are expected.
           assert(PQntuples(pgresult_) == 0);
-          PQclear(pgresult_);
-          pgresult_ = PQgetResult(conn_);
-          assert(pgresult_ == nullptr);
-          status_ = PGRES_EMPTY_QUERY;
           break;
 
         case PGRES_BAD_RESPONSE:
@@ -258,6 +255,7 @@ namespace db {
 
       switch (status_) {
         case PGRES_COMMAND_OK:
+        case PGRES_TUPLES_OK:
           PQclear(pgresult_);
           pgresult_ = PQgetResult(conn_);
           assert(pgresult_ == nullptr);
@@ -269,6 +267,11 @@ namespace db {
             // All results of the previous query have not been processed, we
             // need to cancel it.
             conn_.cancel();
+          }
+          else if (status_ == PGRES_TUPLES_OK) {
+            PQclear(pgresult_);
+            pgresult_ = PQgetResult(conn_);
+            status_ = PGRES_EMPTY_QUERY;
           }
           assert(pgresult_ == nullptr);
           break;

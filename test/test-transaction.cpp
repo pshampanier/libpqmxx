@@ -25,12 +25,34 @@
 
 using namespace db::postgres;
 
-TEST(result_sync, statements) {
+TEST(transaction, sync_commit) {
 
   Connection cnx;
   cnx.connect("postgresql://postgres@localhost");
 
-  EXPECT_EQ(cnx.execute("SELECT generate_series(1, 3) INTO tmp").result().count(), 3);
-  EXPECT_EQ(cnx.execute("DROP TABLE tmp").result().count(), 0);
+  cnx.execute("DROP TABLE IF EXISTS tmpTrans");
+  cnx.execute("CREATE TABLE tmpTrans(a VARCHAR(10))");
+  cnx.begin();
+  cnx.execute("INSERT INTO tmpTrans (a) VALUES ('hello')");
+  cnx.commit();
+  EXPECT_STREQ(cnx.execute("SELECT a FROM tmpTrans WHERE a='hello'").result().get<std::string>(0).c_str(), "hello");
+  cnx.execute("DROP TABLE tmpTrans");
+
+}
+
+TEST(transaction, sync_rollback) {
+
+  Connection cnx;
+  cnx.connect("postgresql://postgres@localhost");
+
+  cnx.execute("DROP TABLE IF EXISTS tmpTrans");
+  cnx.execute("CREATE TABLE tmpTrans(a VARCHAR(10))");
+  cnx.begin();
+  cnx.execute("INSERT INTO tmpTrans (a) VALUES ('hello')");
+  cnx.rollback();
+
+  auto &result = cnx.execute("SELECT a FROM tmpTrans").result();
+  EXPECT_FALSE(result.begin() != result.end());
+  cnx.execute("DROP TABLE tmpTrans");
 
 }

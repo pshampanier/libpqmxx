@@ -34,6 +34,9 @@ namespace db {
     // -------------------------------------------------------------------------
     Connection::Connection()
       : result_(*this) {
+      pgconn_ = nullptr;
+      async_ = false;
+      transaction_ = 0;
     }
 
     // -------------------------------------------------------------------------
@@ -95,15 +98,46 @@ namespace db {
                                       params.formats_.data(),
                                       1 /* binary results */);
 
+      if (success) {
+        // Switch to the single row mode to avoid loading the all result in memory.
+        success = PQsetSingleRowMode(pgconn_);
+        assert(success);
+        result_.first();
+      }
+
       if (!success) {
         throw ExecutionException(lastError());
       }
+    }
 
-      // Switch to the single row mode to avoid loading the all result in memory.
-      success = PQsetSingleRowMode(pgconn_);
-      assert(success);
+    // -------------------------------------------------------------------------
+    // Start a transaction.
+    // -------------------------------------------------------------------------
+    Connection &Connection::begin() {
+      execute("BEGIN;");
+      transaction_++;
+      return *this;
+    }
 
-      result_.first();
+    // -------------------------------------------------------------------------
+    // Commit a transaction.
+    // -------------------------------------------------------------------------
+    Connection &Connection::commit() {
+      assert(transaction_ > 0);
+      if (--transaction_ == 0) {
+        execute("COMMIT;");
+      }
+      return *this;
+    }
+
+    // -------------------------------------------------------------------------
+    // Rollback a transaction.
+    // -------------------------------------------------------------------------
+    Connection &Connection::rollback() {
+      assert(transaction_ > 0);
+      execute("ROLLBACK;");
+      transaction_ = 0;
+      return *this;
     }
     
     // -------------------------------------------------------------------------

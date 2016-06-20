@@ -37,6 +37,9 @@
 namespace db {
   namespace postgres {
 
+    //--------------------------------------------------------------------------
+    // Constructor
+    //--------------------------------------------------------------------------
     Params::Params(int size) {
       types_.reserve(size);
       values_.reserve(size);
@@ -44,6 +47,9 @@ namespace db {
       formats_.reserve(size);
     }
 
+    //--------------------------------------------------------------------------
+    // Destructor
+    //--------------------------------------------------------------------------
     Params::~Params() {
       for (int i=types_.size(); i > 0; --i) {
         switch (types_[i]) {
@@ -63,8 +69,12 @@ namespace db {
       }
     }
 
+    //--------------------------------------------------------------------------
+    // Bind any value
+    //--------------------------------------------------------------------------
     void Params::bind(Oid type, char *value, int length) {
 
+      char *copy = nullptr;
       int format = 1; /* binary */
 
       switch (type) {
@@ -75,10 +85,17 @@ namespace db {
         case FLOAT8OID:
         case BOOLOID:
         case CHAROID:
-          char *copy = new char[length];
+          copy = new char[length];
           std::memcpy(copy, value, length);
           value = copy;
           break;
+
+        case VARCHAROID:
+        case BYTEAOID:
+          break;
+
+        default:
+          assert(false);
       }
 
       types_.push_back(type);
