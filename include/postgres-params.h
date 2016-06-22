@@ -31,7 +31,12 @@ namespace db {
 
       friend class Connection;
 
-    public:
+    private:
+      std::vector<Oid>    types_;
+      std::vector<char *> values_;
+      std::vector<int>    lengths_;
+      std::vector<int>    formats_;
+
       Params(int size);
       ~Params();
 
@@ -41,12 +46,6 @@ namespace db {
 
       template<typename T>
       void bind(T v);
-
-    private:
-      std::vector<Oid>    types_;
-      std::vector<char *> values_;
-      std::vector<int>    lengths_;
-      std::vector<int>    formats_;
 
       void bind(Oid type, char *value, int length);
     };

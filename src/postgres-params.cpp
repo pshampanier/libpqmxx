@@ -60,6 +60,12 @@ namespace db {
           case FLOAT8OID:
           case BOOLOID:
           case CHAROID:
+          case DATEOID:
+          case TIMESTAMPTZOID:
+          case TIMESTAMPOID:
+          case TIMETZOID:
+          case TIMEOID:
+          case INTERVALOID:
             delete [] values_[i];
             break;
 
@@ -85,6 +91,12 @@ namespace db {
         case FLOAT8OID:
         case BOOLOID:
         case CHAROID:
+        case DATEOID:
+        case TIMESTAMPTZOID:
+        case TIMESTAMPOID:
+        case TIMETZOID:
+        case TIMEOID:
+        case INTERVALOID:
           copy = new char[length];
           std::memcpy(copy, value, length);
           value = copy;
@@ -182,6 +194,67 @@ namespace db {
     //--------------------------------------------------------------------------
     void Params::bind(const std::vector<uint8_t> &d) {
       bind(BYTEAOID, (char *)d.data(), d.size());
+    }
+
+    //--------------------------------------------------------------------------
+    // date
+    //--------------------------------------------------------------------------
+    template<>
+    void Params::bind(date_t d) {
+      int32_t v = ((d.epoch_date - (d.epoch_date % 86400)) / 86400) - DAYS_UNIX_TO_J2000_EPOCH;
+      v = htonl(v);
+      bind(DATEOID, (char *)&v, sizeof(v));
+    }
+
+    //--------------------------------------------------------------------------
+    // timestamptz
+    //--------------------------------------------------------------------------
+    template<>
+    void Params::bind(timestamptz_t d) {
+      int64_t v = d.epoch_time - MICROSEC_UNIX_TO_J2000_EPOCH;
+      v = htonll(v);
+      bind(TIMESTAMPTZOID, (char *)&v, sizeof(v));
+    }
+
+    //--------------------------------------------------------------------------
+    // timestamp
+    //--------------------------------------------------------------------------
+    template<>
+    void Params::bind(timestamp_t d) {
+      int64_t v = d.epoch_time - MICROSEC_UNIX_TO_J2000_EPOCH;
+      v = htonll(v);
+      bind(TIMESTAMPOID, (char *)&v, sizeof(v));
+    }
+
+    //--------------------------------------------------------------------------
+    // timetz
+    //--------------------------------------------------------------------------
+    template<>
+    void Params::bind(timetz_t t) {
+      t.time = htonll(t.time);
+      t.offset = htonl(t.offset);
+      bind(TIMETZOID, (char *)&t, 12);
+    }
+
+    //--------------------------------------------------------------------------
+    // time
+    //--------------------------------------------------------------------------
+    template<>
+    void Params::bind(time_t t) {
+      int64_t v = htonll(t);
+      bind(TIMEOID, (char *)&v, sizeof(v));
+    }
+
+    //--------------------------------------------------------------------------
+    // timetz
+    //--------------------------------------------------------------------------
+    template<>
+    void Params::bind(interval_t t) {
+      assert(sizeof(t) == 16);
+      t.months = htonl(t.months);
+      t.days = htonl(t.days);
+      t.time = htonll(t.time);
+      bind(INTERVALOID, (char *)&t, sizeof(t));
     }
 
   } // namespace postgres

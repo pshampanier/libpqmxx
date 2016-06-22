@@ -31,6 +31,9 @@ cnx.connect("postgres://").done([cnx]() {
 # See also
 1. https://github.com/purpleKarrot/async-db
 2. https://www.postgresql.org/docs/current/static/libpq-example.html
+3. https://github.com/caanvaga/pgx
+4. https://hackage.haskell.org/package/Takusen-0.7/docs/src/Database-PostgreSQL-PGFunctions.html
+5. http://libpqtypes.esilo.com/browse_source.html?file=numerics.c
 
 # Build
 ```

@@ -70,11 +70,37 @@ TEST(result_sync, char_types) {
   Connection cnx;
   cnx.connect("postgresql://postgres@localhost");
 
-  EXPECT_STREQ(cnx.execute("SELECT CAST('hello' AS CHAR(10))").result().get<std::string>(0).c_str(), "hello     ");
-  EXPECT_STREQ(cnx.execute("SELECT CAST('world' AS VARCHAR(10))").result().get<std::string>(0).c_str(), "world");
-  EXPECT_STREQ(cnx.execute("SELECT CAST('hello world' AS TEXT)").result().get<std::string>(0).c_str(), "hello world");
-  EXPECT_EQ(cnx.execute("SELECT CAST('X' AS \"char\")").result().get<char>(0), 'X');
-  EXPECT_STREQ(cnx.execute("SELECT CAST('name' AS NAME)").result().get<std::string>(0).c_str(), "name");
+  EXPECT_STREQ("hello     ", cnx.execute("SELECT CAST('hello' AS CHAR(10))").result().get<std::string>(0).c_str());
+  EXPECT_STREQ("world", cnx.execute("SELECT CAST('world' AS VARCHAR(10))").result().get<std::string>(0).c_str());
+  EXPECT_STREQ("hello world", cnx.execute("SELECT CAST('hello world' AS TEXT)").result().get<std::string>(0).c_str());
+  EXPECT_EQ('X', cnx.execute("SELECT CAST('X' AS \"char\")").result().get<char>(0));
+  EXPECT_STREQ("name", cnx.execute("SELECT CAST('name' AS NAME)").result().get<std::string>(0).c_str());
+
+}
+
+TEST(result_sync, date_time_types) {
+
+  Connection cnx;
+  cnx.connect("postgresql://postgres@localhost");
+
+  EXPECT_EQ(0, cnx.execute("SELECT TIMESTAMP WITH TIME ZONE '1970-01-01 00:00:00+00'").result().get<timestamptz_t>(0));
+  EXPECT_EQ(600123, cnx.execute("SELECT TIMESTAMP WITH TIME ZONE '1970-01-01 00:00:00.600123+00'").result().get<timestamptz_t>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT DATE '1970-01-01'").result().get<date_t>(0));
+  EXPECT_EQ(1451606400, cnx.execute("SELECT DATE '2016-01-01'").result().get<date_t>(0));
+
+  auto timetz = cnx.execute("SELECT TIME WITH TIME ZONE '00:00:01.000001-07'").result().get<timetz_t>(0);
+  EXPECT_EQ(1000001, timetz.time);
+  EXPECT_EQ(7*3600, timetz.offset);
+
+  EXPECT_EQ(39602000101, cnx.execute("SELECT TIME '11:00:02.000101'").result().get<db::postgres::time_t>(0));
+
+  auto interval = cnx.execute("SELECT INTERVAL '3 months 7 days 2:03:04'").result().get<interval_t>(0);
+  EXPECT_EQ(7384000000, interval.time);
+  EXPECT_EQ(7, interval.days);
+  EXPECT_EQ(3, interval.months);
+
+  cnx.execute("set timezone TO 'GMT'");
+  EXPECT_EQ(cnx.execute("SELECT TIMESTAMP '1970-01-01 00:00:00.600123'").result().get<timestamp_t>(0), 600123);
 
 }
 

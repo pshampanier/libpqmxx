@@ -61,9 +61,6 @@ namespace db {
       friend class Row;
 
     public:
-
-      Result(Connection &conn);
-      ~Result();
       
       /**
        * Number of rows affected by the SQL command.
@@ -117,6 +114,9 @@ namespace db {
       int num_;
 
       ExecStatusType status_ = PGRES_EMPTY_QUERY;
+
+      Result(Connection &conn);
+      ~Result();
 
       /**
        * Cast to the native PostgreSQL result.

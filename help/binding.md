@@ -24,8 +24,8 @@
   BOXOID         |      603 | box
   POLYGONOID     |      604 | polygon
   LINEOID        |      628 | line
-  FLOAT4OID      |      700 | real                        | float                 | float
-  FLOAT8OID      |      701 | double precision            | double                | double
+  FLOAT4OID      |      700 | real                        | float                       | float
+  FLOAT8OID      |      701 | double precision            | double                      | double
   ABSTIMEOID     |      702 | abstime
   RELTIMEOID     |      703 | reltime
   TINTERVALOID   |      704 | tinterval
@@ -34,14 +34,14 @@
   CASHOID        |      790 | money
   INETOID        |      869 | inet
   CIDROID        |      650 | cidr
-  BPCHAROID      |     1042 | character                 | const char *            | std::string
-  VARCHAROID     |     1043 | character varying         | const char *            | std::string
-  DATEOID        |     1082 | date
-  TIMEOID        |     1083 | time without time zone
-  TIMESTAMPOID   |     1114 | timestamp without time zone
-  TIMESTAMPTZOID |     1184 | timestamp with time zone
-  INTERVALOID    |     1186 | interval
-  TIMETZOID      |     1266 | time with time zone
+  BPCHAROID      |     1042 | character                   | const char *                | std::string
+  VARCHAROID     |     1043 | character varying           | const char *                | std::string
+  DATEOID        |     1082 | date                        | db::postgres::date_t        | db::postgres::date_t
+  TIMEOID        |     1083 | time without time zone      | db::postgres::time_t        | db::postgres::time_t
+  TIMESTAMPOID   |     1114 | timestamp without time zone | db::postgres::timestamp_t   | db::postgres::timestamp_t
+  TIMESTAMPTZOID |     1184 | timestamp with time zone    | db::postgres::timestamptz_t | db::postgres::timestamptz_t
+  INTERVALOID    |     1186 | interval                    | db::postgres::interval_t    | db::postgres::interval_t
+  TIMETZOID      |     1266 | time with time zone         | db::postgres::timetz_t      | db::postgres::timetz_t
   ZPBITOID       |     1560 | bit
   VARBITOID      |     1562 | bit varying
   NUMERICOID     |     1700 | numeric

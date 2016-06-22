@@ -31,6 +31,40 @@
 namespace db {
   namespace postgres {
 
+    const int32_t DAYS_UNIX_TO_J2000_EPOCH = int32_t(10957);
+    const int64_t MICROSEC_UNIX_TO_J2000_EPOCH = int64_t(946684800) * 1000000;
+
+    typedef struct {
+      int32_t epoch_date;
+      operator int32_t() const { return epoch_date; }
+    } date_t;
+
+    typedef struct {
+      int64_t epoch_time;
+      operator int64_t() const { return epoch_time; }
+    } timestamptz_t;
+
+    typedef struct {
+      int64_t epoch_time;
+      operator int64_t() const { return epoch_time; }
+    } timestamp_t;
+
+    typedef struct {
+      int64_t time;
+      int32_t offset;
+    } timetz_t;
+
+    typedef struct {
+      int64_t time;
+      operator int64_t() const { return time; }
+    } time_t;
+
+    typedef struct {
+      int64_t time;
+      int32_t days;
+      int32_t months;
+    } interval_t;
+
     class Connection : public std::enable_shared_from_this<Connection> {
 
       friend class Result;

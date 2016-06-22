@@ -26,9 +26,7 @@
 #include <cassert>
 #include <cstdlib>
 
-#ifndef NDEBUG
-  #include "libpq/pg_type.h"
-#endif
+#include "libpq/pg_type.h"
 
 #ifdef __linux__
   #include <endian.h>
@@ -140,6 +138,80 @@ namespace db {
       int length = PQgetlength(result_, 0, column);
       uint8_t *data = reinterpret_cast<uint8_t *>(PQgetvalue(result_, 0, column));
       return std::vector<uint8_t>(data, data + length);
+    }
+
+    // -------------------------------------------------------------------------
+    // date
+    // -------------------------------------------------------------------------
+    template<>
+    date_t Row::get<date_t>(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      assert(PQftype(result_, column) == DATEOID);
+      int32_t i = be32toh(*reinterpret_cast<int32_t*>(PQgetvalue(result_, 0, column)));
+      i = (i+DAYS_UNIX_TO_J2000_EPOCH) * 86400;
+      return date_t { i };
+    }
+
+    // -------------------------------------------------------------------------
+    // timestamptz
+    // -------------------------------------------------------------------------
+    template<>
+    timestamptz_t Row::get<timestamptz_t>(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      assert(PQftype(result_, column) == TIMESTAMPTZOID);
+      int64_t v = be64toh(*reinterpret_cast<int64_t*>(PQgetvalue(result_, 0, column))) + MICROSEC_UNIX_TO_J2000_EPOCH;
+      return timestamptz_t { v };
+    }
+
+    // -------------------------------------------------------------------------
+    // timestamp
+    // -------------------------------------------------------------------------
+    template<>
+    timestamp_t Row::get<timestamp_t>(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      assert(PQftype(result_, column) == TIMESTAMPOID);
+      int64_t v = be64toh(*reinterpret_cast<int64_t*>(PQgetvalue(result_, 0, column))) + MICROSEC_UNIX_TO_J2000_EPOCH;
+      return timestamp_t { v };
+    }
+
+    // -------------------------------------------------------------------------
+    // timetz
+    // -------------------------------------------------------------------------
+    template<>
+    timetz_t Row::get<timetz_t>(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      assert(PQftype(result_, column) == TIMETZOID);
+      timetz_t t;
+      std::memcpy(&t, PQgetvalue(result_, 0, column), 12);
+      t.time = be64toh(t.time);
+      t.offset = be32toh(t.offset);
+      return t;
+    }
+
+    // -------------------------------------------------------------------------
+    // time
+    // -------------------------------------------------------------------------
+    template<>
+    time_t Row::get<time_t>(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      assert(PQftype(result_, column) == TIMEOID);
+      int64_t t = be64toh(*reinterpret_cast<int64_t*>(PQgetvalue(result_, 0, column)));
+      return time_t { t };
+    }
+
+    // -------------------------------------------------------------------------
+    // interval
+    // -------------------------------------------------------------------------
+    template<>
+    interval_t Row::get<interval_t>(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      assert(PQftype(result_, column) == INTERVALOID);
+      interval_t i;
+      std::memcpy(&i, PQgetvalue(result_, 0, column), sizeof(i));
+      i.time = be64toh(i.time);
+      i.days = be32toh(i.days);
+      i.months = be32toh(i.months);
+      return i;
     }
 
     // -------------------------------------------------------------------------
