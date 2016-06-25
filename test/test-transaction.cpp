@@ -28,7 +28,7 @@ using namespace db::postgres;
 TEST(transaction, sync_commit) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   cnx.execute("DROP TABLE IF EXISTS tmpTrans");
   cnx.execute("CREATE TABLE tmpTrans(a VARCHAR(10))");
@@ -43,7 +43,7 @@ TEST(transaction, sync_commit) {
 TEST(transaction, sync_rollback) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   cnx.execute("DROP TABLE IF EXISTS tmpTrans");
   cnx.execute("CREATE TABLE tmpTrans(a VARCHAR(10))");

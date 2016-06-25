@@ -28,7 +28,7 @@ using namespace db::postgres;
 TEST(result_sync, integer_types) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   EXPECT_EQ(cnx.execute("SELECT true").result().get<bool>(0), true);
   EXPECT_EQ(cnx.execute("SELECT false").result().get<bool>(0), false);
@@ -43,7 +43,7 @@ TEST(result_sync, integer_types) {
 TEST(result_sync, floating_point_types) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   EXPECT_FLOAT_EQ(cnx.execute("SELECT CAST(4.46678 AS REAL)").result().get<float>(0), 4.46678);
   EXPECT_FLOAT_EQ(cnx.execute("SELECT CAST(4.46678 AS DOUBLE PRECISION)").result().get<double>(0), 4.46678);
@@ -53,7 +53,7 @@ TEST(result_sync, floating_point_types) {
 TEST(result_sync, serial_types) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   cnx.execute("CREATE TABLE tmp(id16 smallserial, id32 serial, id64 bigserial, val integer)");
   cnx.execute("INSERT INTO tmp(val) SELECT 0");
@@ -68,7 +68,7 @@ TEST(result_sync, serial_types) {
 TEST(result_sync, char_types) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   EXPECT_STREQ("hello     ", cnx.execute("SELECT CAST('hello' AS CHAR(10))").result().get<std::string>(0).c_str());
   EXPECT_STREQ("world", cnx.execute("SELECT CAST('world' AS VARCHAR(10))").result().get<std::string>(0).c_str());
@@ -81,7 +81,7 @@ TEST(result_sync, char_types) {
 TEST(result_sync, utf8) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   EXPECT_STREQ(u8"Günter", cnx.execute("SELECT 'Günter'").result().get<std::string>(0).c_str());
   EXPECT_STREQ(u8"メインページ", cnx.execute("SELECT 'メインページ'").result().get<std::string>(0).c_str());
@@ -91,7 +91,7 @@ TEST(result_sync, utf8) {
 TEST(result_sync, date_time_types) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   EXPECT_EQ(0, cnx.execute("SELECT TIMESTAMP WITH TIME ZONE '1970-01-01 00:00:00+00'").result().get<timestamptz_t>(0));
   EXPECT_EQ(600123, cnx.execute("SELECT TIMESTAMP WITH TIME ZONE '1970-01-01 00:00:00.600123+00'").result().get<timestamptz_t>(0));
@@ -117,7 +117,7 @@ TEST(result_sync, date_time_types) {
 TEST(result_sync, bytea_type) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   std::vector<uint8_t> expected;
   expected.push_back(0xDE);
@@ -133,10 +133,10 @@ TEST(result_sync, bytea_type) {
 TEST(result_sync, null_values) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
-  EXPECT_EQ(true, cnx.execute("SELECT NULL::bigint").result().isNull(0));
-  EXPECT_EQ(false, cnx.execute("SELECT NULL::bool").result().get<bool>(0));
+  EXPECT_TRUE(cnx.execute("SELECT NULL::bigint").result().isNull(0));
+  EXPECT_FALSE(cnx.execute("SELECT NULL::bool").result().get<bool>(0));
   EXPECT_EQ(0, cnx.execute("SELECT NULL::smallint").result().get<int16_t>(0));
   EXPECT_EQ(0, cnx.execute("SELECT NULL::integer").result().get<int32_t>(0));
   EXPECT_EQ(0., cnx.execute("SELECT NULL::float4").result().get<float>(0));
@@ -159,7 +159,7 @@ TEST(result_sync, null_values) {
 TEST(result_sync, column_name) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   auto &result = cnx.execute("SELECT 0 AS c1, 1, 2 AS \"Günter\", 3 AS \"メインページ\"").result();
   EXPECT_STREQ("c1", result.columnName(0));

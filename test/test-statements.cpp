@@ -28,7 +28,7 @@ using namespace db::postgres;
 TEST(result_sync, statements) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   EXPECT_EQ(cnx.execute("SELECT generate_series(1, 3) INTO tmp").result().count(), 3);
   EXPECT_EQ(cnx.execute("DROP TABLE tmp").result().count(), 0);

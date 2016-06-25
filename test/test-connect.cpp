@@ -28,7 +28,7 @@ using namespace db::postgres;
 TEST(connect, sync) {
 
   Connection cnx;
-  EXPECT_NO_THROW(cnx.connect("postgresql://postgres@localhost").close());
+  EXPECT_NO_THROW(cnx.connect("postgresql://ci-test@localhost").close());
   EXPECT_THROW(cnx.connect("postgresql://invalid_user@localhost"), ConnectionException);
 
 }

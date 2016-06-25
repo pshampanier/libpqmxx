@@ -25,11 +25,16 @@
 #include "libpq/pg_type.h"
 
 #include <cassert>
+#include <cstring>
 
+#include <arpa/inet.h>
 #ifdef __linux__
   #include <endian.h>
-#elif defined (__APPLE__)
-  #include <arpa/inet.h>
+    #if __BYTE_ORDER == __LITTLE_ENDIAN
+      #define htonll(x) __bswap_constant_64(x)
+    #else
+      #define htonll(x) x
+    #endif
 #elif defined (__WINDOWS__)
 
 #endif

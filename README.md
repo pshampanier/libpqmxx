@@ -36,13 +36,9 @@ cnx.connect("postgres://").done([cnx]() {
 5. http://libpqtypes.esilo.com/browse_source.html?file=numerics.c
 
 # Build
+
 ```
-cmake -G Xcode \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DPostgreSQL_INCLUDE_DIRS=../dist/lib-postgresql-9.5.3/include/ \
-  -DPostgreSQL_LIBRARIES=../dist/lib-postgresql-9.5.3/lib/libpq.a \
-  -DOPENSSL_LIBRARIES="../dist/lib-openssl-1.0.2h/libs/Release/libssl.a;../dist/lib-openssl-1.0.2h/libs/Release/libcrypto.a" \
-  ../
+cmake -DPostgreSQL_ROOT=../dist/lib-postgresql-9.5.3/ ../
 ```
 
 # Notes
@@ -51,3 +47,17 @@ cmake -G Xcode \
 SELECT  700::oid::regtype -- real
 ```
 
+# Contributing
+
+Create a user and a database `ci-test`.
+
+```bash
+createuser ci-test
+createdb ci-test --owner=ci-test --encoding=UTF8 
+```
+
+## OSX
+
+```
+  brew install postgresql
+```

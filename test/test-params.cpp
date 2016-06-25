@@ -28,15 +28,15 @@ using namespace db::postgres;
 TEST(params_sync, datatypes) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   EXPECT_EQ(32767, cnx.execute("SELECT $1::smallint", int16_t(32767)).result().get<int16_t>(0));
   EXPECT_EQ(2147483647, cnx.execute("SELECT $1", 2147483647).result().get<int32_t>(0));
   EXPECT_EQ(9223372036854775807, cnx.execute("SELECT $1", int64_t(9223372036854775807)).result().get<int64_t>(0));
   EXPECT_FLOAT_EQ(0.45567, cnx.execute("SELECT $1::real", float(0.45567)).result().get<float>(0));
   EXPECT_FLOAT_EQ(0.45567, cnx.execute("SELECT $1::double precision", double(0.45567)).result().get<double>(0));
-  EXPECT_EQ(true, cnx.execute("SELECT $1", true).result().get<bool>(0));
-  EXPECT_EQ(false, cnx.execute("SELECT $1", false).result().get<bool>(0));
+  EXPECT_TRUE(cnx.execute("SELECT $1", true).result().get<bool>(0));
+  EXPECT_FALSE(cnx.execute("SELECT $1", false).result().get<bool>(0));
   EXPECT_STREQ("hello", cnx.execute("SELECT $1", "hello").result().get<std::string>(0).c_str());
   EXPECT_STREQ("hello", cnx.execute("SELECT $1", std::string("hello")).result().get<std::string>(0).c_str());
   EXPECT_EQ('X', cnx.execute("SELECT $1", 'X').result().get<char>(0));
@@ -46,7 +46,7 @@ TEST(params_sync, datatypes) {
 TEST(params_sync, utf8) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   EXPECT_STREQ(u8"Günter", cnx.execute("SELECT $1", u8"Günter").result().get<std::string>(0).c_str());
   EXPECT_STREQ(u8"メインページ", cnx.execute("SELECT $1", u8"メインページ").result().get<std::string>(0).c_str());
@@ -56,7 +56,7 @@ TEST(params_sync, utf8) {
 TEST(params_sync, date_time) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   EXPECT_STREQ("1970-01-01", cnx.execute("SELECT to_char($1, 'YYYY-MM-DD')", date_t {0}).result().get<std::string>(0).c_str());
   EXPECT_STREQ("2014-11-01 05:14:00", cnx.execute("SELECT to_char($1 at time zone 'America/New_York', 'YYYY-MM-DD HH24:MI:SS')", timestamptz_t {1414833240000000}).result().get<std::string>(0).c_str());
@@ -82,7 +82,7 @@ TEST(params_sync, date_time) {
 TEST(param_sync, bytea_type) {
 
   Connection cnx;
-  cnx.connect("postgresql://postgres@localhost");
+  cnx.connect("postgresql://ci-test@localhost");
 
   std::vector<uint8_t> expected;
   expected.push_back(0xDE);
