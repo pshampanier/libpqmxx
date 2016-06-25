@@ -119,3 +119,29 @@ TEST(result_sync, bytea_type) {
   EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
 
 }
+
+TEST(result_sync, null_values) {
+
+  Connection cnx;
+  cnx.connect("postgresql://postgres@localhost");
+
+  EXPECT_EQ(true, cnx.execute("SELECT NULL::bigint").result().isNull(0));
+  EXPECT_EQ(false, cnx.execute("SELECT NULL::bool").result().get<bool>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::smallint").result().get<int16_t>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::integer").result().get<int32_t>(0));
+  EXPECT_EQ(0., cnx.execute("SELECT NULL::float4").result().get<float>(0));
+  EXPECT_EQ(0., cnx.execute("SELECT NULL::float8").result().get<double>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::bytea").result().get<std::vector<uint8_t>>(0).size());
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::date").result().get<date_t>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::timestamptz").result().get<timestamptz_t>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::timestamp").result().get<timestamp_t>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::time").result().get<db::postgres::time_t>(0));
+  auto timetz = cnx.execute("SELECT NULL::timetz").result().get<db::postgres::timetz_t>(0);
+  EXPECT_EQ(0, timetz.time);
+  EXPECT_EQ(0, timetz.offset);
+  auto interval = cnx.execute("SELECT NULL::interval").result().get<db::postgres::interval_t>(0);
+  EXPECT_EQ(0, interval.time);
+  EXPECT_EQ(0, interval.days);
+  EXPECT_EQ(0, interval.months);
+
+}

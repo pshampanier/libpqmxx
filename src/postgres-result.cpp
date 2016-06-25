@@ -46,6 +46,18 @@
 namespace db {
   namespace postgres {
 
+    int16_t read16(const PGresult *pgresult, int column) {
+      return be16toh(*reinterpret_cast<int16_t*>(PQgetvalue(pgresult, 0, column)));
+    }
+
+    int32_t read32(const PGresult *pgresult, int column) {
+      return be32toh(*reinterpret_cast<int32_t*>(PQgetvalue(pgresult, 0, column)));
+    }
+
+    int64_t read64(const PGresult *pgresult, int column) {
+      return be64toh(*reinterpret_cast<int64_t*>(PQgetvalue(pgresult, 0, column)));
+    }
+
     // -------------------------------------------------------------------------
     // Row contructor
     // -------------------------------------------------------------------------
@@ -57,39 +69,66 @@ namespace db {
       return result_.num_;
     }
 
+    // -------------------------------------------------------------------------
+    // Tests a column for a null value.
+    // -------------------------------------------------------------------------
+    bool Row::isNull(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      return PQgetisnull(result_, 0, column) == 1;
+    }
+
+    // -------------------------------------------------------------------------
+    // bool
+    // -------------------------------------------------------------------------
     template<>
     bool Row::get<bool>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == BOOLOID);
-      return *reinterpret_cast<bool *>(PQgetvalue(result_, 0, column));
+      return PQgetisnull(result_, 0, column) ? false :
+        *reinterpret_cast<bool *>(PQgetvalue(result_, 0, column));
     }
 
+    // -------------------------------------------------------------------------
+    // smallint
+    // -------------------------------------------------------------------------
     template<>
     int16_t Row::get<int16_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == INT2OID);
-      return be16toh(*reinterpret_cast<int16_t*>(PQgetvalue(result_, 0, column)));
+      return PQgetisnull(result_, 0, column) ? 0 : read16(result_, column);
     }
 
+    // -------------------------------------------------------------------------
+    // integer
+    // -------------------------------------------------------------------------
     template<>
     int32_t Row::get<int32_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == INT4OID);
-      return be32toh(*reinterpret_cast<int32_t*>(PQgetvalue(result_, 0, column)));
+      return PQgetisnull(result_, 0, column) ? 0 : read32(result_, column);
     }
 
+    // -------------------------------------------------------------------------
+    // bigint
+    // -------------------------------------------------------------------------
     template<>
     int64_t Row::get<int64_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == INT8OID);
-      return be64toh(*reinterpret_cast<int64_t*>(PQgetvalue(result_, 0, column)));
+      return PQgetisnull(result_, 0, column) ? 0 : read64(result_, column);
     }
 
+    // -------------------------------------------------------------------------
+    // real
+    // -------------------------------------------------------------------------
     template<>
     float Row::get<float>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == FLOAT4OID);
-      uint32_t v = be32toh(*reinterpret_cast<int32_t*>(PQgetvalue(result_, 0, column)));
+      if (PQgetisnull(result_, 0, column)) {
+        return 0.f;
+      }
+      int32_t v = read32(result_, column);
       return *reinterpret_cast<float*>(&v);
     }
 
@@ -100,7 +139,10 @@ namespace db {
     double Row::get<double>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == FLOAT8OID);
-      uint64_t v = be64toh(*reinterpret_cast<int64_t*>(PQgetvalue(result_, 0, column)));
+      if (PQgetisnull(result_, 0, column)) {
+        return 0.;
+      }
+      uint64_t v = read64(result_, column);
       return *reinterpret_cast<double*>(&v);
     }
 
@@ -114,6 +156,9 @@ namespace db {
              PQftype(result_, column) == VARCHAROID ||
              PQftype(result_, column) == NAMEOID ||
              PQftype(result_, column) == TEXTOID);
+      if (PQgetisnull(result_, 0, column)) {
+        return std::string();
+      }
       return std::string(PQgetvalue(result_, 0, column));
     }
 
@@ -124,8 +169,7 @@ namespace db {
     char Row::get<char>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == CHAROID);
-      char c = *PQgetvalue(result_, 0, column);
-      return c;
+      return PQgetisnull(result_, 0, column) ? '\0' : *PQgetvalue(result_, 0, column);
     }
 
     // -------------------------------------------------------------------------
@@ -147,8 +191,11 @@ namespace db {
     date_t Row::get<date_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == DATEOID);
-      int32_t i = be32toh(*reinterpret_cast<int32_t*>(PQgetvalue(result_, 0, column)));
-      i = (i+DAYS_UNIX_TO_J2000_EPOCH) * 86400;
+      int32_t i = 0;
+      if (!PQgetisnull(result_, 0, column)) {
+        i = read32(result_, column);
+        i = (i+DAYS_UNIX_TO_J2000_EPOCH) * 86400;
+      }
       return date_t { i };
     }
 
@@ -159,8 +206,11 @@ namespace db {
     timestamptz_t Row::get<timestamptz_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == TIMESTAMPTZOID);
-      int64_t v = be64toh(*reinterpret_cast<int64_t*>(PQgetvalue(result_, 0, column))) + MICROSEC_UNIX_TO_J2000_EPOCH;
-      return timestamptz_t { v };
+      int64_t t = 0;
+      if (!PQgetisnull(result_, 0, column)) {
+        t = read64(result_, column) + MICROSEC_UNIX_TO_J2000_EPOCH;
+      }
+      return timestamptz_t { t };
     }
 
     // -------------------------------------------------------------------------
@@ -170,8 +220,11 @@ namespace db {
     timestamp_t Row::get<timestamp_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == TIMESTAMPOID);
-      int64_t v = be64toh(*reinterpret_cast<int64_t*>(PQgetvalue(result_, 0, column))) + MICROSEC_UNIX_TO_J2000_EPOCH;
-      return timestamp_t { v };
+      int64_t t = 0;
+      if (!PQgetisnull(result_, 0, column)) {
+        t = read64(result_, column) + MICROSEC_UNIX_TO_J2000_EPOCH;
+      }
+      return timestamp_t { t };
     }
 
     // -------------------------------------------------------------------------
@@ -182,9 +235,14 @@ namespace db {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == TIMETZOID);
       timetz_t t;
-      std::memcpy(&t, PQgetvalue(result_, 0, column), 12);
-      t.time = be64toh(t.time);
-      t.offset = be32toh(t.offset);
+      if (PQgetisnull(result_, 0, column)) {
+        std::memset(&t, 0, 12);
+      }
+      else {
+        std::memcpy(&t, PQgetvalue(result_, 0, column), 12);
+        t.time = be64toh(t.time);
+        t.offset = be32toh(t.offset);
+      }
       return t;
     }
 
@@ -195,7 +253,10 @@ namespace db {
     time_t Row::get<time_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == TIMEOID);
-      int64_t t = be64toh(*reinterpret_cast<int64_t*>(PQgetvalue(result_, 0, column)));
+      int64_t t = 0;
+      if (!PQgetisnull(result_, 0, column)) {
+        t = read64(result_, column);
+      }
       return time_t { t };
     }
 
@@ -207,10 +268,15 @@ namespace db {
       assert(result_.pgresult_ != nullptr);
       assert(PQftype(result_, column) == INTERVALOID);
       interval_t i;
-      std::memcpy(&i, PQgetvalue(result_, 0, column), sizeof(i));
-      i.time = be64toh(i.time);
-      i.days = be32toh(i.days);
-      i.months = be32toh(i.months);
+      if (PQgetisnull(result_, 0, column)) {
+        std::memset(&i, 0, sizeof(i));
+      }
+      else {
+        std::memcpy(&i, PQgetvalue(result_, 0, column), sizeof(i));
+        i.time = be64toh(i.time);
+        i.days = be32toh(i.days);
+        i.months = be32toh(i.months);
+      }
       return i;
     }
 

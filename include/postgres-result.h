@@ -34,8 +34,30 @@ namespace db {
     public:
       Row(Result &result);
 
+      /**
+       * Tests a field for a null value.
+       *
+       * Column numbers start at 0.
+       * @return true if the column value is NULL.
+       **/
+      bool isNull(int column) const;
+
+      /**
+       * Get a column value.
+       *
+       * @param column Column number. Column numbers start at 0.
+       * @return The value of the column.
+       **/
       template<typename T>
       T get(int column) const;
+
+      /**
+       * Get a column name.
+       *
+       * @param column Column number. Column numbers start at 0.
+       * @return The column name associated with the given column number.
+       **/
+      const char *name(int column) const;
 
       /**
        * Row number.
