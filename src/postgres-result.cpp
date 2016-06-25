@@ -78,6 +78,16 @@ namespace db {
     }
 
     // -------------------------------------------------------------------------
+    // Get a column name.
+    // -------------------------------------------------------------------------
+    const char *Row::columnName(int column) const {
+      assert(result_.pgresult_ != nullptr);
+      const char *res = PQfname(result_, column);
+      assert(res);
+      return res;
+    }
+
+    // -------------------------------------------------------------------------
     // bool
     // -------------------------------------------------------------------------
     template<>
@@ -155,7 +165,8 @@ namespace db {
       assert(PQftype(result_, column) == BPCHAROID ||
              PQftype(result_, column) == VARCHAROID ||
              PQftype(result_, column) == NAMEOID ||
-             PQftype(result_, column) == TEXTOID);
+             PQftype(result_, column) == TEXTOID ||
+             PQftype(result_, column) == UNKNOWNOID);
       if (PQgetisnull(result_, 0, column)) {
         return std::string();
       }

@@ -78,6 +78,16 @@ TEST(result_sync, char_types) {
 
 }
 
+TEST(result_sync, utf8) {
+
+  Connection cnx;
+  cnx.connect("postgresql://postgres@localhost");
+
+  EXPECT_STREQ(u8"Günter", cnx.execute("SELECT 'Günter'").result().get<std::string>(0).c_str());
+  EXPECT_STREQ(u8"メインページ", cnx.execute("SELECT 'メインページ'").result().get<std::string>(0).c_str());
+
+}
+
 TEST(result_sync, date_time_types) {
 
   Connection cnx;
@@ -143,5 +153,18 @@ TEST(result_sync, null_values) {
   EXPECT_EQ(0, interval.time);
   EXPECT_EQ(0, interval.days);
   EXPECT_EQ(0, interval.months);
+
+}
+
+TEST(result_sync, column_name) {
+
+  Connection cnx;
+  cnx.connect("postgresql://postgres@localhost");
+
+  auto &result = cnx.execute("SELECT 0 AS c1, 1, 2 AS \"Günter\", 3 AS \"メインページ\"").result();
+  EXPECT_STREQ("c1", result.columnName(0));
+  EXPECT_STREQ("?column?", result.columnName(1));
+  EXPECT_STREQ(u8"Günter", result.columnName(2));
+  EXPECT_STREQ(u8"メインページ", result.columnName(3));
 
 }

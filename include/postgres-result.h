@@ -57,7 +57,7 @@ namespace db {
        * @param column Column number. Column numbers start at 0.
        * @return The column name associated with the given column number.
        **/
-      const char *name(int column) const;
+      const char *columnName(int column) const;
 
       /**
        * Row number.

@@ -38,6 +38,7 @@ cnx.connect("postgres://").done([cnx]() {
 # Build
 ```
 cmake -G Xcode \
+  -DCMAKE_BUILD_TYPE=Debug \
   -DPostgreSQL_INCLUDE_DIRS=../dist/lib-postgresql-9.5.3/include/ \
   -DPostgreSQL_LIBRARIES=../dist/lib-postgresql-9.5.3/lib/libpq.a \
   -DOPENSSL_LIBRARIES="../dist/lib-openssl-1.0.2h/libs/Release/libssl.a;../dist/lib-openssl-1.0.2h/libs/Release/libcrypto.a" \
