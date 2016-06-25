@@ -43,8 +43,17 @@ macro(googletest target)
   endif()
 
   include_directories(${DIR_GTEST_SOURCES}/include)
-  find_library(LIB_GTEST      gtest       PATH ${CMAKE_BINARY_DIR}/googletest-release-${GTEST_RELEASE}/Debug)
-  find_library(LIB_GTEST_MAIN gtest_main  PATH ${CMAKE_BINARY_DIR}/googletest-release-${GTEST_RELEASE}/Debug)
+  find_library(LIB_GTEST gtest PATHS 
+    ${CMAKE_BINARY_DIR}/googletest-release-${GTEST_RELEASE}
+    ${CMAKE_BINARY_DIR}/googletest-release-${GTEST_RELEASE}/Debug
+    NO_DEFAULT_PATH
+  )
+  find_library(LIB_GTEST_MAIN gtest_main PATHS 
+    ${CMAKE_BINARY_DIR}/googletest-release-${GTEST_RELEASE}
+    ${CMAKE_BINARY_DIR}/googletest-release-${GTEST_RELEASE}/Debug
+    NO_DEFAULT_PATH
+  )
+  
   target_link_libraries(${target} ${LIB_GTEST} ${LIB_GTEST_MAIN})
   
 endmacro(googletest)
