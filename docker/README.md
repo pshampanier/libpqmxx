@@ -1,7 +1,6 @@
 # Docker
 
-## horizon:build
-> Debian 8.3 with gcc 5.3 + gdb 7.1.1 + cmake 3.5.1
+> Debian 8.3 with gcc 5.3 + gdb 7.1.1 + cmake 3.5.1 + postgresql 9.5
 
 ### Build
 
