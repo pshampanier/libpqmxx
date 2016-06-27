@@ -163,15 +163,11 @@ namespace db {
     template<>
     std::string Row::get<std::string>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == BPCHAROID ||
-             PQftype(result_, column) == VARCHAROID ||
-             PQftype(result_, column) == NAMEOID ||
-             PQftype(result_, column) == TEXTOID ||
-             PQftype(result_, column) == UNKNOWNOID);
       if (PQgetisnull(result_, 0, column)) {
         return std::string();
       }
-      return std::string(PQgetvalue(result_, 0, column));
+      int length = PQgetlength(result_, 0, column);
+      return std::string(PQgetvalue(result_, 0, column), length);
     }
 
     // -------------------------------------------------------------------------
@@ -180,8 +176,11 @@ namespace db {
     template<>
     char Row::get<char>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == CHAROID);
-      return PQgetisnull(result_, 0, column) ? '\0' : *PQgetvalue(result_, 0, column);
+      if (PQgetisnull(result_, 0, column)) {
+        return '\0';
+      }
+      assert(PQgetlength(result_, 0, column) == 1);
+      return *PQgetvalue(result_, 0, column);
     }
 
     // -------------------------------------------------------------------------
@@ -405,10 +404,45 @@ namespace db {
 
       switch (status_) {
         case PGRES_COMMAND_OK:
+          do {
+            PQclear(pgresult_);
+            pgresult_ = PQgetResult(conn_);
+            if (pgresult_ == nullptr) {
+              status_ = PGRES_EMPTY_QUERY;
+            }
+            else {
+              status_ = PQresultStatus(pgresult_);
+              switch (status_) {
+                case PGRES_COMMAND_OK:
+                  break;
+
+                case PGRES_BAD_RESPONSE:
+                case PGRES_FATAL_ERROR:
+                  throw ExecutionException(conn_.lastError());
+                  break;
+
+                case PGRES_SINGLE_TUPLE:
+                case PGRES_TUPLES_OK:
+                  // It is not supported to execute a multi statement sql
+                  // without fetching the result with the result iterator.
+                  assert(true);
+                  break;
+
+                default:
+                  assert(true);
+                  break;
+              }
+            }
+          } while (status_ != PGRES_EMPTY_QUERY);
+          break;
+
+        case PGRES_BAD_RESPONSE:
+        case PGRES_FATAL_ERROR:
         case PGRES_TUPLES_OK:
           PQclear(pgresult_);
           pgresult_ = PQgetResult(conn_);
           assert(pgresult_ == nullptr);
+          status_ = PGRES_EMPTY_QUERY;
           break;
 
         case PGRES_SINGLE_TUPLE:
