@@ -179,14 +179,12 @@ TEST(misc, cancel) {
 
   for (auto &row: result) {
     rownum = row.num();
-    if (row.num() == 2) {
+    if (row.num() == 100) {
       cnx.cancel();
       break;
     }
   }
 
-  rownum += 1;
-  rownum += 1;
 }
 
 TEST(misc, is_single_statement) {

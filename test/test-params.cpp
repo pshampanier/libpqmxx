@@ -32,9 +32,9 @@ TEST(params_sync, datatypes) {
 
   EXPECT_EQ(32767, cnx.execute("SELECT $1::smallint", int16_t(32767)).get<int16_t>(0));
   EXPECT_EQ(2147483647, cnx.execute("SELECT $1", 2147483647).get<int32_t>(0));
-  EXPECT_EQ(9223372036854775807, cnx.execute("SELECT $1", int64_t(9223372036854775807)).get<int64_t>(0));
-  EXPECT_FLOAT_EQ(0.45567, cnx.execute("SELECT $1::real", float(0.45567)).get<float>(0));
-  EXPECT_FLOAT_EQ(0.45567, cnx.execute("SELECT $1::double precision", double(0.45567)).get<double>(0));
+  EXPECT_EQ(9223372036854775807, cnx.execute("SELECT $1", 9223372036854775807LL).get<int64_t>(0));
+  EXPECT_FLOAT_EQ(0.45567, cnx.execute("SELECT $1", 0.45567f).get<float>(0));
+  EXPECT_FLOAT_EQ(0.45567, cnx.execute("SELECT $1", 0.45567).get<double>(0));
   EXPECT_TRUE(cnx.execute("SELECT $1", true).get<bool>(0));
   EXPECT_FALSE(cnx.execute("SELECT $1", false).get<bool>(0));
   EXPECT_STREQ("hello", cnx.execute("SELECT $1", "hello").get<std::string>(0).c_str());
