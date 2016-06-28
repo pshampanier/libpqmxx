@@ -11,5 +11,5 @@ docker build -t db-postgres-cpp .
 ### Start
 
 ```
-run --rm -ti --name=db-postgres-cpp -v ~/Sources/:/home/build/Sources db-postgres-cpp
+docker run --rm -ti --name=db-postgres-cpp -v ~/Sources/:/home/build/Sources db-postgres-cpp
 ```

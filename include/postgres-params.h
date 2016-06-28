@@ -41,6 +41,7 @@ namespace db {
       ~Params();
 
       void bind() const {}
+      void bind(std::nullptr_t);
       void bind(const std::string &s);
       void bind(const std::vector<uint8_t> &d);
 

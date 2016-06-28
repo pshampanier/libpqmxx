@@ -78,3 +78,24 @@ template1=# \d tmp
 --------+---------+-----------
  col    | unknown | 
 ```
+
+SQL Type                    | C++ Param                   
+----------------------------|-----------------------------
+boolean                     | bool                        
+bytea                       | std::vector\<uint_8\>       
+"char"                      | char                        
+name                        | const char *                
+bigint                      | int64_t                     
+smallint                    | int16_t                     
+integer                     | int32_t                     
+text                        | const char *                
+real                        | float                       
+double precision            | double                      
+character                   | const char *                
+character varying           | const char *                
+date                        | db::postgres::date_t        
+time without time zone      | db::postgres::time_t        
+timestamp without time zone | db::postgres::timestamp_t   
+timestamp with time zone    | db::postgres::timestamptz_t 
+interval                    | db::postgres::interval_t    
+time with time zone         | db::postgres::timetz_t      

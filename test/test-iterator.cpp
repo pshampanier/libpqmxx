@@ -32,7 +32,7 @@ TEST(iterator, sync_no_row) {
 
   int32_t actual = 0;
 
-  auto &result = cnx.execute("SELECT 1 WHERE 1=2").result();
+  auto &result = cnx.execute("SELECT 1 WHERE 1=2");
   for (auto &row: result) {
     actual += row.get<int32_t>(0);
   }
@@ -48,7 +48,7 @@ TEST(iterator, sync_one_row) {
 
   int32_t actual = 0;
 
-  auto &result = cnx.execute("SELECT 42").result();
+  auto &result = cnx.execute("SELECT 42");
   for (auto &row: result) {
     actual += row.get<int32_t>(0);
   }
@@ -64,7 +64,7 @@ TEST(iterator, sync_multiple_rows) {
 
   int32_t actual = 0;
 
-  auto &result = cnx.execute("SELECT generate_series(1, 3)").result();
+  auto &result = cnx.execute("SELECT generate_series(1, 3)");
   for (auto &row: result) {
     actual += row.get<int32_t>(0);
   }
@@ -80,13 +80,13 @@ TEST(iterator, sync_rownum) {
 
   int32_t actual = 0;
 
-  auto &result = cnx.execute("SELECT generate_series(1, 3)").result();
+  auto &result = cnx.execute("SELECT generate_series(1, 3)");
   for (auto &row: result) {
     actual += row.num();
   }
 
   // rownum should reset for the next query
-  auto &result2 = cnx.execute("SELECT generate_series(1, 3)").result();
+  auto &result2 = cnx.execute("SELECT generate_series(1, 3)");
   for (auto &row: result2) {
     actual += row.num();
   }

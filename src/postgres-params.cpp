@@ -109,6 +109,7 @@ namespace db {
 
         case VARCHAROID:
         case BYTEAOID:
+        case UNKNOWNOID:
           break;
 
         default:
@@ -119,6 +120,13 @@ namespace db {
       values_.push_back(value);
       lengths_.push_back(length);
       formats_.push_back(format);
+    }
+
+    //--------------------------------------------------------------------------
+    // NULL
+    //--------------------------------------------------------------------------
+    void Params::bind(std::nullptr_t) {
+      bind(UNKNOWNOID, (char *)nullptr, 0);
     }
 
     //--------------------------------------------------------------------------

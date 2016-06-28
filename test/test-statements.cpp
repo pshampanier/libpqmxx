@@ -87,7 +87,7 @@ TEST(result_sync, statements) {
       (10019,'1953-01-23','Lillian','Haddadi','M','1999-04-30'),
       (10020,'1952-12-24','Mayuko','Warwick','M','1991-01-26');
 
-  )SQL").result().count());
+  )SQL").count());
 
   EXPECT_EQ(28, cnx.execute(R"SQL(
 
@@ -121,7 +121,7 @@ TEST(result_sync, statements) {
       (10019,'Staff','1999-04-30',NULL),
       (10020,'Engineer','1997-12-30',NULL);
 
-  )SQL").result().count());
+  )SQL").count());
 
   auto &genders = cnx.execute(R"SQL(
 
@@ -129,7 +129,7 @@ TEST(result_sync, statements) {
       FROM employees e JOIN titles t on (e.emp_no=t.emp_no)
      WHERE t.to_date IS NULL ORDER BY t.from_date DESC LIMIT 3
 
-  )SQL").result();
+  )SQL");
 
   char gender;
   int32_t males = 0, females = 0, ids = 0;
@@ -150,6 +150,14 @@ TEST(result_sync, statements) {
 
   EXPECT_THROW(cnx.execute("INSERT INTO titles VALUES (10021,'Technique Leader','1988-02-10','2002-07-15')"), ExecutionException);
 
+  cnx.execute("UPDATE titles SET to_date=$1::date WHERE emp_no=$2", "1988-02-10", 10020);
+  cnx.execute("INSERT INTO titles VALUES ($1, $2, $3::date, $4)",
+              10020, "Technique Leader", "1988-02-10", nullptr);
+
+  EXPECT_EQ(883440000, cnx.execute(R"SQL(
+    SELECT from_date FROM titles WHERE  to_date=$1::date AND emp_no=$2
+  )SQL", "1988-02-10", 10020).get<date_t>(0));
+
   // Cleanup
   cnx.execute(R"SQL(
 
@@ -159,6 +167,26 @@ TEST(result_sync, statements) {
 
   )SQL");
 
+}
+
+TEST(misc, cancel) {
+
+  Connection cnx;
+  cnx.connect("postgresql://ci-test@localhost");
+
+  auto &result = cnx.execute("SELECT generate_series(1, 10000)");
+  int rownum = 0;
+
+  for (auto &row: result) {
+    rownum = row.num();
+    if (row.num() == 2) {
+      cnx.cancel();
+      break;
+    }
+  }
+
+  rownum += 1;
+  rownum += 1;
 }
 
 TEST(misc, is_single_statement) {

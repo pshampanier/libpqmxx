@@ -250,7 +250,6 @@ namespace db {
     Connection::Connection()
       : result_(*this) {
       pgconn_ = nullptr;
-      async_ = false;
       transaction_ = 0;
     }
 
@@ -264,20 +263,14 @@ namespace db {
     // -------------------------------------------------------------------------
     // Open a connection to the database.
     // -------------------------------------------------------------------------
-    Connection &Connection::connect(const char *connInfo, bool async) {
+    Connection &Connection::connect(const char *connInfo) {
       assert(pgconn_ == nullptr);
-      async_ = async;
       pgconn_ = PQconnectdb(connInfo);
       
       if( PQstatus(pgconn_) != CONNECTION_OK ) {
         PQfinish(pgconn_);
         pgconn_ = nullptr;
         throw ConnectionException(std::string(PQerrorMessage(pgconn_)));
-      }
-      
-      if (PQsetnonblocking(pgconn_, async_) != 0) {
-        // ## TODO
-        return *this;
       }
 
       return *this;
@@ -366,44 +359,15 @@ namespace db {
     // Cancel queries in progress.
     // -------------------------------------------------------------------------
     Connection &Connection::cancel() {
-      // ##
-      // ## TO DO
-      // ##
-      return *this;
-    }
+      char errbuf[256];
+      PGcancel *pgcancel = PQgetCancel(pgconn_);
 
-    // -------------------------------------------------------------------------
-    // Get the native socket identifier.
-    // -------------------------------------------------------------------------
-    int Connection::socket() const noexcept {
-      return PQsocket(pgconn_);
-    }
-    
-    Connection &Connection::once(std::function<bool (const Result &)> cb) {
-      iterator_ = cb;
-      return *this;
-    }
-    
-    Connection &Connection::each(std::function<bool (const Result &)> cb) {
-      iterator_ = cb;
-      return *this;
-    }
-    
-    Connection &Connection::done(std::function<void (int)> cb) {
-      done_ = cb;
-      return *this;
-    }
-    
-    Connection &Connection::always(std::function<void ()> cb) {
-      always_ = cb;
-      return *this;
-    }
-    
-    // -------------------------------------------------------------------------
-    // Error handler registration.
-    // -------------------------------------------------------------------------
-    Connection &Connection::error(std::function<void (std::exception_ptr)> cb) {
-      error_ = cb;
+      int success = PQcancel(pgcancel, errbuf, sizeof(errbuf));
+      if (!success) {
+        throw ExecutionException(errbuf);
+      }
+
+      PQfreeCancel(pgcancel);
       return *this;
     }
 
