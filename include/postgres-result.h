@@ -27,26 +27,71 @@ namespace db {
     class Connection;
     class Result;
 
+    /**
+     * A row in a Result.
+     *
+     * Rows can be accessed using the Result::iterator except the first one
+     * that can be directly access through the result.
+     **/
     class Row {
 
       friend class Result;
 
     public:
-      Row(Result &result);
 
       /**
-       * Tests a field for a null value.
+       * Test a field for a null value.
        *
        * Column numbers start at 0.
-       * @return true if the column value is NULL.
+       * @return true if the column value is a null value.
        **/
       bool isNull(int column) const;
 
       /**
        * Get a column value.
        *
+       * ```
+       * int32_t emp_no = row.get<int32_t>(0);
+       * ```
+       *
+       * The `typename` used to call the function must by compatible with the
+       * SQL type. The following table defines compatible types:
+
+         SQL Type                    | Typename                    | null value
+         ----------------------------|-----------------------------|------------
+         boolean                     | bool                        | false
+         bytea                       | std::vector\<uint_8\>       | *empty vector*
+         "char"                      | char                        | '\0'
+         name                        | std::string                 | *empty string*
+         bigint                      | int64_t                     | 0
+         smallint                    | int16_t                     | 0
+         integer                     | int32_t                     | 0
+         text                        | std::string                 | *empty string*
+         real                        | float                       | 0.f
+         double precision            | double                      | 0.
+         character                   | std::string                 | *empty string*
+         character varying           | std::string                 | *empty string*
+         date                        | db::postgres::date_t        | { 0 }
+         time without time zone      | db::postgres::time_t        | { 0 }
+         timestamp without time zone | db::postgres::timestamp_t   | { 0 }
+         timestamp with time zone    | db::postgres::timestamptz_t | { 0 }
+         interval                    | db::postgres::interval_t    | { 0, 0 }
+         time with time zone         | db::postgres::timetz_t      | { 0, 0, 0 }
+         smallserial                 | int16_t                     | 0
+         serial                      | int32_t                     | 0
+         bigserial                   | int64_t                     | 0
+
+       * If the column value is null, the null value defined in the table above
+       * will be returned. To insure the column value is really null the method
+       * `isNull()` should be used.
+       *
        * @param column Column number. Column numbers start at 0.
        * @return The value of the column.
+       *
+       * @attention Calling this method with incompatible types is treated as
+       *            programming errors, not user or run-time errors. Those errors
+       *            will be captured by an assert in debug mode and the behavior
+       *            in non debug modes is undertermined.
        **/
       template<typename T>
       T get(int column) const;
@@ -56,11 +101,18 @@ namespace db {
        *
        * @param column Column number. Column numbers start at 0.
        * @return The column name associated with the given column number.
+       *
+
+        ```
+        cnx.execute("SELECT emp_no, firstname from employees").columnName(1) → "firstname"
+        ```
+
+       *
        **/
       const char *columnName(int column) const;
 
       /**
-       * Row number.
+       * Get the row number.
        *
        * @return For each row returned by a query, `num()` returns a number
        *         indicating the order of the row in the result. The first row
@@ -69,7 +121,12 @@ namespace db {
       int num() const noexcept;
 
     private:
-      Result &result_;
+      Result &result_;  /**< The result set by the constructor **/
+
+      /**
+       * Constructor.
+       **/
+      Row(Result &result);
 
       Row(const Row&) = delete;
       Row& operator = (const Row&) = delete;
@@ -77,6 +134,16 @@ namespace db {
       Row& operator = (const Row&&) = delete;
     };
 
+    /**
+     * A result from an SQL command.
+     *
+     * SQL commands always return a result. For a SELECT command you can iterate
+     * through the result using the Result::iterator. Otherwise you can use the
+     * count() method to get the number of rows affected by the SQL command.
+     *
+     * When executing more than one SQL command, the iterator can also be used
+     * to access the result of each command.
+     **/
     class Result : public Row {
 
       friend class Connection;
@@ -98,10 +165,11 @@ namespace db {
       uint64_t count() const noexcept;
       
       /**
-       * iterator - Support of the range-based for loops.
+       * Support of the range-based for loops.
        *
        *
        * ```
+       *  auto &result = cnx.exectute("SELECT ...");
        *  for (auto &row: result) {
        *    ...
        *  }
@@ -120,20 +188,26 @@ namespace db {
         Row *ptr_;
       };
 
+      /**
+       * First row of the result.
+       *
+       * @return An iterator pointing to the first row of the result.
+       **/
       iterator begin();
+
+      /**
+       * Last row of the result.
+       *
+       * @return An iterator pointing to the past-the-end row of the result.
+       **/
       iterator end();
 
     private:
 
-      /**
-       * The current result.
-       **/
-      PGresult *pgresult_;
-
-      Connection &conn_;
-      Row begin_, end_;
-
-      int num_;
+      PGresult *pgresult_;  /**< Native result **/
+      Connection &conn_;    /**< Connection owning the result. **/
+      Row begin_, end_;     /**< Virtual begin and end of the result. **/
+      int num_;             /**< Current row number. */
 
       ExecStatusType status_ = PGRES_EMPTY_QUERY;
 

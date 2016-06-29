@@ -279,16 +279,17 @@ namespace db {
     // -------------------------------------------------------------------------
     // Close the database connection.
     // -------------------------------------------------------------------------
-    void Connection::close() noexcept {
+    Connection &Connection::close() noexcept {
       assert(pgconn_);
       PQfinish(pgconn_);
       pgconn_ = nullptr;
+      return *this;
     }
 
     // -------------------------------------------------------------------------
     // Last error message on the connection.
     // -------------------------------------------------------------------------
-    std::string Connection::lastError() const {
+    std::string Connection::lastError() const noexcept {
       return std::string(PQerrorMessage(pgconn_));
     }
 

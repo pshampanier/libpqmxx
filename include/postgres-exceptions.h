@@ -26,15 +26,31 @@
 namespace db {
   namespace postgres {
     
+    /**
+     * Exception thrown on connection failure.
+     **/
     class ConnectionException : public std::runtime_error {
     public:
+      /**
+       * Constructor.
+       *
+       * @param what - The error message returned by the server.
+       **/
       ConnectionException(const std::string &what)
       : std::runtime_error(what) {
       }
     };
 
+    /**
+     * Exception thrown on any runtime error except a connection failure.
+     **/
     class ExecutionException : public std::runtime_error {
     public:
+      /**
+       * Constructor.
+       *
+       * @param what - The error message returned by the server.
+       **/
       ExecutionException(const std::string &what)
       : std::runtime_error(what) {
       }

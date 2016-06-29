@@ -35,8 +35,6 @@
     #else
       #define htonll(x) x
     #endif
-#elif defined (__WINDOWS__)
-
 #endif
 
 namespace db {

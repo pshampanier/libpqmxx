@@ -53,49 +53,5 @@ SQL Type      | C++ Param | C++ Result
 smallserial   | n/a       | int16_t
 serial        | n/a       | int32_t
 bigserial     | n/a       | int64_t
-  
-## TODO
 
 
-
-### Warning
-```
-template1=# SELECT 'H' INTO tmp;
-WARNING:  column "?column?" has type "unknown"
-DETAIL:  Proceeding with relation creation anyway.
-```
-
-### Unknown type
-
-```
-template1=# SELECT 'H' AS col INTO tmp;
-WARNING:  column "col" has type "unknown"
-DETAIL:  Proceeding with relation creation anyway.
-SELECT 1
-template1=# \d tmp
-      Table "public.tmp"
- Column |  Type   | Modifiers 
---------+---------+-----------
- col    | unknown | 
-```
-
-SQL Type                    | C++ Param                   
-----------------------------|-----------------------------
-boolean                     | bool                        
-bytea                       | std::vector\<uint_8\>       
-"char"                      | char                        
-name                        | const char *                
-bigint                      | int64_t                     
-smallint                    | int16_t                     
-integer                     | int32_t                     
-text                        | const char *                
-real                        | float                       
-double precision            | double                      
-character                   | const char *                
-character varying           | const char *                
-date                        | db::postgres::date_t        
-time without time zone      | db::postgres::time_t        
-timestamp without time zone | db::postgres::timestamp_t   
-timestamp with time zone    | db::postgres::timestamptz_t 
-interval                    | db::postgres::interval_t    
-time with time zone         | db::postgres::timetz_t      

@@ -27,6 +27,9 @@
 namespace db {
   namespace postgres {
 
+    /**
+     * A private class to bind SQL command paramters.
+     **/
     class Params {
 
       friend class Connection;
