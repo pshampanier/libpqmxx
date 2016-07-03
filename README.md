@@ -1,6 +1,9 @@
 # <img src="help/assets/libpqmxx-logo.png" height="60"/>
 
+
 > A simple PostgreSQL client library written in Modern C++.
+
+[![License][license-mit-img]][license-mit]
 
 libpq**m**xx is un official C++ client API for ​PostgreSQL.
 
@@ -39,4 +42,7 @@ If you are looking for the official C++ client library fro PostgreSQL, please vi
 * `Windows x86_64` Visual Studio 2015 (work in progress)
 
 ## License
-MIT
+[MIT][license-mit]
+
+[license-mit-img]: http://img.shields.io/badge/license-MIT-blue.svg?style=flat-square
+[license-mit]: ./LICENSE.md
