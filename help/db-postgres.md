@@ -6,7 +6,7 @@
 
  Members                        | Descriptions                                
 --------------------------------|---------------------------------------------
-`class `[``Connection``](classdb_1_1postgres_1_1_connection)    | A connection to a PostgreSQL database.
+`class `[``Connection``](./#classdb_1_1postgres_1_1_connection)    | A connection to a PostgreSQL database.
 `class `[``ConnectionException``](classdb_1_1postgres_1_1_connection_exception)    | Exception thrown on connection failure.
 `class `[``ExecutionException``](classdb_1_1postgres_1_1_execution_exception)    | Exception thrown on any runtime error except a connection failure.
 `class `[``Result``](classdb_1_1postgres_1_1_result)    | A result from an SQL command.
