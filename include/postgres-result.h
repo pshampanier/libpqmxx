@@ -83,7 +83,7 @@ namespace db {
 
        * If the column value is null, the null value defined in the table above
        * will be returned. To insure the column value is really null the method
-       * `isNull()` should be used.
+       * isNull() should be used.
        *
        * @param column Column number. Column numbers start at 0.
        * @return The value of the column.
@@ -104,7 +104,7 @@ namespace db {
        *
 
         ```
-        cnx.execute("SELECT emp_no, firstname from employees").columnName(1) → "firstname"
+        cnx.execute("SELECT emp_no, firstname from employees").columnName(1) // → "firstname"
         ```
 
        *
@@ -114,9 +114,9 @@ namespace db {
       /**
        * Get the row number.
        *
-       * @return For each row returned by a query, `num()` returns a number
+       * @return For each row returned by a query, num() returns a number
        *         indicating the order of the row in the result. The first row
-       *         selected has a `num()` of 1, the second has 2, and so on.
+       *         selected has a num() of 1, the second has 2, and so on.
        **/
       int num() const noexcept;
 
@@ -158,7 +158,7 @@ namespace db {
        * CREATE TABLE AS, INSERT, UPDATE, DELETE, MOVE, FETCH, or COPY statement,
        * or an EXECUTE of a prepared query that contains an INSERT, UPDATE, or
        * DELETE statement. If the command that generated the PGresult was
-       * anything else, `count()` returns 0.
+       * anything else, count() returns 0.
        *
        * @return The number of rows affected by the SQL statement.
        **/
@@ -179,8 +179,8 @@ namespace db {
       class iterator {
       public:
 
-        iterator(Row *ptr): ptr_(ptr) {}
-        iterator operator ++();
+        iterator(Row *ptr): ptr_(ptr) {} /**< Constructor. **/
+        iterator operator ++();          /**< Next row in the resultset **/
         bool operator != (const iterator &other) { return ptr_ != other.ptr_; }
         Row &operator *() { return *ptr_; }
 

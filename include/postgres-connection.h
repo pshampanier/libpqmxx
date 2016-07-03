@@ -133,7 +133,6 @@ namespace db {
           // Execute a query with parameters.
           cnx.execute("UPDATE titles SET to_date=$1::date WHERE emp_no=$2", "1988-02-10", 10020);
 
-
           // Execute multiple statements in one call.
           cnx.execute(R"SQL(
 
@@ -181,32 +180,33 @@ namespace db {
         }
 
         /**
-         * \defgroup transactions ‘‘Transactions’’
-         *
-         * Helper methods to deal with transactions. The main benefit of using
-         * those methods rather than executing the SQL commands is on nested
-         * transactions. If a code start a transaction and call another code
-         * also starting a transaction, thoses methods will create only one
-         * transaction started at the first all to `begin()` and commited at the
-         * last call to `commit()`.
-         * @{
-         **/
-
-        /**
          * Start a transaction.
+         *
+         * begin(), commit() and rollback() are helper methods to deal with
+         * transactions.
+         * The main benefit of using those methods rather than executing the SQL
+         * commands is on nested transactions. If a code start a transaction and
+         * call another code also starting a transaction, thoses methods will
+         * create only one transaction started at the first all to begin() and
+         * commited at the last call to commit().
+         *
+         * @return The connection itself.
          **/
         Connection &begin();
 
         /**
          * Commit a transaction.
+         *
+         * @return The connection itself.
          **/
         Connection &commit();
 
         /**
          * Rollback a transaction.
+         *
+         * @return The connection itself.
          **/
         Connection &rollback();
-        /* @} */
 
       protected:
 
@@ -233,10 +233,11 @@ namespace db {
         /**
          * Current transaction level.
          *
-         * 0 → no transaction in progress.
-         * 1 → one transaction in progress.
-         * 2 → one transaction in progress + 1 nested transaction.
-         * n → one transaction in progress + (n-1) nested transactions.
+         * * 0 → no transaction in progress.
+         * * 1 → one transaction in progress.
+         * * 2 → one transaction in progress + 1 nested transaction.
+         * * n → one transaction in progress + (n-1) nested transactions.
+         *
          **/
         int transaction_;
 

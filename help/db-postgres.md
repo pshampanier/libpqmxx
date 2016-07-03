@@ -18,7 +18,7 @@
 `struct `[``timestamptz_t``](structdb_1_1postgres_1_1timestamptz__t)    | A `timestamp with timezone` value.
 `struct `[``timetz_t``](structdb_1_1postgres_1_1timetz__t)    | A `time with timezone` value.
 
-# class `Connection`
+# <a name=classdb_1_1postgres_1_1_connection/>class `Connection`
 
 ```
 class Connection
@@ -230,7 +230,7 @@ Cast operator to the native connection pointer.
 
 
 
-# class `ConnectionException`
+# <a name=classdb_1_1postgres_1_1_connection_exception/>class `ConnectionException`
 
 ```
 class ConnectionException
@@ -257,7 +257,7 @@ Constructor.
 * `what` - The error message returned by the server.
 
 
-# class `ExecutionException`
+# <a name=classdb_1_1postgres_1_1_execution_exception/>class `ExecutionException`
 
 ```
 class ExecutionException
@@ -284,7 +284,7 @@ Constructor.
 * `what` - The error message returned by the server.
 
 
-# class `Result`
+# <a name=classdb_1_1postgres_1_1_result/>class `Result`
 
 ```
 class Result
@@ -343,7 +343,7 @@ Last row of the result.
 An iterator pointing to the past-the-end row of the result.
 
 
-# class `iterator`
+# <a name=classdb_1_1postgres_1_1_result_1_1iterator/>class `iterator`
 
 
 Support of the range-based for loops.
@@ -391,7 +391,7 @@ Next row in the resultset.
 
 
 
-# class `Row`
+# <a name=classdb_1_1postgres_1_1_row/>class `Row`
 
 
 A row in a [Result](classdb_1_1postgres_1_1_result).
@@ -494,7 +494,7 @@ Get the row number.
 For each row returned by a query, [num()](classdb_1_1postgres_1_1_row_1a450ab7a4e2945826f8c4f35cb8af9cf4) returns a number indicating the order of the row in the result. The first row selected has a [num()](classdb_1_1postgres_1_1_row_1a450ab7a4e2945826f8c4f35cb8af9cf4) of 1, the second has 2, and so on.
 
 
-# struct `date_t`
+# <a name=structdb_1_1postgres_1_1date__t/>struct `date_t`
 
 
 A `date` value.
@@ -528,7 +528,7 @@ Cast to int32_t.
 
 
 
-# struct `interval_t`
+# <a name=structdb_1_1postgres_1_1interval__t/>struct `interval_t`
 
 
 An `interval` value.
@@ -564,7 +564,7 @@ Number of months.
 
 
 
-# struct `time_t`
+# <a name=structdb_1_1postgres_1_1time__t/>struct `time_t`
 
 
 A `time` value.
@@ -593,7 +593,7 @@ Cast to int64_t.
 
 
 
-# struct `timestamp_t`
+# <a name=structdb_1_1postgres_1_1timestamp__t/>struct `timestamp_t`
 
 
 A `timestamp` value (without time zone).
@@ -627,7 +627,7 @@ Cast to int64_t.
 
 
 
-# struct `timestamptz_t`
+# <a name=structdb_1_1postgres_1_1timestamptz__t/>struct `timestamptz_t`
 
 
 A `timestamp with timezone` value.
@@ -661,7 +661,7 @@ Cast to int64_t.
 
 
 
-# struct `timetz_t`
+# <a name=structdb_1_1postgres_1_1timetz__t/>struct `timetz_t`
 
 
 A `time with timezone` value.
