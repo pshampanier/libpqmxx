@@ -1,31 +1,6 @@
-# db-postgres-cpp
+# <img src="help/images/libpqmxx-logo.png" height="60"/>
 
-> A PostgreSQL client written in Modern C++ supporting synchonous and asynchronous processing.
-
-```cpp
-auto cnx = std::make_shared(db::postgres::Connection());
-
-cnx.onError([cnx](std::exception_ptr reason) {
-  // do something with the error
-});
-
-cnx.connect("postgres://", [cnx]() {
-    cnx.execute("CREATE TABLE mytable(c1 VARCHAR 10)", [cnx](int) {
-      cnx.execute("INSERT INTO mytable (c1) VALUES (:1)", "hello", [cnx](int count) {
-      
-      });
-    });
-});
-```
-```cpp
-cnx.connect("postgres://").done([cnx]() {
-  cnx.execute("CREATE TABLE mytable(c1 VARCHAR 10)").done([cnx]() {
-  
-  });
-}).error([] {
-
-});
-```
+> A simple PostgreSQL client library written in Modern C++.
 
 # Build
 
@@ -35,7 +10,7 @@ cmake -DPostgreSQL_ROOT=/dist/lib-postgresql-9.5.3/ ../
 
 # Contributing
 
-Create a user and a database `ci-test`.
+To run the test suite you will need to create a PostgreSQL user and a database named `ci-test`.
 
 ```bash
 createuser ci-test
