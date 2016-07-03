@@ -37,3 +37,6 @@ If you are looking for the official C++ client library fro PostgreSQL, please vi
 * `Linux x86_64` GCC 5.x
 * `Mac x86_64` XCode 7.x
 * `Windows x86_64` Visual Studio 2015 (work in progress)
+
+## License
+MIT
