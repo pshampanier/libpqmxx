@@ -6,19 +6,19 @@
 
  Members                        | Descriptions                                
 --------------------------------|---------------------------------------------
-`class `[``Connection``](./#classdb_1_1postgres_1_1_connection)    | A connection to a PostgreSQL database.
-`class `[``ConnectionException``](classdb_1_1postgres_1_1_connection_exception)    | Exception thrown on connection failure.
-`class `[``ExecutionException``](classdb_1_1postgres_1_1_execution_exception)    | Exception thrown on any runtime error except a connection failure.
-`class `[``Result``](classdb_1_1postgres_1_1_result)    | A result from an SQL command.
-`class `[``Row``](classdb_1_1postgres_1_1_row)    | A row in a [Result](classdb_1_1postgres_1_1_result).
-`struct `[``date_t``](structdb_1_1postgres_1_1date__t)    | A `date` value.
-`struct `[``interval_t``](structdb_1_1postgres_1_1interval__t)    | An `interval` value.
-`struct `[``time_t``](structdb_1_1postgres_1_1time__t)    | A `time` value.
-`struct `[``timestamp_t``](structdb_1_1postgres_1_1timestamp__t)    | A `timestamp` value (without time zone).
-`struct `[``timestamptz_t``](structdb_1_1postgres_1_1timestamptz__t)    | A `timestamp with timezone` value.
-`struct `[``timetz_t``](structdb_1_1postgres_1_1timetz__t)    | A `time with timezone` value.
+`class `[``Connection``](#classdb_1_1postgres_1_1_connection)    | A connection to a PostgreSQL database.
+`class `[``ConnectionException``](#classdb_1_1postgres_1_1_connection_exception)    | Exception thrown on connection failure.
+`class `[``ExecutionException``](#classdb_1_1postgres_1_1_execution_exception)    | Exception thrown on any runtime error except a connection failure.
+`class `[``Result``](#classdb_1_1postgres_1_1_result)    | A result from an SQL command.
+`class `[``Row``](#classdb_1_1postgres_1_1_row)    | A row in a [Result](#classdb_1_1postgres_1_1_result).
+`struct `[``date_t``](#structdb_1_1postgres_1_1date__t)    | A `date` value.
+`struct `[``interval_t``](#structdb_1_1postgres_1_1interval__t)    | An `interval` value.
+`struct `[``time_t``](#structdb_1_1postgres_1_1time__t)    | A `time` value.
+`struct `[``timestamp_t``](#structdb_1_1postgres_1_1timestamp__t)    | A `timestamp` value (without time zone).
+`struct `[``timestamptz_t``](#structdb_1_1postgres_1_1timestamptz__t)    | A `timestamp with timezone` value.
+`struct `[``timetz_t``](#structdb_1_1postgres_1_1timetz__t)    | A `time with timezone` value.
 
-# <a name=classdb_1_1postgres_1_1_connection/>class `Connection`
+# class `Connection` {#classdb_1_1postgres_1_1_connection}
 
 ```
 class Connection
@@ -35,33 +35,33 @@ A connection to a PostgreSQL database.
 --------------------------------|---------------------------------------------
 `public  Connection()` | Constructor.
 `public  ~Connection()` | Destructor.
-`public `[`Connection`](classdb_1_1postgres_1_1_connection)` & connect(const char * connInfo)` | Open a connection to the database.
-`public `[`Connection`](classdb_1_1postgres_1_1_connection)` & close() noexcept` | Close the database connection.
-`public `[`Connection`](classdb_1_1postgres_1_1_connection)` & cancel()` | Cancel queries in progress.
-`public template<typename... Args>`  <br/>`inline `[`Result`](classdb_1_1postgres_1_1_result)` & execute(const char * sql,Args... args)` | Execute one or more SQL commands.
-`public `[`Connection`](classdb_1_1postgres_1_1_connection)` & begin()` | Start a transaction.
-`public `[`Connection`](classdb_1_1postgres_1_1_connection)` & commit()` | Commit a transaction.
-`public `[`Connection`](classdb_1_1postgres_1_1_connection)` & rollback()` | Rollback a transaction.
+`public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & connect(const char * connInfo)` | Open a connection to the database.
+`public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & close() noexcept` | Close the database connection.
+`public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & cancel()` | Cancel queries in progress.
+`public template<typename... Args>`  <br/>`inline `[`Result`](#classdb_1_1postgres_1_1_result)` & execute(const char * sql,Args... args)` | Execute one or more SQL commands.
+`public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & begin()` | Start a transaction.
+`public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & commit()` | Commit a transaction.
+`public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & rollback()` | Rollback a transaction.
 `protected PGconn * pgconn_` | The native connection pointer.
-`protected `[`Result`](classdb_1_1postgres_1_1_result)` result_` | [Result](classdb_1_1postgres_1_1_result) of the current query.
+`protected `[`Result`](#classdb_1_1postgres_1_1_result)` result_` | [Result](#classdb_1_1postgres_1_1_result) of the current query.
 `protected std::string lastError() const noexcept` | Last error messages sent by the server.
 `protected inline  operator PGconn *()` | Cast operator to the native connection pointer.
 
 ## Members
 
-### `public  Connection()`
+### `public  Connection()` {#classdb_1_1postgres_1_1_connection_1aeed46214f02e5586a59fa963ec738aa0}
 
 Constructor.
 
 Copy and move constructor have been explicitly delete dto prevent copy of the connection object.
 
-### `public  ~Connection()`
+### `public  ~Connection()` {#classdb_1_1postgres_1_1_connection_1ab0771ae2470a6ee9625a8adfd551f496}
 
 Destructor.
 
 The destuctor will implicitly close the connection to the server and associated results if necessary.
 
-### `public `[`Connection`](classdb_1_1postgres_1_1_connection)` & connect(const char * connInfo)`
+### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & connect(const char * connInfo)` {#classdb_1_1postgres_1_1_connection_1a05d7f255215150237e806bff876bd4b3}
 
 Open a connection to the database.
 
@@ -86,13 +86,13 @@ postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
 #### Returns
 The connection itself.
 
-### `public `[`Connection`](classdb_1_1postgres_1_1_connection)` & close() noexcept`
+### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & close() noexcept` {#classdb_1_1postgres_1_1_connection_1a31910dd96d809b69c13d01a59941a335}
 
 Close the database connection.
 
 This method is automatically called by the destructor.
 
-### `public `[`Connection`](classdb_1_1postgres_1_1_connection)` & cancel()`
+### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & cancel()` {#classdb_1_1postgres_1_1_connection_1a0cf67cd39e3d63fa5ffc794fd7a02493}
 
 Cancel queries in progress.
 
@@ -102,7 +102,7 @@ Calling this method will request the cancellation of the current query in progre
 #### Returns
 The connection ifself.
 
-### `public template<typename... Args>`  <br/>`inline `[`Result`](classdb_1_1postgres_1_1_result)` & execute(const char * sql,Args... args)`
+### `public template<typename... Args>`  <br/>`inline `[`Result`](#classdb_1_1postgres_1_1_result)` & execute(const char * sql,Args... args)` {#classdb_1_1postgres_1_1_connection_1a3a0df5f68403ff370bef5026eec584c2}
 
 Execute one or more SQL commands.
 
@@ -127,12 +127,12 @@ integer |int32_t
 real |float
 double precision |double
 character varying |const char *, std::string
-date |[db::postgres::date_t](structdb_1_1postgres_1_1date__t)
-time without time zone |[db::postgres::time_t](structdb_1_1postgres_1_1time__t)
-timestamp without time zone |[db::postgres::timestamp_t](structdb_1_1postgres_1_1timestamp__t)
-timestamp with time zone |[db::postgres::timestamptz_t](structdb_1_1postgres_1_1timestamptz__t)
-interval |[db::postgres::interval_t](structdb_1_1postgres_1_1interval__t)
-time with time zone |[db::postgres::timetz_t](structdb_1_1postgres_1_1timetz__t)
+date |[db::postgres::date_t](#structdb_1_1postgres_1_1date__t)
+time without time zone |[db::postgres::time_t](#structdb_1_1postgres_1_1time__t)
+timestamp without time zone |[db::postgres::timestamp_t](#structdb_1_1postgres_1_1timestamp__t)
+timestamp with time zone |[db::postgres::timestamptz_t](#structdb_1_1postgres_1_1timestamptz__t)
+interval |[db::postgres::interval_t](#structdb_1_1postgres_1_1interval__t)
+time with time zone |[db::postgres::timetz_t](#structdb_1_1postgres_1_1timetz__t)
 
 
 ```cpp
@@ -180,57 +180,57 @@ cnx.execute("INSERT INTO titles VALUES ($1, $2, $3::date, $4)",
 #### Returns
 The results of the SQL commands.
 
-### `public `[`Connection`](classdb_1_1postgres_1_1_connection)` & begin()`
+### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & begin()` {#classdb_1_1postgres_1_1_connection_1a086d2a64021d88fa15889439143f66ac}
 
 Start a transaction.
 
-[begin()](classdb_1_1postgres_1_1_connection_1a086d2a64021d88fa15889439143f66ac), [commit()](classdb_1_1postgres_1_1_connection_1aeff7ff857a2224dcffeeadcd96a09f14) and [rollback()](classdb_1_1postgres_1_1_connection_1a308e05aa25244cc560d8def07d349844) are helper methods to deal with transactions. The main benefit of using those methods rather than executing the SQL commands is on nested transactions. If a code start a transaction and call another code also starting a transaction, thoses methods will create only one transaction started at the first all to [begin()](classdb_1_1postgres_1_1_connection_1a086d2a64021d88fa15889439143f66ac) and commited at the last call to [commit()](classdb_1_1postgres_1_1_connection_1aeff7ff857a2224dcffeeadcd96a09f14).
+[begin()](#classdb_1_1postgres_1_1_connection_1a086d2a64021d88fa15889439143f66ac), [commit()](#classdb_1_1postgres_1_1_connection_1aeff7ff857a2224dcffeeadcd96a09f14) and [rollback()](#classdb_1_1postgres_1_1_connection_1a308e05aa25244cc560d8def07d349844) are helper methods to deal with transactions. The main benefit of using those methods rather than executing the SQL commands is on nested transactions. If a code start a transaction and call another code also starting a transaction, thoses methods will create only one transaction started at the first all to [begin()](#classdb_1_1postgres_1_1_connection_1a086d2a64021d88fa15889439143f66ac) and commited at the last call to [commit()](#classdb_1_1postgres_1_1_connection_1aeff7ff857a2224dcffeeadcd96a09f14).
 
 
 #### Returns
 The connection itself.
 
-### `public `[`Connection`](classdb_1_1postgres_1_1_connection)` & commit()`
+### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & commit()` {#classdb_1_1postgres_1_1_connection_1aeff7ff857a2224dcffeeadcd96a09f14}
 
 Commit a transaction.
 
 #### Returns
 The connection itself.
 
-### `public `[`Connection`](classdb_1_1postgres_1_1_connection)` & rollback()`
+### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & rollback()` {#classdb_1_1postgres_1_1_connection_1a308e05aa25244cc560d8def07d349844}
 
 Rollback a transaction.
 
 #### Returns
 The connection itself.
 
-### `protected PGconn * pgconn_`
+### `protected PGconn * pgconn_` {#classdb_1_1postgres_1_1_connection_1aebe710e91ed7a7978d585ddeaffaab2b}
 
 The native connection pointer.
 
 
 
-### `protected `[`Result`](classdb_1_1postgres_1_1_result)` result_`
+### `protected `[`Result`](#classdb_1_1postgres_1_1_result)` result_` {#classdb_1_1postgres_1_1_connection_1aa29316537e596fd8f4dcc51950da3612}
 
-[Result](classdb_1_1postgres_1_1_result) of the current query.
+[Result](#classdb_1_1postgres_1_1_result) of the current query.
 
 
 
-### `protected std::string lastError() const noexcept`
+### `protected std::string lastError() const noexcept` {#classdb_1_1postgres_1_1_connection_1a860cf6e150e5b3e230fb2a6cfe2c2b93}
 
 Last error messages sent by the server.
 
 #### Returns
 The error message most recently generated by an operation on the connection.
 
-### `protected inline  operator PGconn *()`
+### `protected inline  operator PGconn *()` {#classdb_1_1postgres_1_1_connection_1ae8ae6e3848a5d74a0460fd4d90224092}
 
 Cast operator to the native connection pointer.
 
 
 
 
-# <a name=classdb_1_1postgres_1_1_connection_exception/>class `ConnectionException`
+# class `ConnectionException` {#classdb_1_1postgres_1_1_connection_exception}
 
 ```
 class ConnectionException
@@ -249,7 +249,7 @@ Exception thrown on connection failure.
 
 ## Members
 
-### `public inline  ConnectionException(const std::string & what)`
+### `public inline  ConnectionException(const std::string & what)` {#classdb_1_1postgres_1_1_connection_exception_1a097ce2cfb8aa8b04452f912652ad484b}
 
 Constructor.
 
@@ -257,7 +257,7 @@ Constructor.
 * `what` - The error message returned by the server.
 
 
-# <a name=classdb_1_1postgres_1_1_execution_exception/>class `ExecutionException`
+# class `ExecutionException` {#classdb_1_1postgres_1_1_execution_exception}
 
 ```
 class ExecutionException
@@ -276,7 +276,7 @@ Exception thrown on any runtime error except a connection failure.
 
 ## Members
 
-### `public inline  ExecutionException(const std::string & what)`
+### `public inline  ExecutionException(const std::string & what)` {#classdb_1_1postgres_1_1_execution_exception_1ac268e6bb3babf3cc98aa7e4f01e4f8e3}
 
 Constructor.
 
@@ -284,7 +284,7 @@ Constructor.
 * `what` - The error message returned by the server.
 
 
-# <a name=classdb_1_1postgres_1_1_result/>class `Result`
+# class `Result` {#classdb_1_1postgres_1_1_result}
 
 ```
 class Result
@@ -293,7 +293,7 @@ class Result
 
 A result from an SQL command.
 
-SQL commands always return a result. For a SELECT command you can iterate through the result using the [Result::iterator](classdb_1_1postgres_1_1_result_1_1iterator). Otherwise you can use the [count()](classdb_1_1postgres_1_1_result_1af66b6b7b685ee6d1d0fe2f517b53557e) method to get the number of rows affected by the SQL command.
+SQL commands always return a result. For a SELECT command you can iterate through the result using the [Result::iterator](#classdb_1_1postgres_1_1_result_1_1iterator). Otherwise you can use the [count()](#classdb_1_1postgres_1_1_result_1af66b6b7b685ee6d1d0fe2f517b53557e) method to get the number of rows affected by the SQL command.
 
 When executing more than one SQL command, the iterator can also be used to access the result of each command.
 
@@ -301,14 +301,14 @@ When executing more than one SQL command, the iterator can also be used to acces
 
  Members                        | Descriptions                                
 --------------------------------|---------------------------------------------
-`class `[``iterator``](classdb_1_1postgres_1_1_result_1_1iterator)        | Support of the range-based for loops.
+`class `[``iterator``](#classdb_1_1postgres_1_1_result_1_1iterator)        | Support of the range-based for loops.
 `public uint64_t count() const noexcept` | Number of rows affected by the SQL command.
-`public `[`iterator`](classdb_1_1postgres_1_1_result_1_1iterator)` begin()` | First row of the result.
-`public `[`iterator`](classdb_1_1postgres_1_1_result_1_1iterator)` end()` | Last row of the result.
+`public `[`iterator`](#classdb_1_1postgres_1_1_result_1_1iterator)` begin()` | First row of the result.
+`public `[`iterator`](#classdb_1_1postgres_1_1_result_1_1iterator)` end()` | Last row of the result.
 
 ## Members
 
-### `class `[``iterator``](classdb_1_1postgres_1_1_result_1_1iterator)
+### `class `[``iterator``](#classdb_1_1postgres_1_1_result_1_1iterator) {#classdb_1_1postgres_1_1_result_1_1iterator}
 
 Support of the range-based for loops.
 
@@ -318,24 +318,24 @@ for (auto &row: result) {
   ...
 }
 ```
-### `public uint64_t count() const noexcept`
+### `public uint64_t count() const noexcept` {#classdb_1_1postgres_1_1_result_1af66b6b7b685ee6d1d0fe2f517b53557e}
 
 Number of rows affected by the SQL command.
 
-This function can only be used following the execution of a SELECT, CREATE TABLE AS, INSERT, UPDATE, DELETE, MOVE, FETCH, or COPY statement, or an EXECUTE of a prepared query that contains an INSERT, UPDATE, or DELETE statement. If the command that generated the PGresult was anything else, [count()](classdb_1_1postgres_1_1_result_1af66b6b7b685ee6d1d0fe2f517b53557e) returns 0.
+This function can only be used following the execution of a SELECT, CREATE TABLE AS, INSERT, UPDATE, DELETE, MOVE, FETCH, or COPY statement, or an EXECUTE of a prepared query that contains an INSERT, UPDATE, or DELETE statement. If the command that generated the PGresult was anything else, [count()](#classdb_1_1postgres_1_1_result_1af66b6b7b685ee6d1d0fe2f517b53557e) returns 0.
 
 
 #### Returns
 The number of rows affected by the SQL statement.
 
-### `public `[`iterator`](classdb_1_1postgres_1_1_result_1_1iterator)` begin()`
+### `public `[`iterator`](#classdb_1_1postgres_1_1_result_1_1iterator)` begin()` {#classdb_1_1postgres_1_1_result_1abad750449a1aa1814b1d080f1626a19c}
 
 First row of the result.
 
 #### Returns
 An iterator pointing to the first row of the result.
 
-### `public `[`iterator`](classdb_1_1postgres_1_1_result_1_1iterator)` end()`
+### `public `[`iterator`](#classdb_1_1postgres_1_1_result_1_1iterator)` end()` {#classdb_1_1postgres_1_1_result_1a13b8ac4b95d89cca7213271dc98909d8}
 
 Last row of the result.
 
@@ -343,7 +343,7 @@ Last row of the result.
 An iterator pointing to the past-the-end row of the result.
 
 
-# <a name=classdb_1_1postgres_1_1_result_1_1iterator/>class `iterator`
+# class `iterator` {#classdb_1_1postgres_1_1_result_1_1iterator}
 
 
 Support of the range-based for loops.
@@ -359,44 +359,44 @@ for (auto &row: result) {
 
  Members                        | Descriptions                                
 --------------------------------|---------------------------------------------
-`public inline  iterator(`[`Row`](classdb_1_1postgres_1_1_row)` * ptr)` | Constructor.
-`public `[`iterator`](classdb_1_1postgres_1_1_result_1_1iterator)` operator++()` | Next row in the resultset.
-`public inline bool operator!=(const `[`iterator`](classdb_1_1postgres_1_1_result_1_1iterator)` & other)` | 
-`public inline `[`Row`](classdb_1_1postgres_1_1_row)` & operator*()` | 
+`public inline  iterator(`[`Row`](#classdb_1_1postgres_1_1_row)` * ptr)` | Constructor.
+`public `[`iterator`](#classdb_1_1postgres_1_1_result_1_1iterator)` operator++()` | Next row in the resultset.
+`public inline bool operator!=(const `[`iterator`](#classdb_1_1postgres_1_1_result_1_1iterator)` & other)` | 
+`public inline `[`Row`](#classdb_1_1postgres_1_1_row)` & operator*()` | 
 
 ## Members
 
-### `public inline  iterator(`[`Row`](classdb_1_1postgres_1_1_row)` * ptr)`
+### `public inline  iterator(`[`Row`](#classdb_1_1postgres_1_1_row)` * ptr)` {#classdb_1_1postgres_1_1_result_1_1iterator_1a8edbc51a3fcbc5338ec3fefd5ae7888c}
 
 Constructor.
 
 
 
-### `public `[`iterator`](classdb_1_1postgres_1_1_result_1_1iterator)` operator++()`
+### `public `[`iterator`](#classdb_1_1postgres_1_1_result_1_1iterator)` operator++()` {#classdb_1_1postgres_1_1_result_1_1iterator_1a27714a8124ae0a4b04ecc863d5bdc5cd}
 
 Next row in the resultset.
 
 
 
-### `public inline bool operator!=(const `[`iterator`](classdb_1_1postgres_1_1_result_1_1iterator)` & other)`
+### `public inline bool operator!=(const `[`iterator`](#classdb_1_1postgres_1_1_result_1_1iterator)` & other)` {#classdb_1_1postgres_1_1_result_1_1iterator_1a1e1dcab41e0d7b58f56e4cf1be2dcba9}
 
 
 
 
 
-### `public inline `[`Row`](classdb_1_1postgres_1_1_row)` & operator*()`
+### `public inline `[`Row`](#classdb_1_1postgres_1_1_row)` & operator*()` {#classdb_1_1postgres_1_1_result_1_1iterator_1a9100a2370c979582f3ad8de0a3539bac}
 
 
 
 
 
 
-# <a name=classdb_1_1postgres_1_1_row/>class `Row`
+# class `Row` {#classdb_1_1postgres_1_1_row}
 
 
-A row in a [Result](classdb_1_1postgres_1_1_result).
+A row in a [Result](#classdb_1_1postgres_1_1_result).
 
-Rows can be accessed using the [Result::iterator](classdb_1_1postgres_1_1_result_1_1iterator) except the first one that can be directly access through the result.
+Rows can be accessed using the [Result::iterator](#classdb_1_1postgres_1_1_result_1_1iterator) except the first one that can be directly access through the result.
 
 ## Summary
 
@@ -409,7 +409,7 @@ Rows can be accessed using the [Result::iterator](classdb_1_1postgres_1_1_result
 
 ## Members
 
-### `public bool isNull(int column) const`
+### `public bool isNull(int column) const` {#classdb_1_1postgres_1_1_row_1a38e8b7b279e1a05b6a7abdc995238e3e}
 
 Test a field for a null value.
 
@@ -417,7 +417,7 @@ Column numbers start at 0.
 #### Returns
 true if the column value is a null value.
 
-### `public template<typename T>`  <br/>`T get(int column) const`
+### `public template<typename T>`  <br/>`T get(int column) const` {#classdb_1_1postgres_1_1_row_1afc50bb75e1ed70b0d718c4c600268e47}
 
 Get a column value.
 
@@ -443,16 +443,16 @@ real |float |0.f
 double precision |double |0.
 character |std::string |*empty string*
 character varying |std::string |*empty string*
-date |[db::postgres::date_t](structdb_1_1postgres_1_1date__t)|{ 0 }
-time without time zone |[db::postgres::time_t](structdb_1_1postgres_1_1time__t)|{ 0 }
-timestamp without time zone |[db::postgres::timestamp_t](structdb_1_1postgres_1_1timestamp__t)|{ 0 }
-timestamp with time zone |[db::postgres::timestamptz_t](structdb_1_1postgres_1_1timestamptz__t)|{ 0 }
-interval |[db::postgres::interval_t](structdb_1_1postgres_1_1interval__t)|{ 0, 0 }
-time with time zone |[db::postgres::timetz_t](structdb_1_1postgres_1_1timetz__t)|{ 0, 0, 0 }
+date |[db::postgres::date_t](#structdb_1_1postgres_1_1date__t)|{ 0 }
+time without time zone |[db::postgres::time_t](#structdb_1_1postgres_1_1time__t)|{ 0 }
+timestamp without time zone |[db::postgres::timestamp_t](#structdb_1_1postgres_1_1timestamp__t)|{ 0 }
+timestamp with time zone |[db::postgres::timestamptz_t](#structdb_1_1postgres_1_1timestamptz__t)|{ 0 }
+interval |[db::postgres::interval_t](#structdb_1_1postgres_1_1interval__t)|{ 0, 0 }
+time with time zone |[db::postgres::timetz_t](#structdb_1_1postgres_1_1timetz__t)|{ 0, 0, 0 }
 smallserial |int16_t |0
 serial |int32_t |0
 bigserial |int64_t |0
-If the column value is null, the null value defined in the table above will be returned. To insure the column value is really null the method [isNull()](classdb_1_1postgres_1_1_row_1a38e8b7b279e1a05b6a7abdc995238e3e) should be used.
+If the column value is null, the null value defined in the table above will be returned. To insure the column value is really null the method [isNull()](#classdb_1_1postgres_1_1_row_1a38e8b7b279e1a05b6a7abdc995238e3e) should be used.
 
 
 #### Parameters
@@ -467,7 +467,7 @@ The value of the column.
 
 > Calling this method with incompatible types is treated as programming errors, not user or run-time errors. Those errors will be captured by an assert in debug mode and the behavior in non debug modes is undertermined.
 
-### `public const char * columnName(int column) const`
+### `public const char * columnName(int column) const` {#classdb_1_1postgres_1_1_row_1a36da64e5fead10d999dd41e3e1cd6adf}
 
 Get a column name.
 
@@ -486,20 +486,20 @@ The column name associated with the given column number.
 cnx.execute("SELECT emp_no, firstname from employees").columnName(1) // → "firstname"
 ```
 
-### `public int num() const noexcept`
+### `public int num() const noexcept` {#classdb_1_1postgres_1_1_row_1a450ab7a4e2945826f8c4f35cb8af9cf4}
 
 Get the row number.
 
 #### Returns
-For each row returned by a query, [num()](classdb_1_1postgres_1_1_row_1a450ab7a4e2945826f8c4f35cb8af9cf4) returns a number indicating the order of the row in the result. The first row selected has a [num()](classdb_1_1postgres_1_1_row_1a450ab7a4e2945826f8c4f35cb8af9cf4) of 1, the second has 2, and so on.
+For each row returned by a query, [num()](#classdb_1_1postgres_1_1_row_1a450ab7a4e2945826f8c4f35cb8af9cf4) returns a number indicating the order of the row in the result. The first row selected has a [num()](#classdb_1_1postgres_1_1_row_1a450ab7a4e2945826f8c4f35cb8af9cf4) of 1, the second has 2, and so on.
 
 
-# <a name=structdb_1_1postgres_1_1date__t/>struct `date_t`
+# struct `date_t` {#structdb_1_1postgres_1_1date__t}
 
 
 A `date` value.
 
-This struct can be used set a date parameter when calling execute, or to get a date value from a [Row](classdb_1_1postgres_1_1_row). An alternative for date parameters is to use a date literal with an explict cast of the parameter.
+This struct can be used set a date parameter when calling execute, or to get a date value from a [Row](#classdb_1_1postgres_1_1_row). An alternative for date parameters is to use a date literal with an explict cast of the parameter.
 
 
 ```cpp
@@ -515,20 +515,20 @@ execute("SELECT $1::date", "2014-11-01");
 
 ## Members
 
-### `public int32_t epoch_date`
+### `public int32_t epoch_date` {#structdb_1_1postgres_1_1date__t_1a4850957397f150ba6f4e128595f6375f}
 
 Number of seconds sine Unix epoch time.
 
 
 
-### `public inline  operator int32_t() const`
+### `public inline  operator int32_t() const` {#structdb_1_1postgres_1_1date__t_1a794f59a7d479feac29d4e9f60dde8738}
 
 Cast to int32_t.
 
 
 
 
-# <a name=structdb_1_1postgres_1_1interval__t/>struct `interval_t`
+# struct `interval_t` {#structdb_1_1postgres_1_1interval__t}
 
 
 An `interval` value.
@@ -545,26 +545,26 @@ An `interval` value.
 
 ## Members
 
-### `public int64_t time`
+### `public int64_t time` {#structdb_1_1postgres_1_1interval__t_1aca3c9fae42007d77adc4f086c9300c48}
 
 Number of microseconds on the day since 00:00:00.
 
 
 
-### `public int32_t days`
+### `public int32_t days` {#structdb_1_1postgres_1_1interval__t_1afaede2f5d53642637f3cac07cc2e73ec}
 
 Number of days.
 
 
 
-### `public int32_t months`
+### `public int32_t months` {#structdb_1_1postgres_1_1interval__t_1a032c05d15f12d1eca703fe005633af36}
 
 Number of months.
 
 
 
 
-# <a name=structdb_1_1postgres_1_1time__t/>struct `time_t`
+# struct `time_t` {#structdb_1_1postgres_1_1time__t}
 
 
 A `time` value.
@@ -580,25 +580,25 @@ A `time` value.
 
 ## Members
 
-### `public int64_t time`
+### `public int64_t time` {#structdb_1_1postgres_1_1time__t_1a1d79e495efb93363589ccb4861c8c064}
 
 Number of microseconds since 00:00:00.
 
 
 
-### `public inline  operator int64_t() const`
+### `public inline  operator int64_t() const` {#structdb_1_1postgres_1_1time__t_1a90e8f8db0e1cb44d3e00bca188c539c9}
 
 Cast to int64_t.
 
 
 
 
-# <a name=structdb_1_1postgres_1_1timestamp__t/>struct `timestamp_t`
+# struct `timestamp_t` {#structdb_1_1postgres_1_1timestamp__t}
 
 
 A `timestamp` value (without time zone).
 
-This struct can be used set a timestamp parameter when calling execute, or to get a timestamp value from a [Row](classdb_1_1postgres_1_1_row). An alternative for timestamp parameters is to use a timestamp literal with an explict cast of the parameter.
+This struct can be used set a timestamp parameter when calling execute, or to get a timestamp value from a [Row](#classdb_1_1postgres_1_1_row). An alternative for timestamp parameters is to use a timestamp literal with an explict cast of the parameter.
 
 
 ```cpp
@@ -614,25 +614,25 @@ execute("SELECT $1::timestamp", "2014-11-01T05:19:00");
 
 ## Members
 
-### `public int64_t epoch_time`
+### `public int64_t epoch_time` {#structdb_1_1postgres_1_1timestamp__t_1ac8e9ef9330324c4134fcb763b3322436}
 
 Number of microsecondes since Unix epoch time.
 
 
 
-### `public inline  operator int64_t() const`
+### `public inline  operator int64_t() const` {#structdb_1_1postgres_1_1timestamp__t_1a378561481926a4781ae1bfda1f6b98cd}
 
 Cast to int64_t.
 
 
 
 
-# <a name=structdb_1_1postgres_1_1timestamptz__t/>struct `timestamptz_t`
+# struct `timestamptz_t` {#structdb_1_1postgres_1_1timestamptz__t}
 
 
 A `timestamp with timezone` value.
 
-This struct can be used set a timestamptz parameter when calling execute, or to get a timestamptz value from a [Row](classdb_1_1postgres_1_1_row). An alternative for timestamptz parameters is to use a timestamp literal with an explict cast of the parameter.
+This struct can be used set a timestamptz parameter when calling execute, or to get a timestamptz value from a [Row](#classdb_1_1postgres_1_1_row). An alternative for timestamptz parameters is to use a timestamp literal with an explict cast of the parameter.
 
 
 ```cpp
@@ -648,20 +648,20 @@ execute("SELECT $1::timestamptz", "2014-11-01T05:19:00-500");
 
 ## Members
 
-### `public int64_t epoch_time`
+### `public int64_t epoch_time` {#structdb_1_1postgres_1_1timestamptz__t_1aa2c055460381e818d3df1776a9a4ea3e}
 
 Number of microsecondes since Unix epoch time.
 
 
 
-### `public inline  operator int64_t() const`
+### `public inline  operator int64_t() const` {#structdb_1_1postgres_1_1timestamptz__t_1aaf782e90ce2ba8b3acbf63f36c15ce9b}
 
 Cast to int64_t.
 
 
 
 
-# <a name=structdb_1_1postgres_1_1timetz__t/>struct `timetz_t`
+# struct `timetz_t` {#structdb_1_1postgres_1_1timetz__t}
 
 
 A `time with timezone` value.
@@ -677,13 +677,13 @@ A `time with timezone` value.
 
 ## Members
 
-### `public int64_t time`
+### `public int64_t time` {#structdb_1_1postgres_1_1timetz__t_1abe67faa78687684a6d008e052adee346}
 
 Number of microseconds since 00:00:00.
 
 
 
-### `public int32_t offset`
+### `public int32_t offset` {#structdb_1_1postgres_1_1timetz__t_1aa34f0a81487d034137ad0170aacfe5a4}
 
 Offset from GMT in seconds.
 
