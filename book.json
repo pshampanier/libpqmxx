@@ -2,6 +2,6 @@
   "gitbook": "2.4.3",
   "title": "libpqmxx",
   "structure": {
-    "summary": "help/README.md"
+    "summary": "help/summary.md"
   }
 }
