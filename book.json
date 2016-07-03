@@ -2,7 +2,7 @@
   "gitbook": ">=2.0.0",
   "title": "libpqmxx",
   "structure": {
-    "readme": "./README.md",
+    "readme": "README.md",
     "summary": "help/api.md"
   }
 }
