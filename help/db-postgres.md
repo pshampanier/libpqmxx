@@ -115,24 +115,24 @@ Execute one or more SQL commands.
 
 
 
-|SQL Type |C++ Param  |
-|-------------------------------------------------|
-|boolean |bool |
-|bytea |std::vector<uint_8> |
-|"char" |char |
-|bigint |int64_t |
-|smallint |int16_t |
-|integer |int32_t |
-|real |float |
-|double precision |double |
-|character varying |const char *, std::string |
-|date |[db::postgres::date_t](structdb_1_1postgres_1_1date__t)|
-|time without time zone |[db::postgres::time_t](structdb_1_1postgres_1_1time__t)|
-|timestamp without time zone |[db::postgres::timestamp_t](structdb_1_1postgres_1_1timestamp__t)|
-|timestamp with time zone |[db::postgres::timestamptz_t](structdb_1_1postgres_1_1timestamptz__t)|
-|interval |[db::postgres::interval_t](structdb_1_1postgres_1_1interval__t)|
-|time with time zone |[db::postgres::timetz_t](structdb_1_1postgres_1_1timetz__t)|
 
+SQL Type |C++ Param
+-- | --
+boolean |bool
+bytea |std::vector<uint_8>
+"char" |char
+bigint |int64_t
+smallint |int16_t
+integer |int32_t
+real |float
+double precision |double
+character varying |const char *, std::string
+date |[db::postgres::date_t](structdb_1_1postgres_1_1date__t)
+time without time zone |[db::postgres::time_t](structdb_1_1postgres_1_1time__t)
+timestamp without time zone |[db::postgres::timestamp_t](structdb_1_1postgres_1_1timestamp__t)
+timestamp with time zone |[db::postgres::timestamptz_t](structdb_1_1postgres_1_1timestamptz__t)
+interval |[db::postgres::interval_t](structdb_1_1postgres_1_1interval__t)
+time with time zone |[db::postgres::timetz_t](structdb_1_1postgres_1_1timetz__t)
 
 
 ```cpp
@@ -428,30 +428,30 @@ int32_t emp_no = row.get<int32_t>(0);
 
 The `typename` used to call the function must by compatible with the SQL type. The following table defines compatible types:
 
-|SQL Type |Typename |null value  |
-|-------------------------------------------------|
-|boolean |bool |false |
-|bytea |std::vector<uint_8> |*empty vector*|
-|"char" |char |'\0' |
-|name |std::string |*empty string*|
-|bigint |int64_t |0 |
-|smallint |int16_t |0 |
-|integer |int32_t |0 |
-|text |std::string |*empty string*|
-|real |float |0.f |
-|double precision |double |0. |
-|character |std::string |*empty string*|
-|character varying |std::string |*empty string*|
-|date |[db::postgres::date_t](structdb_1_1postgres_1_1date__t)|{ 0 } |
-|time without time zone |[db::postgres::time_t](structdb_1_1postgres_1_1time__t)|{ 0 } |
-|timestamp without time zone |[db::postgres::timestamp_t](structdb_1_1postgres_1_1timestamp__t)|{ 0 } |
-|timestamp with time zone |[db::postgres::timestamptz_t](structdb_1_1postgres_1_1timestamptz__t)|{ 0 } |
-|interval |[db::postgres::interval_t](structdb_1_1postgres_1_1interval__t)|{ 0, 0 } |
-|time with time zone |[db::postgres::timetz_t](structdb_1_1postgres_1_1timetz__t)|{ 0, 0, 0 } |
-|smallserial |int16_t |0 |
-|serial |int32_t |0 |
-|bigserial |int64_t |0 |
 
+SQL Type |Typename |null value
+-- | -- | --
+boolean |bool |false
+bytea |std::vector<uint_8> |*empty vector*
+"char" |char |'\0'
+name |std::string |*empty string*
+bigint |int64_t |0
+smallint |int16_t |0
+integer |int32_t |0
+text |std::string |*empty string*
+real |float |0.f
+double precision |double |0.
+character |std::string |*empty string*
+character varying |std::string |*empty string*
+date |[db::postgres::date_t](structdb_1_1postgres_1_1date__t)|{ 0 }
+time without time zone |[db::postgres::time_t](structdb_1_1postgres_1_1time__t)|{ 0 }
+timestamp without time zone |[db::postgres::timestamp_t](structdb_1_1postgres_1_1timestamp__t)|{ 0 }
+timestamp with time zone |[db::postgres::timestamptz_t](structdb_1_1postgres_1_1timestamptz__t)|{ 0 }
+interval |[db::postgres::interval_t](structdb_1_1postgres_1_1interval__t)|{ 0, 0 }
+time with time zone |[db::postgres::timetz_t](structdb_1_1postgres_1_1timetz__t)|{ 0, 0, 0 }
+smallserial |int16_t |0
+serial |int32_t |0
+bigserial |int64_t |0
 If the column value is null, the null value defined in the table above will be returned. To insure the column value is really null the method [isNull()](classdb_1_1postgres_1_1_row_1a38e8b7b279e1a05b6a7abdc995238e3e) should be used.
 
 
