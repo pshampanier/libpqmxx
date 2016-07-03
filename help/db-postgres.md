@@ -117,7 +117,7 @@ Execute one or more SQL commands.
 
 
 SQL Type |C++ Param
--- | --
+--------- | ---------
 boolean |bool
 bytea |std::vector<uint_8>
 "char" |char
@@ -430,7 +430,7 @@ The `typename` used to call the function must by compatible with the SQL type. T
 
 
 SQL Type |Typename |null value
--- | -- | --
+--------- | --------- | ---------
 boolean |bool |false
 bytea |std::vector<uint_8> |*empty vector*
 "char" |char |'\0'
