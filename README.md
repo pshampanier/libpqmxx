@@ -22,3 +22,7 @@ createdb ci-test --owner=ci-test --encoding=UTF8
 ```
   brew install postgresql
 ```
+
+# License
+
+MIT
