@@ -68,6 +68,7 @@ namespace db {
           case TIMETZOID:
           case TIMEOID:
           case INTERVALOID:
+          case CHAROID:
             delete [] values_[i];
             break;
 
@@ -98,6 +99,7 @@ namespace db {
         case TIMETZOID:
         case TIMEOID:
         case INTERVALOID:
+        case CHAROID:
           copy = new char[length];
           std::memcpy(copy, value, length);
           value = copy;
@@ -106,7 +108,6 @@ namespace db {
         case VARCHAROID:
         case BYTEAOID:
         case UNKNOWNOID:
-        case CHAROID:
           break;
 
         default:

@@ -45,13 +45,13 @@ If you are looking for the official C++ client library fro PostgreSQL, please vi
 using namespace db::postgres;
 
 int main() {
-  
+
   Connection cnx;
   try {
     cnx.connect("postgresql://ci-test@localhost");
-    
+
     cnx.execute(R"SQL(
-                
+
       DROP TABLE IF EXISTS employees;
 
       CREATE TABLE employees (
@@ -65,9 +65,9 @@ int main() {
       );
 
     )SQL");
-    
+
     std::cout << "Table created." << std::endl;
-    
+
     int employees = cnx.execute(R"SQL(
 
       INSERT INTO employees VALUES
@@ -93,45 +93,45 @@ int main() {
         (10020,'1972-12-24','Mayuko','Warwick','M','2011-01-26')
 
     )SQL").count();
-    
+
     std::cout << employees << " have been added." << std::endl;
-    
+
     std::cout << "The three oldest employees are: " << std::endl;
 
     auto &oldest = cnx.execute(R"SQL(
-                               
+
       SELECT first_name, last_name, DATE_PART('year', now()) - DATE_PART('year', birth_date)
         FROM employees
        ORDER BY birth_date
        LIMIT 3
-                               
+
     )SQL");
-    
+
     for (auto &row: oldest) {
       std::cout << "- " << row.get<std::string>(0) << " " << row.get<std::string>(1)
         << ", " << row.get<double>(2) << " years old." << std::endl;
     }
-    
+
     auto &employee = cnx.execute(R"SQL(
-                                 
+
       SELECT first_name, last_name, DATE_PART('year', birth_date)
         FROM employees WHERE birth_date = $1::date
-                                 
+
     )SQL", "1973-11-07");
-    
+
     std::cout << employee.get<std::string>(0) << " "
       << employee.get<std::string>(1) << " is born in "
       << employee.get<double>(2) << std::endl;
-    
+
     int deleted = cnx.execute(R"SQL(
-                              
+
       DELETE FROM employees
-       WHERE DATE_PART('year', birth_date) = $1 AND gender = $2
-                              
+        WHERE DATE_PART('year', birth_date) = $1 AND gender = $2
+
     )SQL", 1973, 'M').count();
-    
-    std::cout << deleted << " employee records have been deleted." << std::endl;
-    
+
+    std::cout << deleted << " employees records have been deleted." << std::endl;
+
     return 0;
   }
   catch (ConnectionException e) {
@@ -140,9 +140,20 @@ int main() {
   catch (ExecutionException e) {
     std::cerr << "Oups... " << e.what();
   }
-  
+
   return -1;
 }
+```
+
+```
+Table created.
+20 have been added.
+The three oldest employees are: 
+- Sumant Peac, 44 years old.
+- Mayuko Warwick, 44 years old.
+- Lillian Haddadi, 43 years old.
+Mary Sluis is born in 1973
+2 employees records have been deleted.
 ```
 
 ## Compatibility

@@ -108,11 +108,11 @@ int main() {
     int deleted = cnx.execute(R"SQL(
 
       DELETE FROM employees
-       WHERE DATE_PART('year', birth_date) = $1 AND gender = $2
+        WHERE DATE_PART('year', birth_date) = $1 AND gender = $2
 
     )SQL", 1973, 'M').count();
 
-    std::cout << deleted << " employee records have been deleted." << std::endl;
+    std::cout << deleted << " employees records have been deleted." << std::endl;
 
     return 0;
   }
