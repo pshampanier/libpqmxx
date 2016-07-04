@@ -53,7 +53,7 @@ A connection to a PostgreSQL database.
 
 Constructor.
 
-Copy and move constructor have been explicitly delete dto prevent copy of the connection object.
+Copy and move constructor have been explicitly deleted to prevent the copy of the connection object.
 
 ### `public  ~Connection()` {#classdb_1_1postgres_1_1_connection_1ab0771ae2470a6ee9625a8adfd551f496}
 
@@ -107,7 +107,7 @@ The connection ifself.
 Execute one or more SQL commands.
 
 #### Parameters
-* `sql` One or more SQL command to be executed. 
+* `sql` One or more SQL commands to be executed. 
 
 
 * `args` Zero or more parameters of the SQL command. If parameters are used, they are referred to in the `sql` command as `$1`, `$2`, etc... The PostgreSQL datatype of a parameter is deducted from the C++ type of the parameter according to the following table:
@@ -159,9 +159,7 @@ cnx.execute(R"SQL(
 
 )SQL");
 ```
-
-
-When the parameter data type might be ambigious for the server, you can use the PostgreSQL casting syntax. In the example below both parameters are send as `character varying` but the server will perform the cast to `date` and `integer`. 
+ When the parameter data type might be ambigious for the server, you can use the PostgreSQL casting syntax. In the example below both parameters are send as `character varying` but the server will perform the cast to `date` and `integer`. 
 ```cpp
 cnx.execute("UPDATE titles SET to_date=$1::date WHERE emp_no::integer=$2", "1988-02-10", "10020");
 ```
@@ -174,11 +172,14 @@ cnx.execute("INSERT INTO titles VALUES ($1, $2, $3::date, $4)",
 ```
 
 
-> Parameters are only supported for a single SQL command. If execute is called with more than one sql command and any of those commands are using parameters, execute will fail. 
+> Parameters are only supported for a single SQL command. If [execute()](#classdb_1_1postgres_1_1_connection_1a3a0df5f68403ff370bef5026eec584c2) is called with more than one sql command and any of those commands are using parameters, [execute()](#classdb_1_1postgres_1_1_connection_1a3a0df5f68403ff370bef5026eec584c2) will fail.
 
 
 #### Returns
 The results of the SQL commands.
+
+
+You can iterate over the returned result using the [Result::iterator](#classdb_1_1postgres_1_1_result_1_1iterator). When a query in a the `sql` command is a SELECT all the rows of the result must be fetched using the iterator before the connection can be reused for another command. For other commands such as an UPDATE or a CREATE TABLE, using the iterator is not required and the connection can be reused for the next command right away.
 
 ### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & begin()` {#classdb_1_1postgres_1_1_connection_1a086d2a64021d88fa15889439143f66ac}
 
@@ -499,7 +500,7 @@ For each row returned by a query, [num()](#classdb_1_1postgres_1_1_row_1a450ab7a
 
 A `date` value.
 
-This struct can be used set a date parameter when calling execute, or to get a date value from a [Row](#classdb_1_1postgres_1_1_row). An alternative for date parameters is to use a date literal with an explict cast of the parameter.
+This struct can be used set a date parameter when calling execute, or to get a date value from a [Row](#classdb_1_1postgres_1_1_row). An alternative for date parameters is to use a date literal with an explict cast of the parameter in the sql command.
 
 
 ```cpp
@@ -511,7 +512,7 @@ execute("SELECT $1::date", "2014-11-01");
  Members                        | Descriptions                                
 --------------------------------|---------------------------------------------
 `public int32_t epoch_date` | Number of seconds sine Unix epoch time.
-`public inline  operator int32_t() const` | Cast to int32_t.
+`public inline  operator int32_t() const` | Cast to `int32_t`.
 
 ## Members
 
@@ -523,7 +524,7 @@ Number of seconds sine Unix epoch time.
 
 ### `public inline  operator int32_t() const` {#structdb_1_1postgres_1_1date__t_1a794f59a7d479feac29d4e9f60dde8738}
 
-Cast to int32_t.
+Cast to `int32_t`.
 
 
 
@@ -598,7 +599,7 @@ Cast to int64_t.
 
 A `timestamp` value (without time zone).
 
-This struct can be used set a timestamp parameter when calling execute, or to get a timestamp value from a [Row](#classdb_1_1postgres_1_1_row). An alternative for timestamp parameters is to use a timestamp literal with an explict cast of the parameter.
+This struct can be used set a timestamp parameter when calling execute, or to get a timestamp value from a [Row](#classdb_1_1postgres_1_1_row). An alternative for timestamp parameters is to use a timestamp literal with an explict cast of the parameter in the sql command.
 
 
 ```cpp
@@ -632,7 +633,7 @@ Cast to int64_t.
 
 A `timestamp with timezone` value.
 
-This struct can be used set a timestamptz parameter when calling execute, or to get a timestamptz value from a [Row](#classdb_1_1postgres_1_1_row). An alternative for timestamptz parameters is to use a timestamp literal with an explict cast of the parameter.
+This struct can be used set a timestamptz parameter when calling execute, or to get a timestamptz value from a [Row](#classdb_1_1postgres_1_1_row). An alternative for timestamptz parameters is to use a timestamp literal with an explict cast of the parameter in the sql command.
 
 
 ```cpp
