@@ -5,7 +5,7 @@
 
 [![License][license-mit-img]][license-mit]
 
-libpq**m**xx is an official C++ 11 client API for PostgreSQL.
+libpq**m**xx is an unofficial C++ 11 client API for PostgreSQL.
 
 The aim of this library is to provide an API very simple to use without any 
 compromise on performances. Modern C++ features such as variadic templates are 
