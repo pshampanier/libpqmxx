@@ -18,6 +18,7 @@ matrix:
             - g++-4.9
             - cmake
             - cmake-data
+            - postgresql-server-dev-all
       env: COMPILER=g++-4.9
 
 before_install:
