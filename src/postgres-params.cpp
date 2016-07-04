@@ -62,7 +62,6 @@ namespace db {
           case FLOAT4OID:
           case FLOAT8OID:
           case BOOLOID:
-          case CHAROID:
           case DATEOID:
           case TIMESTAMPTZOID:
           case TIMESTAMPOID:
@@ -93,7 +92,6 @@ namespace db {
         case FLOAT4OID:
         case FLOAT8OID:
         case BOOLOID:
-        case CHAROID:
         case DATEOID:
         case TIMESTAMPTZOID:
         case TIMESTAMPOID:
@@ -108,6 +106,7 @@ namespace db {
         case VARCHAROID:
         case BYTEAOID:
         case UNKNOWNOID:
+        case CHAROID:
           break;
 
         default:
