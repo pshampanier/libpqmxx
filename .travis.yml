@@ -13,11 +13,8 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - george-edison55-precise-backports
           packages:
             - g++-4.9
-            - cmake
-            - cmake-data
             - postgresql-server-dev-all
       env: COMPILER=g++-4.9
 
@@ -27,7 +24,7 @@ before_install:
 install:
   # install cmake
   - CMAKE_VERSION="3.5.2"
-  - wget "https://cmake.org/files/v3.5/cmake-${CMAKE_VERSION}.tar.gz"
+  - wget "http://cmake.org/files/v3.5/cmake-${CMAKE_VERSION}.tar.gz"
   - openssl sha1 "cmake-${CMAKE_VERSION}.tar.gz"
   - tar xf "cmake-${CMAKE_VERSION}.tar.gz"
   - cd "cmake-${CMAKE_VERSION}"
