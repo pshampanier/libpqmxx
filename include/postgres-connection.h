@@ -47,8 +47,8 @@ namespace db {
         /**
          * Constructor.
          *
-         * Copy and move constructor have been explicitly delete dto prevent copy
-         * of the connection object.
+         * Copy and move constructor have been explicitly deleted to prevent the
+         * copy of the connection object.
          **/
         Connection();
 
@@ -68,7 +68,7 @@ namespace db {
          * Both Keyword/Value and URI are accepted.
          *
          * ```
-         *    postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
+         * postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
          * ```
          *
          * @see https://www.postgresql.org/docs/9.5/static/libpq-connect.html#LIBPQ-CONNSTRING
@@ -99,7 +99,7 @@ namespace db {
         /**
          * Execute one or more SQL commands.
          *
-         * @param sql  One or more SQL command to be executed.
+         * @param sql  One or more SQL commands to be executed.
          * @param args Zero or more parameters of the SQL command.
          *        If parameters are used, they are referred to in the `sql`
          *        command as `$1`, `$2`, etc... The PostgreSQL datatype of a
@@ -151,7 +151,6 @@ namespace db {
           )SQL");
 
          * ```
-         *
          * When the parameter data type might be ambigious for the server, you
          * can use the PostgreSQL casting syntax. In the example below both
          * parameters are send as `character varying` but the server will
@@ -167,9 +166,18 @@ namespace db {
          * ```
          *
          * @attention Parameters are only supported for a single SQL command. If
-         *            execute is called with more than one sql command and any
-         *            of those commands are using parameters, execute will fail.
+         *            execute() is called with more than one sql command and any
+         *            of those commands are using parameters, execute() will fail.
+         *
          * @return The results of the SQL commands.
+         *
+         * You can iterate over the returned result using the Result::iterator.
+         * When a query in a the `sql` command is a SELECT all the rows of the
+         * result must be fetched using the iterator before the connection can
+         * be reused for another command. For other commands such as an UPDATE
+         * or a CREATE TABLE, using the iterator is not required and the
+         * connection can be reused for the next command right away.
+         *
          **/
         template<typename... Args>
         Result &execute(const char *sql, Args... args) {
@@ -257,7 +265,7 @@ namespace db {
      *
      * This struct can be used set a date parameter when calling execute, or to
      * get a date value from a Row. An alternative for date parameters is to use
-     * a date literal with an explict cast of the parameter.
+     * a date literal with an explict cast of the parameter in the sql command.
      *
      * ```
      * execute("SELECT $1::date", "2014-11-01");
@@ -265,7 +273,7 @@ namespace db {
      **/
     typedef struct {
       int32_t epoch_date; /**< Number of seconds sine Unix epoch time. **/
-      operator int32_t() const { return epoch_date; } /**< Cast to int32_t. **/
+      operator int32_t() const { return epoch_date; } /**< Cast to `int32_t`. **/
     } date_t;
 
     /**
@@ -274,7 +282,7 @@ namespace db {
      * This struct can be used set a timestamptz parameter when calling execute,
      * or to get a timestamptz value from a Row. An alternative for timestamptz
      * parameters is to use a timestamp literal with an explict cast of the
-     * parameter.
+     * parameter in the sql command.
      *
      * ```
      * execute("SELECT $1::timestamptz", "2014-11-01T05:19:00-500");
@@ -291,7 +299,7 @@ namespace db {
      * This struct can be used set a timestamp parameter when calling execute,
      * or to get a timestamp value from a Row. An alternative for timestamp
      * parameters is to use a timestamp literal with an explict cast of the
-     * parameter.
+     * parameter in the sql command.
      *
      * ```
      * execute("SELECT $1::timestamp", "2014-11-01T05:19:00");
