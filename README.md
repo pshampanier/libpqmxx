@@ -26,6 +26,21 @@ used to make the programing interface slick, very easy to use and the code to re
     std::string title = row.get<std::string>(1);
     ```
     
+* **Use of the range-based for statement to iterate through the result.**
+
+    ```cpp
+    auto &employees = cnx.execute("SELECT emp_no, first_name || ' ' || last_name FROM employees");
+    for (auto &employee: employees) {
+      std::cout << row.get<int32_t>(0) << row.get<std::string>(1) << std::endl;
+    }
+    ```  
+* **Results with only one row can be accessed without using the iterator**:
+
+    ```cpp
+    auto &employee = cnx.execute("SELECT last_name FROM employees WHERE emp_no=$1", 10001);
+    std::cout << employee.get<std::string>(0) << std::endl;
+    ```
+    
 * **`nullptr` can be used to set a null value**.
 
     ```cpp
