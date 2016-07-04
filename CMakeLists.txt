@@ -42,20 +42,33 @@ macro(googletest target)
   
 endmacro(googletest)
 
+include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
+include_directories(${PostgreSQL_INCLUDE_DIRS})
+file(GLOB SOURCE_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
+file(GLOB INCLUDE_FILES ${CMAKE_CURRENT_LIST_DIR}/include/*.h)
+source_group("include" FILES ${INCLUDE_FILES})
+
 #
 # postgres-test (Unit Testing)
 #
 macro(postgres_test target)
-  include_directories(${PostgreSQL_INCLUDE_DIRS})
   file(GLOB TEST_FILES ${CMAKE_CURRENT_LIST_DIR}/test/*.cpp)
-  file(GLOB SOURCE_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
-  file(GLOB INCLUDE_FILES ${CMAKE_CURRENT_LIST_DIR}/include/*.h)
   source_group("test" FILES ${TEST_FILES})
-  source_group("include" FILES ${INCLUDE_FILES})
-  include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
   add_executable(${target} ${TEST_FILES} ${INCLUDE_FILES} ${SOURCE_FILES})
   target_link_libraries(${target} "${PostgreSQL_LIBRARIES}")
   googletest(${target})
 endmacro(postgres_test)
 
+#
+# postgres-example
+#
+macro(postgres_example target)
+  file(GLOB EXAMPLES_FILES ${CMAKE_CURRENT_LIST_DIR}/example/*.cpp)
+  source_group("example" FILES ${EXAMPLES_FILES})
+  add_executable(${target} ${EXAMPLES_FILES} ${INCLUDE_FILES} ${SOURCE_FILES})
+  target_link_libraries(${target} "${PostgreSQL_LIBRARIES}")
+  googletest(${target})
+endmacro(postgres_example)
+
 postgres_test(postgres-test)
+postgres_example(postgres-example)

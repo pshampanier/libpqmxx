@@ -1,42 +1,24 @@
-# <img src="help/assets/libpqmxx-logo.png" height="60"/>
-
-
-> A simple PostgreSQL client library written in Modern C++.
-
-[![License][license-mit-img]][license-mit]
-
-libpq**m**xx is an official C++ 11 client API for PostgreSQL.
-
-The aim of this library is to provide an API very simple to use without any 
-compromise on performances. Modern C++ features such as variadic templates are 
-used to make the programing interface slick, very easy to use and the code to read.
-
-* **Automatic detection of the PostgresSQL datatype from C++ parameter's type**.
-
-    ```cpp
-    cnx.execute("SELECT from_date FROM titles WHERE emp_no=$1", 10020);
-    ```
-    
-    Because `10020` is an `int` in C++, the library will bind this parameter to a PostgreSQL `integer`.  
-    
-* **One single method to get a column value from a row independently of the data type**.
-
-    ```cpp
-    int32_t emp_no = row.get<int32_t>(0);
-    std::string title = row.get<std::string>(1);
-    ```
-    
-* **`nullptr` can be used to set a null value**.
-
-    ```cpp
-    cnx.execute("INSERT INTO titles VALUES ($1, $2, $3::date, $4)",
-                10020, "Technique Leader", "1988-02-10", nullptr);
-    ```
-
-The online API documentation is available on [gitbook](https://pshampanier.gitbooks.io/libpqmxx/content/).  
-If you are looking for the official C++ client library fro PostgreSQL, please visit [pqxx.org](http://pqxx.org).
-
-```cpp
+/**
+ * Copyright (c) 2016 Philippe FERDINAND
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ **/
 #include "postgres-connection.h"
 #include "postgres-exceptions.h"
 
@@ -45,13 +27,13 @@ If you are looking for the official C++ client library fro PostgreSQL, please vi
 using namespace db::postgres;
 
 int main() {
-  
+
   Connection cnx;
   try {
     cnx.connect("postgresql://ci-test@localhost");
-    
+
     cnx.execute(R"SQL(
-                
+
       DROP TABLE IF EXISTS employees;
 
       CREATE TABLE employees (
@@ -65,9 +47,9 @@ int main() {
       );
 
     )SQL");
-    
+
     std::cout << "Table created." << std::endl;
-    
+
     int employees = cnx.execute(R"SQL(
 
       INSERT INTO employees VALUES
@@ -93,45 +75,45 @@ int main() {
         (10020,'1972-12-24','Mayuko','Warwick','M','2011-01-26')
 
     )SQL").count();
-    
+
     std::cout << employees << " have been added." << std::endl;
-    
+
     std::cout << "The three oldest employees are: " << std::endl;
 
     auto &oldest = cnx.execute(R"SQL(
-                               
+
       SELECT first_name, last_name, DATE_PART('year', now()) - DATE_PART('year', birth_date)
         FROM employees
        ORDER BY birth_date
        LIMIT 3
-                               
+
     )SQL");
-    
+
     for (auto &row: oldest) {
       std::cout << "- " << row.get<std::string>(0) << " " << row.get<std::string>(1)
         << ", " << row.get<double>(2) << " years old." << std::endl;
     }
-    
+
     auto &employee = cnx.execute(R"SQL(
-                                 
+
       SELECT first_name, last_name, DATE_PART('year', birth_date)
         FROM employees WHERE birth_date = $1::date
-                                 
+
     )SQL", "1973-11-07");
-    
+
     std::cout << employee.get<std::string>(0) << " "
       << employee.get<std::string>(1) << " is born in "
       << employee.get<double>(2) << std::endl;
-    
+
     int deleted = cnx.execute(R"SQL(
-                              
+
       DELETE FROM employees
        WHERE DATE_PART('year', birth_date) = $1 AND gender = $2
-                              
+
     )SQL", 1973, 'M').count();
-    
+
     std::cout << deleted << " employee records have been deleted." << std::endl;
-    
+
     return 0;
   }
   catch (ConnectionException e) {
@@ -140,19 +122,6 @@ int main() {
   catch (ExecutionException e) {
     std::cerr << "Oups... " << e.what();
   }
-  
+
   return -1;
 }
-```
-
-## Compatibility
-
-* `Linux x86_64` GCC 4.8.x
-* `Mac x86_64` XCode 7.x
-* `Windows x86_64` Visual Studio 2015 (work in progress)
-
-## License
-[MIT][license-mit]
-
-[license-mit-img]: http://img.shields.io/badge/license-MIT-blue.svg?style=flat-square
-[license-mit]: ./LICENSE.md
