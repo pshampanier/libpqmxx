@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.2.3)
+cmake_minimum_required (VERSION 3.5)
 project (postgres-test)
 
 # C++ standard 11

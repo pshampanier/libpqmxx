@@ -24,6 +24,22 @@ matrix:
 before_install:
   - sudo apt-get update -qq
 
+install:
+  # install cmake
+  - CMAKE_VERSION="3.5.2"
+  - wget "https://cmake.org/files/v3.5/cmake-${CMAKE_VERSION}.tar.gz"
+  - openssl sha1 "cmake-${CMAKE_VERSION}.tar.gz"
+  - tar xf "cmake-${CMAKE_VERSION}.tar.gz"
+  - cd "cmake-${CMAKE_VERSION}"
+  - ./bootstrap --prefix=~
+  - make
+  - make install
+  - export PATH="~/bin:${PATH}"
+  - cd ..
+  # verify installed versions
+  - which cmake
+  - cmake --version
+
 script:
   - mkdir build
   - cd build
