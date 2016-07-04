@@ -26,6 +26,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 
 #include "libpq/pg_type.h"
 
@@ -46,6 +47,45 @@
 
 namespace db {
   namespace postgres {
+
+#ifdef NDEBUG
+
+    #define assert_oid(expected, actual) ((void)0)
+
+#else
+
+    void assert_oid(int expected, int actual) {
+      const char *_expected = nullptr;
+      if (expected != actual) {
+        switch (expected) {
+          case BOOLOID: _expected = "std::vector<uint_8>"; break;
+          case BYTEAOID: _expected = "char"; break;
+          case CHAROID: _expected = "std::string"; break;
+          case NAMEOID: _expected = "std::string"; break;
+          case INT8OID: _expected = "int64_t"; break;
+          case INT2OID: _expected = "int16_t"; break;
+          case INT4OID: _expected = "int32_t"; break;
+          case TEXTOID: _expected = "std::string"; break;
+          case FLOAT4OID: _expected = "float"; break;
+          case FLOAT8OID: _expected = "double"; break;
+          case BPCHAROID: _expected = "std::string"; break;
+          case VARCHAROID: _expected = "std::string"; break;
+          case DATEOID: _expected = "db::postgres::date_t"; break;
+          case TIMEOID: _expected = "db::postgres::time_t"; break;
+          case TIMESTAMPOID: _expected = "db::postgres::timestamp_t"; break;
+          case TIMESTAMPTZOID: _expected = "db::postgres::timestamptz_t"; break;
+          case INTERVALOID: _expected = "db::postgres::interval_t"; break;
+          case TIMETZOID: _expected = "db::postgres::timetz_t"; break;
+          default:
+            assert(false); // unsupported type. try std::string
+        }
+
+        std::cerr << "Unexpected C++ type. Please use get<" << _expected
+          << ">(int column)" << std::endl;
+        assert(false);
+      }
+    }
+#endif
 
     int16_t read16(const PGresult *pgresult, int column) {
       return be16toh(*reinterpret_cast<int16_t*>(PQgetvalue(pgresult, 0, column)));
@@ -94,7 +134,7 @@ namespace db {
     template<>
     bool Row::get<bool>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == BOOLOID);
+      assert_oid(PQftype(result_, column), BOOLOID);
       return PQgetisnull(result_, 0, column) ? false :
         *reinterpret_cast<bool *>(PQgetvalue(result_, 0, column));
     }
@@ -105,7 +145,7 @@ namespace db {
     template<>
     int16_t Row::get<int16_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == INT2OID);
+      assert_oid(PQftype(result_, column), INT2OID);
       return PQgetisnull(result_, 0, column) ? 0 : read16(result_, column);
     }
 
@@ -115,7 +155,7 @@ namespace db {
     template<>
     int32_t Row::get<int32_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == INT4OID);
+      assert_oid(PQftype(result_, column), INT4OID);
       return PQgetisnull(result_, 0, column) ? 0 : read32(result_, column);
     }
 
@@ -125,7 +165,7 @@ namespace db {
     template<>
     int64_t Row::get<int64_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == INT8OID);
+      assert_oid(PQftype(result_, column), INT8OID);
       return PQgetisnull(result_, 0, column) ? 0 : read64(result_, column);
     }
 
@@ -135,7 +175,7 @@ namespace db {
     template<>
     float Row::get<float>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == FLOAT4OID);
+      assert_oid(PQftype(result_, column), FLOAT4OID);
       if (PQgetisnull(result_, 0, column)) {
         return 0.f;
       }
@@ -149,7 +189,7 @@ namespace db {
     template<>
     double Row::get<double>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == FLOAT8OID);
+      assert_oid(PQftype(result_, column), FLOAT8OID);
       if (PQgetisnull(result_, 0, column)) {
         return 0.;
       }
@@ -189,7 +229,7 @@ namespace db {
     template<>
     std::vector<uint8_t> Row::get<std::vector<uint8_t>>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == BYTEAOID);
+      assert_oid(PQftype(result_, column), BYTEAOID);
       int length = PQgetlength(result_, 0, column);
       uint8_t *data = reinterpret_cast<uint8_t *>(PQgetvalue(result_, 0, column));
       return std::vector<uint8_t>(data, data + length);
@@ -201,7 +241,7 @@ namespace db {
     template<>
     date_t Row::get<date_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == DATEOID);
+      assert_oid(PQftype(result_, column), DATEOID);
       int32_t i = 0;
       if (!PQgetisnull(result_, 0, column)) {
         i = read32(result_, column);
@@ -216,7 +256,7 @@ namespace db {
     template<>
     timestamptz_t Row::get<timestamptz_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == TIMESTAMPTZOID);
+      assert_oid(PQftype(result_, column), TIMESTAMPTZOID);
       int64_t t = 0;
       if (!PQgetisnull(result_, 0, column)) {
         t = read64(result_, column) + MICROSEC_UNIX_TO_J2000_EPOCH;
@@ -230,7 +270,7 @@ namespace db {
     template<>
     timestamp_t Row::get<timestamp_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == TIMESTAMPOID);
+      assert_oid(PQftype(result_, column), TIMESTAMPOID);
       int64_t t = 0;
       if (!PQgetisnull(result_, 0, column)) {
         t = read64(result_, column) + MICROSEC_UNIX_TO_J2000_EPOCH;
@@ -244,7 +284,7 @@ namespace db {
     template<>
     timetz_t Row::get<timetz_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == TIMETZOID);
+      assert_oid(PQftype(result_, column), TIMETZOID);
       timetz_t t;
       if (PQgetisnull(result_, 0, column)) {
         std::memset(&t, 0, 12);
@@ -263,7 +303,7 @@ namespace db {
     template<>
     time_t Row::get<time_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == TIMEOID);
+      assert_oid(PQftype(result_, column), TIMEOID);
       int64_t t = 0;
       if (!PQgetisnull(result_, 0, column)) {
         t = read64(result_, column);
@@ -277,7 +317,7 @@ namespace db {
     template<>
     interval_t Row::get<interval_t>(int column) const {
       assert(result_.pgresult_ != nullptr);
-      assert(PQftype(result_, column) == INTERVALOID);
+      assert_oid(PQftype(result_, column), INTERVALOID);
       interval_t i;
       if (PQgetisnull(result_, 0, column)) {
         std::memset(&i, 0, sizeof(i));
