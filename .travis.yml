@@ -1,0 +1,11 @@
+language: cpp
+compiler: gcc
+os:
+- linux
+env:
+  global:
+  - LANG="en_US.UTF-8"
+script:
+  - mkdir build
+  - cd build
+  - cmake .. && make
