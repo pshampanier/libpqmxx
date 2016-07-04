@@ -1,8 +1,8 @@
-cmake_minimum_required (VERSION 3.5)
+cmake_minimum_required (VERSION 3.2.3)
 project (postgres-test)
 
-# C++ standard 14 for lampda functions and closure support
-set (CMAKE_CXX_STANDARD 14)
+# C++ standard 11
+set (CMAKE_CXX_STANDARD 11)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(CMAKE_XCODE_ATTRIBUTE_ENABLE_TESTABILITY "YES")
