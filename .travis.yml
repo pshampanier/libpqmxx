@@ -24,7 +24,7 @@ before_install:
 install:
   # install curl
   - CURL_VERSION="7.49.1"
-  - wget https://curl.haxx.se/download/curl-${CURL_VERSION}.tar.gz
+  - wget --no-check-certificate https://curl.haxx.se/download/curl-${CURL_VERSION}.tar.gz
   - tar xf "curl-${CURL_VERSION}.tar.gz"
   - cd "curl-${CURL_VERSION}"
   - ./configure
