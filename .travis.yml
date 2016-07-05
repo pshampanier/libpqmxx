@@ -22,29 +22,11 @@ before_install:
   - sudo apt-get update -qq
 
 install:
-  # install curl
-  - CURL_VERSION="7.49.1"
-  - wget --no-check-certificate https://curl.haxx.se/download/curl-${CURL_VERSION}.tar.gz
-  - tar xf "curl-${CURL_VERSION}.tar.gz"
-  - cd "curl-${CURL_VERSION}"
-  - ./configure
-  - make
-  - sudo make install
-  - cd ..
   # install cmake
   - CMAKE_VERSION="3.5.2"
-  - wget --no-check-certificate "http://cmake.org/files/v3.5/cmake-${CMAKE_VERSION}.tar.gz"
-  - openssl sha1 "cmake-${CMAKE_VERSION}.tar.gz"
-  - tar xf "cmake-${CMAKE_VERSION}.tar.gz"
-  - cd "cmake-${CMAKE_VERSION}"
-  - ./bootstrap --prefix=~
-  - make
-  - make install
-  - export PATH="~/bin:${PATH}"
-  - cd ..
+  - wget --no-check-certificate "http://cmake.org/files/v3.5/cmake-${CMAKE_VERSION}-Linux-x86_64.sh"
+  - sudo sh cmake-${CMAKE_VERSION}-Linux-x86_64.sh --skip-license
   # verify installed versions
-  - which curl
-  - curl --version
   - which cmake
   - cmake --version
 
