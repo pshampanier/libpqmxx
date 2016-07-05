@@ -29,7 +29,7 @@ install:
   - cd "curl-${CURL_VERSION}"
   - ./configure
   - make
-  - make install
+  - sudo make install
   - cd ..
   # install cmake
   - CMAKE_VERSION="3.5.2"
