@@ -58,7 +58,6 @@ macro(postgres_test target)
   add_executable(${target} ${TEST_FILES} ${INCLUDE_FILES} ${SOURCE_FILES})
   target_link_libraries(${target} "${PostgreSQL_LIBRARIES}")
   googletest(${target})
-  add_test($target $target)
 endmacro(postgres_test)
 
 #

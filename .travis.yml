@@ -24,8 +24,8 @@ before_install:
 install:
   # install cmake
   - CMAKE_VERSION="3.5.2"
-  - wget --no-check-certificate "http://cmake.org/files/v3.5/cmake-${CMAKE_VERSION}-Linux-x86_64.sh"
-  - sudo sh "./cmake-${CMAKE_VERSION}-Linux-x86_64.sh --prefix=/ --skip-license"
+  - wget --no-check-certificate "http://cmake.org/files/v3.5/cmake-${CMAKE_VERSION}-Linux-x86_64.sh -o /tmp/cmake-${CMAKE_VERSION}-Linux-x86_64.sh"
+  - sudo sh "/tmp/cmake-${CMAKE_VERSION}-Linux-x86_64.sh --prefix=/ --skip-license"
   # verify installed versions
   - which cmake
   - cmake --version
