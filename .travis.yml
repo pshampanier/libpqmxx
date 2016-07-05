@@ -37,6 +37,8 @@ install:
   # verify installed versions
   - which cmake
   - cmake --version
+  - which curl
+  - curl --version
 
 script:
   - mkdir build

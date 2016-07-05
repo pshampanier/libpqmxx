@@ -3,6 +3,7 @@ project (postgres-test)
 
 # C++ standard 11
 set (CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED on)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(CMAKE_XCODE_ATTRIBUTE_ENABLE_TESTABILITY "YES")
