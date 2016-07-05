@@ -23,14 +23,18 @@ before_install:
 
 install:
   # install cmake
+  - mkdir cmake
+  - cd cmake
   - CMAKE_VERSION="3.5.2"
   - wget --no-check-certificate "http://cmake.org/files/v3.5/cmake-${CMAKE_VERSION}-Linux-x86_64.sh"
   - chmod +x cmake-${CMAKE_VERSION}-Linux-x86_64.sh
   - ./cmake-${CMAKE_VERSION}-Linux-x86_64.sh --prefix=`pwd` --skip-license
-  - export PATH=~/bin:$PATH
+  - ls -l
+  - export PATH=~/cmake/bin:$PATH
   # verify installed versions
   - which cmake
   - cmake --version
+  - cd ..
 
 script:
   - mkdir build
