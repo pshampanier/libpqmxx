@@ -31,12 +31,9 @@ install:
   - chmod +x cmake-${CMAKE_VERSION}-Linux-x86_64.sh
   - ./cmake-${CMAKE_VERSION}-Linux-x86_64.sh --prefix=${CMAKE_INSTALL_DIR} --skip-license
   - export PATH=${CMAKE_INSTALL_DIR}/bin:$PATH
-  - ls -l
-  - ls -l ${CMAKE_INSTALL_DIR}
   # verify installed versions
   - which cmake
   - cmake --version
-  - cd ..
 
 script:
   - mkdir build
