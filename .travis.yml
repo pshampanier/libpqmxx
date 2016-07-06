@@ -36,8 +36,8 @@ install:
   - cmake --version
 
 before_script:
-  - psql -c "create user ci-test;" -U postgres
-  - psql -c "create database ci-test OWNER ci-test ENCODING 'UTF8';" -U postgres
+  - psql -c 'create user "ci-test";' -U postgres
+  - psql -c 'create database "ci-test" OWNER "ci-test" ENCODING '"'"'UTF8'"'"';' -U postgres
 
 script:
   - mkdir build
