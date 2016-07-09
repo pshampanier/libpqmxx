@@ -24,9 +24,9 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - postgresql-server-dev-all
           packages:
             - g++-5
+            - postgresql-server-dev-all
       env: COMPILER=g++-5
 
 before_install:
