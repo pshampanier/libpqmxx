@@ -114,10 +114,19 @@ namespace db {
           assert(false);
       }
 
+    #ifdef __APPLE__
+      // Seems the std::make_tuple does not behave the same on XCode and other
+      // compilers.
       types_.push_back(type);
       values_.push_back(value);
       lengths_.push_back(length);
       formats_.push_back(format);
+    #else
+      types_.insert(types_.begin(), type);
+      values_.insert(values_.begin(), value);
+      lengths_.insert(lengths_.begin(), length);
+      formats_.insert(formats_.begin(), format);
+    #endif
     }
 
     //--------------------------------------------------------------------------
