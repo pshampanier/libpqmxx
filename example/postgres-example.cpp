@@ -117,10 +117,10 @@ int main() {
     return 0;
   }
   catch (ConnectionException e) {
-    std::cerr << "Oups... Cannot connect...";
+    std::cerr << "Oops... Cannot connect...";
   }
   catch (ExecutionException e) {
-    std::cerr << "Oups... " << e.what();
+    std::cerr << "Oops... " << e.what();
   }
 
   return -1;

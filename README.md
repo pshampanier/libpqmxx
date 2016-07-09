@@ -3,7 +3,7 @@
 
 > A simple PostgreSQL client library written in Modern C++.
 
-[![License][license-mit-img]][license-mit]
+[![License][license-mit-img]][license-mit] [![Build Status](https://travis-ci.org/pferdinand/libpqmxx.svg?branch=master)](https://travis-ci.org/pferdinand/libpqmxx)
 
 libpq**m**xx is an unofficial C++ 11 client API for PostgreSQL.
 
@@ -152,10 +152,10 @@ int main() {
     return 0;
   }
   catch (ConnectionException e) {
-    std::cerr << "Oups... Cannot connect...";
+    std::cerr << "Oops... Cannot connect...";
   }
   catch (ExecutionException e) {
-    std::cerr << "Oups... " << e.what();
+    std::cerr << "Oops... " << e.what();
   }
 
   return -1;
@@ -175,9 +175,8 @@ Mary Sluis is born in 1973
 
 ## Compatibility
 
-* `Linux x86_64` GCC 4.8.x
+* `Linux x86_64` gcc 4.9, gcc 5, clang 3.6, clang 3.7.
 * `Mac x86_64` XCode 7.x
-* `Windows x86_64` Visual Studio 2015 (work in progress)
 
 ## License
 [MIT][license-mit]
