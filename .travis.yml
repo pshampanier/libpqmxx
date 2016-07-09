@@ -28,6 +28,16 @@ matrix:
             - g++-5
             - postgresql-server-dev-all
       env: COMPILER=g++-5
+    - compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
+          packages:
+            - clang-3.6
+            - postgresql-server-dev-all
+      env: COMPILER=clang++-3.6
 
 before_install:
   - sudo apt-get update -qq
