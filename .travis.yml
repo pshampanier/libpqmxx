@@ -41,6 +41,7 @@ matrix:
       env: COMPILER=clang++-3.6
     - compiler: clang
       addons:
+        postgresql: "9.4"
         apt:
           sources:
             - ubuntu-toolchain-r-test
