@@ -114,9 +114,10 @@ namespace db {
           assert(false);
       }
 
-    #ifdef __APPLE__
-      // Seems the std::make_tuple does not behave the same on XCode and other
+    #ifdef __clang__
+      // Seems the std::make_tuple does not behave the same on clang and other
       // compilers.
+      // See http://stackoverflow.com/questions/14056000/how-to-avoid-undefined-execution-order-for-the-constructors-when-using-stdmake
       types_.push_back(type);
       values_.push_back(value);
       lengths_.push_back(length);
