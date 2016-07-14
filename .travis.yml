@@ -74,6 +74,7 @@ install:
   - make
   - cp -r include/ ${GTEST_INSTALL_DIR}
   - cp *.a ${GTEST_INSTALL_DIR}/lib
+  - cd ..
   # verify installed versions
   - which cmake
   - cmake --version
