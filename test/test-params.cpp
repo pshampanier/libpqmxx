@@ -28,13 +28,13 @@ using namespace db::postgres;
 TEST(params_sync, datatypes) {
 
   Connection cnx;
-  cnx.connect("postgresql://ci-test@localhost");
+  cnx.connect();
 
   EXPECT_EQ(32767, cnx.execute("SELECT $1::smallint", int16_t(32767)).get<int16_t>(0));
   EXPECT_EQ(2147483647, cnx.execute("SELECT $1", 2147483647).get<int32_t>(0));
   EXPECT_EQ(9223372036854775807, cnx.execute("SELECT $1", int64_t(9223372036854775807)).get<int64_t>(0));
-  EXPECT_FLOAT_EQ(0.45567, cnx.execute("SELECT $1", 0.45567f).get<float>(0));
-  EXPECT_FLOAT_EQ(0.45567, cnx.execute("SELECT $1", 0.45567).get<double>(0));
+  EXPECT_FLOAT_EQ(0.45567f, cnx.execute("SELECT $1", 0.45567f).get<float>(0));
+  EXPECT_DOUBLE_EQ(0.45567, cnx.execute("SELECT $1", 0.45567).get<double>(0));
   EXPECT_TRUE(cnx.execute("SELECT $1", true).get<bool>(0));
   EXPECT_FALSE(cnx.execute("SELECT $1", false).get<bool>(0));
   EXPECT_STREQ("hello", cnx.execute("SELECT $1", "hello").get<std::string>(0).c_str());
@@ -46,7 +46,7 @@ TEST(params_sync, datatypes) {
 TEST(params_sync, utf8) {
 
   Connection cnx;
-  cnx.connect("postgresql://ci-test@localhost");
+  cnx.connect();
 
   EXPECT_STREQ(u8"Günter", cnx.execute("SELECT $1", u8"Günter").get<std::string>(0).c_str());
   EXPECT_STREQ(u8"メインページ", cnx.execute("SELECT $1", u8"メインページ").get<std::string>(0).c_str());
@@ -56,7 +56,7 @@ TEST(params_sync, utf8) {
 TEST(params_sync, date_time) {
 
   Connection cnx;
-  cnx.connect("postgresql://ci-test@localhost");
+  cnx.connect();
 
   EXPECT_STREQ("1970-01-01", cnx.execute("SELECT to_char($1, 'YYYY-MM-DD')", date_t {0}).get<std::string>(0).c_str());
   EXPECT_STREQ("2014-11-01 05:14:00", cnx.execute("SELECT to_char($1 at time zone 'America/New_York', 'YYYY-MM-DD HH24:MI:SS')", timestamptz_t {1414833240000000}).get<std::string>(0).c_str());
@@ -82,7 +82,7 @@ TEST(params_sync, date_time) {
 TEST(param_sync, bytea_type) {
 
   Connection cnx;
-  cnx.connect("postgresql://ci-test@localhost");
+  cnx.connect();
 
   std::vector<uint8_t> expected;
   expected.push_back(0xDE);
@@ -98,7 +98,7 @@ TEST(param_sync, bytea_type) {
 TEST(param_sync, multi) {
 
   Connection cnx;
-  cnx.connect("postgresql://ci-test@localhost");
+  cnx.connect();
   cnx.execute("SELECT $1, $2", 1, 2);
 
 }

@@ -27,14 +27,16 @@
 #include <cassert>
 #include <cstring>
 
-#include <arpa/inet.h>
 #ifdef __linux__
+  #include <arpa/inet.h>
   #include <endian.h>
     #if __BYTE_ORDER == __LITTLE_ENDIAN
       #define htonll(x) __bswap_constant_64(x)
     #else
       #define htonll(x) x
     #endif
+#elif defined (_WINDOWS)
+  #include <winsock2.h>
 #endif
 
 namespace db {
@@ -54,7 +56,7 @@ namespace db {
     // Destructor
     //--------------------------------------------------------------------------
     Params::~Params() {
-      for (int i=types_.size(); i > 0; --i) {
+      for (size_t i=0; i < types_.size(); i++) {
         switch (types_[i]) {
           case INT2OID:
           case INT4OID:
@@ -81,7 +83,7 @@ namespace db {
     //--------------------------------------------------------------------------
     // Bind any value
     //--------------------------------------------------------------------------
-    void Params::bind(Oid type, char *value, int length) {
+    void Params::bind(Oid type, char *value, size_t length) {
 
       char *copy = nullptr;
       int format = 1; /* binary */
@@ -125,7 +127,7 @@ namespace db {
     #else
       types_.insert(types_.begin(), type);
       values_.insert(values_.begin(), value);
-      lengths_.insert(lengths_.begin(), length);
+      lengths_.insert(lengths_.begin(), int(length));
       formats_.insert(formats_.begin(), format);
     #endif
     }

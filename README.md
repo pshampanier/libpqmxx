@@ -173,10 +173,37 @@ Mary Sluis is born in 1973
 2 employees records have been deleted.
 ```
 
+## Usage
+Using [cmake](https://cmake.org).
+
+```bash
+cmake_minimum_required (VERSION 3.5)
+project (myproject)
+
+# C++ standard 11 minimum is required
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED on)
+
+# Configure libpq
+find_package(PostgreSQL REQUIRED)
+include_directories(${PostgreSQL_INCLUDE_DIRS})
+link_directories(${PostgreSQL_LIBRARY_DIRS})
+
+# Configure libpqmxx
+include("../libpqmxx/libpqmxx.cmake")
+include_directories(${LIBPQMXX_INCLUDE_DIRS})
+
+# Configure your project
+file(GLOB PROJECT_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
+add_executable(myproject ${PROJECT_FILES})
+target_link_libraries(myproject ${PostgreSQL_LIBRARIES} ${LIBPQMXX_LIBRARIES})
+```
+
 ## Compatibility
 
 * `Linux x86_64` gcc 4.9, gcc 5, clang 3.6, clang 3.7.
 * `Mac x86_64` XCode 7.x
+* `Windows x86_64` Visual Studio 2015 Update 2
 
 ## License
 [MIT][license-mit]

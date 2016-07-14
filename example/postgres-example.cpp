@@ -50,7 +50,7 @@ int main() {
 
     std::cout << "Table created." << std::endl;
 
-    int employees = cnx.execute(R"SQL(
+    int64_t employees = cnx.execute(R"SQL(
 
       INSERT INTO employees VALUES
         (10001,'1973-09-02','Georgi','Facello','M','2006-06-26'),
@@ -105,7 +105,7 @@ int main() {
       << employee.get<std::string>(1) << " is born in "
       << employee.get<double>(2) << std::endl;
 
-    int deleted = cnx.execute(R"SQL(
+    int64_t deleted = cnx.execute(R"SQL(
 
       DELETE FROM employees
         WHERE DATE_PART('year', birth_date) = $1 AND gender = $2

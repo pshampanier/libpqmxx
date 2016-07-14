@@ -28,7 +28,7 @@ using namespace db::postgres;
 TEST(iterator, sync_no_row) {
 
   Connection cnx;
-  cnx.connect("postgresql://ci-test@localhost");
+  cnx.connect();
 
   int32_t actual = 0;
 
@@ -44,7 +44,7 @@ TEST(iterator, sync_no_row) {
 TEST(iterator, sync_one_row) {
 
   Connection cnx;
-  cnx.connect("postgresql://ci-test@localhost");
+  cnx.connect();
 
   int32_t actual = 0;
 
@@ -60,7 +60,7 @@ TEST(iterator, sync_one_row) {
 TEST(iterator, sync_multiple_rows) {
 
   Connection cnx;
-  cnx.connect("postgresql://ci-test@localhost");
+  cnx.connect();
 
   int32_t actual = 0;
 
@@ -76,7 +76,7 @@ TEST(iterator, sync_multiple_rows) {
 TEST(iterator, sync_rownum) {
 
   Connection cnx;
-  cnx.connect("postgresql://ci-test@localhost");
+  cnx.connect();
 
   int32_t actual = 0;
 

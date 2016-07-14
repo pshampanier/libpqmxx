@@ -27,6 +27,9 @@
 #include <string>
 #include <cstring>
 
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "Secur32.lib")
+
 namespace db {
   namespace postgres {
 
@@ -264,8 +267,7 @@ namespace db {
     // Open a connection to the database.
     // -------------------------------------------------------------------------
     Connection &Connection::connect(const char *connInfo) {
-      assert(pgconn_ == nullptr);
-      pgconn_ = PQconnectdb(connInfo);
+      pgconn_ = PQconnectdb(connInfo == nullptr ? "" : connInfo);
       
       if( PQstatus(pgconn_) != CONNECTION_OK ) {
         PQfinish(pgconn_);
@@ -302,7 +304,7 @@ namespace db {
 
       int success;
       if (isSingleStatement(sql)) {
-        success = PQsendQueryParams(pgconn_, sql, params.values_.size(),
+        success = PQsendQueryParams(pgconn_, sql, int(params.values_.size()),
                                       params.types_.data(),
                                       params.values_.data(),
                                       params.lengths_.data(),

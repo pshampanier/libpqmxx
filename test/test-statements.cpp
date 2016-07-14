@@ -28,7 +28,7 @@ using namespace db::postgres;
 TEST(result_sync, statements) {
 
   Connection cnx;
-  cnx.connect("postgresql://ci-test@localhost");
+  cnx.connect();
 
   cnx.execute(R"SQL(
 
@@ -172,7 +172,7 @@ TEST(result_sync, statements) {
 TEST(misc, cancel) {
 
   Connection cnx;
-  cnx.connect("postgresql://ci-test@localhost");
+  cnx.connect();
 
   auto &result = cnx.execute("SELECT generate_series(1, 10000)");
   int rownum = 0;

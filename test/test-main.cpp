@@ -19,40 +19,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  **/
-#pragma once
+#include "gtest/gtest.h"
+#include <cstdlib>
+#include <iostream>
+#include <stdlib.h>
 
-#include <string>
-#include <vector>
+#if _WINDOWS
+  #pragma warning(disable : 4996)
+  #define setenv(name, value, overwrite) _putenv_s(name, value);
+#endif
 
-namespace db {
-  namespace postgres {
+const char *DEFAULT_PGHOST = "localhost";
+const char *DEFAULT_PGUSER = "ci-test";
+const char *DEFAULT_PGDATABASE = "ci-test";
 
-    /**
-     * A private class to bind SQL command paramters.
-     **/
-    class Params {
+const char *init(const char *name, const char *defValue) {
+  const char *value = std::getenv(name);
+  if (value == nullptr) {
+    setenv(name, defValue, 1);
+    value = defValue;
+  }
+  return value;
+}
 
-      friend class Connection;
+int main(int argc, char** argv) {
 
-    private:
-      std::vector<Oid>    types_;
-      std::vector<char *> values_;
-      std::vector<int>    lengths_;
-      std::vector<int>    formats_;
+  const char *pghost = init("PGHOST", DEFAULT_PGHOST);
+  const char *pguser = init("PGUSER", DEFAULT_PGUSER);
+  const char *pgdatabase = init("PGDATABASE", DEFAULT_PGDATABASE);
 
-      Params(int size);
-      ~Params();
+  std::cout << "Using "<< "PGHOST=" << pghost << " PGUSER=" << pguser
+    << " PGDATABASE=" << pgdatabase << std::endl;
 
-      void bind() const {}
-      void bind(std::nullptr_t);
-      void bind(const std::string &s);
-      void bind(const std::vector<uint8_t> &d);
+  // This allows the user to override the flag on the command line.
+  ::testing::InitGoogleTest(&argc, argv);
 
-      template<typename T>
-      void bind(T v);
-
-      void bind(Oid type, char *value, size_t length);
-    };
-
-  } // namespace postgres
-}   // namespace db
+  return RUN_ALL_TESTS();
+}
