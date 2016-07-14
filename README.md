@@ -196,7 +196,7 @@ include_directories(${LIBPQMXX_INCLUDE_DIRS})
 # Configure your project
 file(GLOB PROJECT_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
 add_executable(myproject ${PROJECT_FILES})
-target_link_libraries(myproject ${PostgreSQL_LIBRARIES} ${LIBPQMXX_LIBRARIES})
+target_link_libraries(myproject ${LIBPQMXX_LIBRARIES} ${PostgreSQL_LIBRARIES})
 ```
 
 ## Compatibility

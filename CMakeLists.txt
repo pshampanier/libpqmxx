@@ -12,6 +12,8 @@ endif()
 if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /source-charset:utf-8 /execution-charset:utf-8")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:msvcrt.lib")
+elseif (CMAKE_COMPILER_IS_GNUCXX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
 
 # Configure Googletest
@@ -32,7 +34,7 @@ include_directories(${LIBPQMXX_INCLUDE_DIRS})
 macro(postgres_test target)
   file(GLOB TEST_FILES ${CMAKE_CURRENT_LIST_DIR}/test/*.cpp)
   add_executable(${target} ${TEST_FILES} ${INCLUDE_FILES} ${SOURCE_FILES})
-  target_link_libraries(${target} ${PostgreSQL_LIBRARIES} ${GTEST_LIBRARIES} ${LIBPQMXX_LIBRARIES})
+  target_link_libraries(${target} ${GTEST_LIBRARIES} ${LIBPQMXX_LIBRARIES} ${PostgreSQL_LIBRARIES})
 endmacro(postgres_test)
 
 #
@@ -41,7 +43,7 @@ endmacro(postgres_test)
 macro(postgres_example target)
   file(GLOB EXAMPLES_FILES ${CMAKE_CURRENT_LIST_DIR}/example/*.cpp)
   add_executable(${target} ${EXAMPLES_FILES} ${INCLUDE_FILES} ${SOURCE_FILES})
-  target_link_libraries(${target} ${PostgreSQL_LIBRARIES} ${LIBPQMXX_LIBRARIES})
+  target_link_libraries(${target} ${LIBPQMXX_LIBRARIES} ${PostgreSQL_LIBRARIES})
 endmacro(postgres_example)
 
 postgres_test(postgres-test)
