@@ -61,18 +61,15 @@ Destructor.
 
 The destuctor will implicitly close the connection to the server and associated results if necessary.
 
-### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & connect(const char * connInfo)` {#classdb_1_1postgres_1_1_connection_1a05d7f255215150237e806bff876bd4b3}
+### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & connect(const char * connInfo)` {#classdb_1_1postgres_1_1_connection_1aaf2fe1607169b7118735655bd695576b}
 
 Open a connection to the database.
 
 #### Parameters
-* `connInfo` A postgresql connection string.
+* `connInfo` A postgresql connection string. Both Keyword/Value and URI are accepted. The passed `connInfo` can be empty or null to use all default parameters (see [Environment Variables](https://www.postgresql.org/docs/9.5/static/libpq-envars.html)).
 
 
 
-
-
-Both Keyword/Value and URI are accepted.
 
 
 ```cpp
