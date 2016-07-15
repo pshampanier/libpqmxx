@@ -27,6 +27,9 @@
 #include <string>
 #include <cstring>
 
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "Secur32.lib")
+
 namespace db {
   namespace postgres {
 
@@ -269,8 +272,7 @@ namespace db {
     // Open a connection to the database.
     // -------------------------------------------------------------------------
     Connection &Connection::connect(const char *connInfo) {
-      assert(pgconn_ == nullptr);
-      
+      pgconn_ = PQconnectdb(connInfo == nullptr ? "" : connInfo);
       if (async_) {
         pgconn_ = PQconnectStart(connInfo);
         if (pgconn_ == nullptr) {

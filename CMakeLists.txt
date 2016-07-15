@@ -9,11 +9,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(CMAKE_XCODE_ATTRIBUTE_ENABLE_TESTABILITY "YES")
 endif()
 
-find_package(PostgreSQL REQUIRED)
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-  set(PostgreSQL_LIBRARIES "${PostgreSQL_ROOT}/lib/${PostgreSQL_LIBRARIES}" ws2_32 Secur32)
+if(MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /source-charset:utf-8 /execution-charset:utf-8")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:msvcrt.lib")
+elseif (CMAKE_COMPILER_IS_GNUCXX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
-message("PostgreSQL_LIBRARIES: ${PostgreSQL_LIBRARIES}")
 
 # Boost
 set(Boost_DEBUG                 OFF)
@@ -22,36 +23,26 @@ set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 find_package(Boost COMPONENTS system)
 
+# Configure Googletest
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
-if(MSVC)
-  set(CMAKE_CXX_FLAGS                   "${CMAKE_CXX_FLAGS} /GR")
-  set(CMAKE_CXX_FLAGS_DEBUG             "${CMAKE_CXX_FLAGS_DEBUG} /D_DEBUG /Ob0 /Od /RTC1 /MTd")
-  set(CMAKE_C_FLAGS_DEBUG               "${CMAKE_C_FLAGS_DEBUG} /D_DEBUG /Ob0 /Od /RTC1 /MTd")
-  set(CMAKE_C_FLAGS_RELEASE             "${CMAKE_C_FLAGS_RELEASE} /Zi /O2 /Ob2 /MT /D NDEBUG")
-  set(CMAKE_CXX_FLAGS_RELEASE           "${CMAKE_CXX_FLAGS_RELEASE} /Zi /O2 /Ob2 /MT /D NDEBUG")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE    "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG")
-  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG")
-  set(CMAKE_C_FLAGS_RELWITHDEBINFO      "${CMAKE_C_FLAGS_RELWITHDEBINFO} /MT")
-  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO    "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MT")
-endif()
-
-include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
+# Configure libpq
+find_package(PostgreSQL REQUIRED)
 include_directories(${PostgreSQL_INCLUDE_DIRS})
-file(GLOB SOURCE_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
-file(GLOB INCLUDE_FILES ${CMAKE_CURRENT_LIST_DIR}/include/*.h)
-source_group("include" FILES ${INCLUDE_FILES})
+link_directories(${PostgreSQL_LIBRARY_DIRS})
+
+# Configure libpqmxx
+include("libpqmxx.cmake")
+include_directories(${LIBPQMXX_INCLUDE_DIRS})
 
 #
 # postgres-test (Unit Testing)
 #
 macro(postgres_test target)
   file(GLOB TEST_FILES ${CMAKE_CURRENT_LIST_DIR}/test/*.cpp)
-  source_group("test" FILES ${TEST_FILES})
   add_executable(${target} ${TEST_FILES} ${INCLUDE_FILES} ${SOURCE_FILES})
-  target_link_libraries(${target} "${PostgreSQL_LIBRARIES}")
-  target_link_libraries(${target} ${GTEST_BOTH_LIBRARIES})
+  target_link_libraries(${target} ${GTEST_LIBRARIES} ${LIBPQMXX_LIBRARIES} ${PostgreSQL_LIBRARIES})
 endmacro(postgres_test)
 
 #
@@ -59,10 +50,8 @@ endmacro(postgres_test)
 #
 macro(postgres_example target)
   file(GLOB EXAMPLES_FILES ${CMAKE_CURRENT_LIST_DIR}/example/*.cpp)
-  source_group("example" FILES ${EXAMPLES_FILES})
   add_executable(${target} ${EXAMPLES_FILES} ${INCLUDE_FILES} ${SOURCE_FILES})
-  target_link_libraries(${target} "${PostgreSQL_LIBRARIES}")
-  target_link_libraries(${target} ${GTEST_BOTH_LIBRARIES})
+  target_link_libraries(${target} ${LIBPQMXX_LIBRARIES} ${PostgreSQL_LIBRARIES})
 endmacro(postgres_example)
 
 postgres_test(postgres-test)

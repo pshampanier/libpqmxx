@@ -64,8 +64,10 @@ namespace db {
          * Open a connection to the database.
          * 
          * @param connInfo A postgresql connection string.
-         *
-         * Both Keyword/Value and URI are accepted.
+         *                 Both Keyword/Value and URI are accepted.
+         *                 The passed `connInfo` can be empty or null to use all
+         *                 default parameters
+         *                 (see [Environment Variables](https://www.postgresql.org/docs/9.5/static/libpq-envars.html)).
          *
          * ```
          * postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
@@ -74,7 +76,7 @@ namespace db {
          * @see https://www.postgresql.org/docs/9.5/static/libpq-connect.html#LIBPQ-CONNSTRING
          * @return The connection itself.
          **/
-        Connection &connect(const char *connInfo);
+        Connection &connect(const char *connInfo = nullptr);
       
         /**
          * Close the database connection.

@@ -20,27 +20,39 @@
  * SOFTWARE.
  **/
 #include "gtest/gtest.h"
-#include "postgres-connection.h"
-#include "postgres-exceptions.h"
-#include "postgres-boost.h"
+#include <cstdlib>
+#include <iostream>
+#include <stdlib.h>
 
-using namespace db::postgres;
+#if _WINDOWS
+  #pragma warning(disable : 4996)
+  #define setenv(name, value, overwrite) _putenv_s(name, value);
+#endif
 
-TEST(connect, sync) {
+const char *DEFAULT_PGHOST = "localhost";
+const char *DEFAULT_PGUSER = "ci-test";
+const char *DEFAULT_PGDATABASE = "ci-test";
 
-  Connection cnx;
-  EXPECT_NO_THROW(cnx.connect().close());
-  EXPECT_THROW(cnx.connect("postgresql://invalid_user@localhost"), ConnectionException);
-
+const char *init(const char *name, const char *defValue) {
+  const char *value = std::getenv(name);
+  if (value == nullptr) {
+    setenv(name, defValue, 1);
+    value = defValue;
+  }
+  return value;
 }
 
-TEST(connect, async) {
+int main(int argc, char** argv) {
 
-  auto cnx = std::make_shared<boost::Connection>();
-  cnx->connect("postgresql://ci-test@localhost").done([](int) {
-    EXPECT_TRUE(true);
-  });
+  const char *pghost = init("PGHOST", DEFAULT_PGHOST);
+  const char *pguser = init("PGUSER", DEFAULT_PGUSER);
+  const char *pgdatabase = init("PGDATABASE", DEFAULT_PGDATABASE);
 
-//   EXPECT_THROW(cnx.connect("postgresql://invalid_user@localhost"), ConnectionException);
+  std::cout << "Using "<< "PGHOST=" << pghost << " PGUSER=" << pguser
+    << " PGDATABASE=" << pgdatabase << std::endl;
 
+  // This allows the user to override the flag on the command line.
+  ::testing::InitGoogleTest(&argc, argv);
+
+  return RUN_ALL_TESTS();
 }

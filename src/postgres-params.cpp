@@ -56,7 +56,7 @@ namespace db {
     // Destructor
     //--------------------------------------------------------------------------
     Params::~Params() {
-      for (size_t i=types_.size(); i > 0; --i) {
+      for (size_t i=0; i < types_.size(); i++) {
         switch (types_[i]) {
           case INT2OID:
           case INT4OID:
