@@ -20,39 +20,33 @@
  * SOFTWARE.
  **/
 #pragma once
-
-#include <string>
-#include <vector>
+#include "postgres-connection.h"
 
 namespace db {
   namespace postgres {
+    namespace boost {
 
-    /**
-     * A private class to bind SQL command paramters.
-     **/
-    class Params {
+      /**
+       * An asynchronous implementation of a postgresql connection based on boost.
+       **/
+      class Connection : public db::postgres::Connection {
+      public:
+        Connection() {
+          async_ = true;
+        }
 
-      friend class Connection;
+        virtual void asyncRead(int socket, std::function<void ()> handler) const noexcept override {
 
-    private:
-      std::vector<Oid>    types_;
-      std::vector<char *> values_;
-      std::vector<int>    lengths_;
-      std::vector<int>    formats_;
 
-      Params(int size);
-      ~Params();
+        }
 
-      void bind() const {}
-      void bind(std::nullptr_t);
-      void bind(const std::string &s);
-      void bind(const std::vector<uint8_t> &d);
+        virtual void asyncWrite(int socket, std::function<void ()> handler) const noexcept override {
 
-      template<typename T>
-      void bind(T v);
 
-      void bind(Oid type, char *value, size_t length);
-    };
+        }
 
-  } // namespace postgres
-}   // namespace db
+      };
+
+    } // namespace boost
+  }   // namespace postgres
+}     // namespace db

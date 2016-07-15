@@ -22,6 +22,7 @@
 #include "gtest/gtest.h"
 #include "postgres-connection.h"
 #include "postgres-exceptions.h"
+#include "postgres-boost.h"
 
 using namespace db::postgres;
 
@@ -30,5 +31,16 @@ TEST(connect, sync) {
   Connection cnx;
   EXPECT_NO_THROW(cnx.connect("postgresql://ci-test@localhost").close());
   EXPECT_THROW(cnx.connect("postgresql://invalid_user@localhost"), ConnectionException);
+
+}
+
+TEST(connect, async) {
+
+  auto cnx = std::make_shared<boost::Connection>();
+  cnx->connect("postgresql://ci-test@localhost").done([](int) {
+    EXPECT_TRUE(true);
+  });
+
+//   EXPECT_THROW(cnx.connect("postgresql://invalid_user@localhost"), ConnectionException);
 
 }

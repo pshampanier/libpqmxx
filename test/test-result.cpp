@@ -36,7 +36,7 @@ TEST(result_sync, integer_types) {
   EXPECT_EQ(cnx.execute("SELECT 2147483647").get<int32_t>(0), 2147483647);
   EXPECT_EQ(cnx.execute("SELECT 9223372036854775807").get<int64_t>(0), 9223372036854775807);
   EXPECT_FLOAT_EQ(cnx.execute("SELECT CAST(4.46678 AS REAL)").get<float>(0), 4.46678);
-  EXPECT_FLOAT_EQ(cnx.execute("SELECT CAST(4.46678 AS DOUBLE PRECISION)").get<double>(0), 4.46678);
+  EXPECT_DOUBLE_EQ(cnx.execute("SELECT CAST(4.46678 AS DOUBLE PRECISION)").get<double>(0), 4.46678);
 
 }
 

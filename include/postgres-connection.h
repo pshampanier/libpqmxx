@@ -216,10 +216,65 @@ namespace db {
          **/
         Connection &rollback();
 
+        Connection &once(std::function<bool (const Result &result)> callback);
+        Connection &each(std::function<bool (const Result &result)> callback);
+        Connection &done(std::function<void (int count)> callback);
+        Connection &always(std::function<void ()> callback);
+        Connection &error(std::function<void (std::exception_ptr reason)> callback);
+
       protected:
 
         PGconn *pgconn_;  /**< The native connection pointer. **/
         Result  result_;  /**< Result of the current query. **/
+        bool    async_;   /**< `true` when running on asynchronous mode **/
+
+        /**
+         * Callbacks for asynchonous operations in non bloking mode.
+         **/
+        std::function<bool (Result &)>           iterator_; // once and each
+        std::function<void (int)>                done_;
+        std::function<void (std::exception_ptr)> error_;
+        std::function<void ()>                   always_;
+
+        /**
+         * Process available data retreived from the server.
+         *
+         * This method must be called by the owner of the event loop when
+         * some data are available in the connection.
+         *
+         * @return true if more data are expected. In this case the event loop
+         *         owner must call again `consumeInput()` when more data will
+         *         become available.
+         **/
+        bool consumeInput();
+
+        /**
+         * Flush the data pending to be send throught the connection.
+         *
+         * This method must be called by the event loop owner when the
+         * connection is ready to accept to write data to the server.
+         *
+         * @return true if not all data have been flushed. In this case the
+         *         event loop owner must call again `flush()` when the server
+         *         is ready to access more data.
+         **/
+        bool flush();
+
+        /**
+         * Check the connection progress status.
+         **/
+        void connectPoll();
+
+        virtual void asyncRead(int socket, std::function<void ()> handler) const noexcept {}
+        virtual void asyncWrite(int socket, std::function<void ()> handler) const noexcept {}
+
+        /**
+         * Get the native socket identifier.
+         *
+         * See [PQsocket](https://www.postgresql.org/docs/current/static/libpq-status.html).
+         * @return The file descriptor number of the connection socket to the server.
+         **/
+        int socket() const noexcept;
 
         /**
          * Last error messages sent by the server.
