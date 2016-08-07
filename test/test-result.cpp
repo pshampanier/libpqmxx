@@ -23,6 +23,22 @@
 #include "postgres-connection.h"
 #include "postgres-exceptions.h"
 
+#define ARRAY(...) __VA_ARGS__
+#define TEST_VECTOR(expr, _expected, type)                                      \
+{                                                                               \
+  auto res = expr;                                                              \
+  type exp[] = _expected;                                                       \
+  size_t expected_size = sizeof(exp) / sizeof(type);                            \
+  EXPECT_EQ(res.size(), expected_size);                                         \
+  for (size_t i=0; i < res.size() && expected_size == res.size(); i++) {        \
+    auto &actual = res[i];                                                      \
+    auto &expected = exp[i];
+
+
+#define TEST_VECTOR_END                                                        \
+  }                                                                            \
+}
+
 using namespace db::postgres;
 
 TEST(result_sync, integer_types) {
@@ -127,6 +143,22 @@ TEST(result_sync, bytea_type) {
 
   std::vector<uint8_t> actual = cnx.execute("SELECT CAST(E'\\\\xDEADBEEF' AS BYTEA)").get<std::vector<uint8_t>>(0);
   EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+
+}
+
+TEST(result_sync, arrays) {
+
+  Connection cnx;
+  cnx.connect();
+
+  TEST_VECTOR(cnx.execute("SELECT array[1::smallint,2::smallint,3::smallint]").asArray<int16_t>(0), ARRAY({1, 2, 3}), int16_t);
+    EXPECT_EQ(expected, actual);
+  TEST_VECTOR_END;
+
+  TEST_VECTOR(cnx.execute("SELECT ARRAY[4,5,6]").asArray<int32_t>(0), ARRAY({4, 5, 6}), int32_t);
+    EXPECT_EQ(expected, actual);
+  TEST_VECTOR_END;
+
 
 }
 

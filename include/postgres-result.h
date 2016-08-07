@@ -96,6 +96,9 @@ namespace db {
       template<typename T>
       T get(int column) const;
 
+      template<typename T>
+      std::vector<T> asArray(int column) const;
+
       /**
        * Get a column name.
        *

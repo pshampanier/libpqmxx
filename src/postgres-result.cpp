@@ -86,16 +86,184 @@ namespace db {
     }
 #endif
 
-    int16_t read16(const PGresult *pgresult, int column) {
-      return be16toh(*reinterpret_cast<int16_t*>(PQgetvalue(pgresult, 0, column)));
+    // -------------------------------------------------------------------------
+    // Reading a value from a postgresql value buffer
+    // -------------------------------------------------------------------------
+    template <typename T>
+    T read(char **buf);
+
+    // -------------------------------------------------------------------------
+    // bool
+    // -------------------------------------------------------------------------
+    template <>
+    bool read<bool>(char **buf) {
+      auto v = *reinterpret_cast<bool*>(*buf);
+      *buf += sizeof(bool);
+      return v;
     }
 
-    int32_t read32(const PGresult *pgresult, int column) {
-      return be32toh(*reinterpret_cast<int32_t*>(PQgetvalue(pgresult, 0, column)));
+    // -------------------------------------------------------------------------
+    // smallint
+    // -------------------------------------------------------------------------
+    template <>
+    int16_t read<int16_t>(char **buf) {
+      auto v = be16toh(*reinterpret_cast<int16_t*>(*buf));
+      *buf += sizeof(int16_t);
+      return v;
     }
 
-    int64_t read64(const PGresult *pgresult, int column) {
-      return be64toh(*reinterpret_cast<int64_t*>(PQgetvalue(pgresult, 0, column)));
+    // -------------------------------------------------------------------------
+    // integer
+    // -------------------------------------------------------------------------
+    template <>
+    int32_t read<int32_t>(char **buf) {
+      auto v = be32toh(*reinterpret_cast<int32_t*>(*buf));
+      *buf += sizeof(int32_t);
+      return v;
+    }
+
+    // -------------------------------------------------------------------------
+    // bigint
+    // -------------------------------------------------------------------------
+    template <>
+    int64_t read<int64_t>(char **buf) {
+      auto v = be64toh(*reinterpret_cast<int64_t*>(*buf));
+      *buf += sizeof(int64_t);
+      return v;
+    }
+
+    // -------------------------------------------------------------------------
+    // real
+    // -------------------------------------------------------------------------
+    template <>
+    float read<float>(char **buf) {
+      int32_t v = read<int32_t>(buf);
+      return *reinterpret_cast<float*>(&v);
+    }
+
+    // -------------------------------------------------------------------------
+    // double precision
+    // -------------------------------------------------------------------------
+    template <>
+    double read<double>(char **buf) {
+      int64_t v = read<int64_t>(buf);
+      return *reinterpret_cast<double*>(&v);
+    }
+
+    // -------------------------------------------------------------------------
+    // date
+    // -------------------------------------------------------------------------
+    template <>
+    date_t read<date_t>(char **buf) {
+      return date_t {
+        (read<int32_t>(buf) + DAYS_UNIX_TO_J2000_EPOCH) * 86400
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // timestamp
+    // -------------------------------------------------------------------------
+    template <>
+    timestamp_t read<timestamp_t>(char **buf) {
+      return timestamp_t {
+        read<int64_t>(buf) + MICROSEC_UNIX_TO_J2000_EPOCH
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // timestamptz
+    // -------------------------------------------------------------------------
+    template <>
+    timestamptz_t read<timestamptz_t>(char **buf) {
+      return timestamptz_t {
+        read<int64_t>(buf) + MICROSEC_UNIX_TO_J2000_EPOCH
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // timetz
+    // -------------------------------------------------------------------------
+    template <>
+    timetz_t read<timetz_t>(char **buf) {
+      return timetz_t {
+        read<int64_t>(buf),
+        read<int32_t>(buf)
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // time
+    // -------------------------------------------------------------------------
+    template <>
+    time_t read<time_t>(char **buf) {
+      return time_t { read<int64_t>(buf) };
+    }
+
+    // -------------------------------------------------------------------------
+    // interval
+    // -------------------------------------------------------------------------
+    template <>
+    interval_t read<interval_t>(char **buf) {
+      return interval_t {
+        read<int64_t>(buf),
+        read<int32_t>(buf),
+        read<int32_t>(buf)
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // Reading a value from a PGresult
+    // -------------------------------------------------------------------------
+    template <typename T>
+    T read(const PGresult *pgresult, int column) {
+      char *buf = PQgetvalue(pgresult, 0, column);
+      return read<T>(&buf);
+    }
+
+    template <typename T>
+    T read(const PGresult *pgresult, int oid, int column, T defVal) {
+      assert(pgresult != nullptr);
+      assert_oid(PQftype(pgresult, column), oid);
+      return PQgetisnull(pgresult, 0, column) ? defVal : read<T>(pgresult, column);
+    }
+
+    template<typename T>
+    std::vector<T> readArray(const PGresult *pgresult, int oid, int column, T defVal) {
+      std::vector<T> array;
+
+      if (!PQgetisnull(pgresult, 0, column)) {
+        // The data should look like this:
+        //
+        // struct pg_array {
+        //   int32_t ndim; /* Number of dimensions */
+        //   int32_t ign;  /* offset for data, removed by libpq */
+        //   Oid elemtype; /* type of element in the array */
+        //
+        //   /* First dimension */
+        //   int32_t size;  /* Number of elements */
+        //   int32_t index; /* Index of first element */
+        //   T first_value; /* Beginning of the data */
+        // }
+        char *buf = PQgetvalue(pgresult, 0, column);
+        int32_t ndim = read<int32_t>(&buf);
+        int32_t ign = read<int32_t>(&buf);
+        int32_t elemType = read<int32_t>(&buf);
+        assert_oid(elemType, oid);
+        assert(ndim == 1); // only array of 1 dimmension are supported so far.
+
+        // First dimension
+        int32_t size = read<int32_t>(&buf);
+        int32_t index = read<int32_t>(&buf);
+
+        int32_t elemSize;
+        array.reserve(size);
+        for (int32_t i=0; i < size; i++) {
+          elemSize = read<int32_t>(&buf);
+          array.push_back(elemSize == -1 ? defVal : read<T>(&buf));
+        }
+      }
+
+      return array;
     }
 
     // -------------------------------------------------------------------------
@@ -127,73 +295,34 @@ namespace db {
       return res;
     }
 
-    // -------------------------------------------------------------------------
-    // bool
-    // -------------------------------------------------------------------------
     template<>
     bool Row::get<bool>(int column) const {
-      assert(result_.pgresult_ != nullptr);
-      assert_oid(PQftype(result_, column), BOOLOID);
-      return PQgetisnull(result_, 0, column) ? false :
-        *reinterpret_cast<bool *>(PQgetvalue(result_, 0, column));
+      return read<bool>(result_, BOOLOID, column, false);
     }
 
-    // -------------------------------------------------------------------------
-    // smallint
-    // -------------------------------------------------------------------------
     template<>
     int16_t Row::get<int16_t>(int column) const {
-      assert(result_.pgresult_ != nullptr);
-      assert_oid(PQftype(result_, column), INT2OID);
-      return PQgetisnull(result_, 0, column) ? 0 : read16(result_, column);
+      return read<int16_t>(result_, INT2OID, column, 0);
     }
 
-    // -------------------------------------------------------------------------
-    // integer
-    // -------------------------------------------------------------------------
     template<>
     int32_t Row::get<int32_t>(int column) const {
-      assert(result_.pgresult_ != nullptr);
-      assert_oid(PQftype(result_, column), INT4OID);
-      return PQgetisnull(result_, 0, column) ? 0 : read32(result_, column);
+      return read<int32_t>(result_, INT4OID, column, 0);
     }
 
-    // -------------------------------------------------------------------------
-    // bigint
-    // -------------------------------------------------------------------------
     template<>
     int64_t Row::get<int64_t>(int column) const {
-      assert(result_.pgresult_ != nullptr);
-      assert_oid(PQftype(result_, column), INT8OID);
-      return PQgetisnull(result_, 0, column) ? 0 : read64(result_, column);
+      return read<int64_t>(result_, INT8OID, column, 0);
     }
 
-    // -------------------------------------------------------------------------
-    // real
-    // -------------------------------------------------------------------------
     template<>
     float Row::get<float>(int column) const {
-      assert(result_.pgresult_ != nullptr);
-      assert_oid(PQftype(result_, column), FLOAT4OID);
-      if (PQgetisnull(result_, 0, column)) {
-        return 0.f;
-      }
-      int32_t v = read32(result_, column);
-      return *reinterpret_cast<float*>(&v);
+      return read<float>(result_, FLOAT4OID, column, 0);
     }
 
-    // -------------------------------------------------------------------------
-    // double precision
-    // -------------------------------------------------------------------------
     template<>
     double Row::get<double>(int column) const {
-      assert(result_.pgresult_ != nullptr);
-      assert_oid(PQftype(result_, column), FLOAT8OID);
-      if (PQgetisnull(result_, 0, column)) {
-        return 0.;
-      }
-      uint64_t v = read64(result_, column);
-      return *reinterpret_cast<double*>(&v);
+      return read<double>(result_, FLOAT8OID, column, 0);
     }
 
     // -------------------------------------------------------------------------
@@ -234,100 +363,49 @@ namespace db {
       return std::vector<uint8_t>(data, data + length);
     }
 
-    // -------------------------------------------------------------------------
-    // date
-    // -------------------------------------------------------------------------
     template<>
     date_t Row::get<date_t>(int column) const {
-      assert(result_.pgresult_ != nullptr);
-      assert_oid(PQftype(result_, column), DATEOID);
-      int32_t i = 0;
-      if (!PQgetisnull(result_, 0, column)) {
-        i = read32(result_, column);
-        i = (i+DAYS_UNIX_TO_J2000_EPOCH) * 86400;
-      }
-      return date_t { i };
+      return read<date_t>(result_, DATEOID, column, date_t { 0 });
     }
 
-    // -------------------------------------------------------------------------
-    // timestamptz
-    // -------------------------------------------------------------------------
     template<>
     timestamptz_t Row::get<timestamptz_t>(int column) const {
-      assert(result_.pgresult_ != nullptr);
-      assert_oid(PQftype(result_, column), TIMESTAMPTZOID);
-      int64_t t = 0;
-      if (!PQgetisnull(result_, 0, column)) {
-        t = read64(result_, column) + MICROSEC_UNIX_TO_J2000_EPOCH;
-      }
-      return timestamptz_t { t };
+      return read<timestamptz_t>(result_, TIMESTAMPTZOID, column, timestamptz_t { 0 });
     }
 
-    // -------------------------------------------------------------------------
-    // timestamp
-    // -------------------------------------------------------------------------
     template<>
     timestamp_t Row::get<timestamp_t>(int column) const {
-      assert(result_.pgresult_ != nullptr);
-      assert_oid(PQftype(result_, column), TIMESTAMPOID);
-      int64_t t = 0;
-      if (!PQgetisnull(result_, 0, column)) {
-        t = read64(result_, column) + MICROSEC_UNIX_TO_J2000_EPOCH;
-      }
-      return timestamp_t { t };
+      return read<timestamp_t>(result_, TIMESTAMPOID, column, timestamp_t { 0 });
     }
 
-    // -------------------------------------------------------------------------
-    // timetz
-    // -------------------------------------------------------------------------
     template<>
     timetz_t Row::get<timetz_t>(int column) const {
-      assert(result_.pgresult_ != nullptr);
-      assert_oid(PQftype(result_, column), TIMETZOID);
-      timetz_t t;
-      if (PQgetisnull(result_, 0, column)) {
-        std::memset(&t, 0, 12);
-      }
-      else {
-        std::memcpy(&t, PQgetvalue(result_, 0, column), 12);
-        t.time = be64toh(t.time);
-        t.offset = be32toh(t.offset);
-      }
-      return t;
+      return read<timetz_t>(result_, TIMETZOID, column, timetz_t { 0, 0 });
     }
 
-    // -------------------------------------------------------------------------
-    // time
-    // -------------------------------------------------------------------------
     template<>
     time_t Row::get<time_t>(int column) const {
-      assert(result_.pgresult_ != nullptr);
-      assert_oid(PQftype(result_, column), TIMEOID);
-      int64_t t = 0;
-      if (!PQgetisnull(result_, 0, column)) {
-        t = read64(result_, column);
-      }
-      return time_t { t };
+      return read<time_t>(result_, TIMEOID, column, time_t { 0 });
     }
 
-    // -------------------------------------------------------------------------
-    // interval
-    // -------------------------------------------------------------------------
     template<>
     interval_t Row::get<interval_t>(int column) const {
-      assert(result_.pgresult_ != nullptr);
-      assert_oid(PQftype(result_, column), INTERVALOID);
-      interval_t i;
-      if (PQgetisnull(result_, 0, column)) {
-        std::memset(&i, 0, sizeof(i));
-      }
-      else {
-        std::memcpy(&i, PQgetvalue(result_, 0, column), sizeof(i));
-        i.time = be64toh(i.time);
-        i.days = be32toh(i.days);
-        i.months = be32toh(i.months);
-      }
-      return i;
+      return read<interval_t>(result_, INTERVALOID, column, interval_t { 0, 0, 0 });
+    }
+
+    template<>
+    std::vector<bool> Row::asArray<bool>(int column) const {
+      return readArray<bool>(result_, BOOLOID, column, 0);
+    }
+
+    template<>
+    std::vector<int16_t> Row::asArray<int16_t>(int column) const {
+      return readArray<int16_t>(result_, INT2OID, column, 0);
+    }
+
+    template<>
+    std::vector<int32_t> Row::asArray<int32_t>(int column) const {
+      return readArray<int32_t>(result_, INT4OID, column, 0);
     }
 
     // -------------------------------------------------------------------------
