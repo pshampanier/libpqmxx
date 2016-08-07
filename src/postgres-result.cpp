@@ -246,14 +246,14 @@ namespace db {
         // }
         char *buf = PQgetvalue(pgresult, 0, column);
         int32_t ndim = read<int32_t>(&buf);
-        int32_t ign = read<int32_t>(&buf);
+        read<int32_t>(&buf); // skip
         int32_t elemType = read<int32_t>(&buf);
         assert_oid(elemType, oid);
         assert(ndim == 1); // only array of 1 dimmension are supported so far.
 
         // First dimension
         int32_t size = read<int32_t>(&buf);
-        int32_t index = read<int32_t>(&buf);
+        read<int32_t>(&buf); // skip the index of first element.
 
         int32_t elemSize;
         array.reserve(size);
@@ -286,6 +286,38 @@ namespace db {
     }
 
     // -------------------------------------------------------------------------
+    // Test a column for a null value in an array.
+    // -------------------------------------------------------------------------
+    std::vector<bool> Row::nullValues(int column) const {
+      std::vector<bool> nullValues;
+      if (!PQgetisnull(result_, 0, column)) {
+        // See readArray() for the description of the data structure...
+        char *buf = PQgetvalue(result_, 0, column);
+        int32_t ndim = read<int32_t>(&buf);
+        read<int32_t>(&buf); // skip
+        read<int32_t>(&buf); // skip the type of element in the array.
+        assert(ndim == 1);   // only array of 1 dimmension are supported so far.
+
+        // First dimension
+        int32_t size = read<int32_t>(&buf);
+        read<int32_t>(&buf); // skip the index of first element.
+
+        int32_t elemSize;
+        for (int32_t i=0; i < size; i++) {
+          elemSize = read<int32_t>(&buf);
+          if (elemSize == -1) {
+            nullValues.push_back(true);
+          }
+          else {
+            nullValues.push_back(false);
+            buf += elemSize;  // skip the value
+          }
+        }
+      }
+      return nullValues;
+    }
+
+    // -------------------------------------------------------------------------
     // Get a column name.
     // -------------------------------------------------------------------------
     const char *Row::columnName(int column) const {
@@ -296,40 +328,40 @@ namespace db {
     }
 
     template<>
-    bool Row::get<bool>(int column) const {
+    bool Row::as<bool>(int column) const {
       return read<bool>(result_, BOOLOID, column, false);
     }
 
     template<>
-    int16_t Row::get<int16_t>(int column) const {
+    int16_t Row::as<int16_t>(int column) const {
       return read<int16_t>(result_, INT2OID, column, 0);
     }
 
     template<>
-    int32_t Row::get<int32_t>(int column) const {
+    int32_t Row::as<int32_t>(int column) const {
       return read<int32_t>(result_, INT4OID, column, 0);
     }
 
     template<>
-    int64_t Row::get<int64_t>(int column) const {
+    int64_t Row::as<int64_t>(int column) const {
       return read<int64_t>(result_, INT8OID, column, 0);
     }
 
     template<>
-    float Row::get<float>(int column) const {
-      return read<float>(result_, FLOAT4OID, column, 0);
+    float Row::as<float>(int column) const {
+      return read<float>(result_, FLOAT4OID, column, 0.f);
     }
 
     template<>
-    double Row::get<double>(int column) const {
-      return read<double>(result_, FLOAT8OID, column, 0);
+    double Row::as<double>(int column) const {
+      return read<double>(result_, FLOAT8OID, column, 0.);
     }
 
     // -------------------------------------------------------------------------
     // char, varchar, text
     // -------------------------------------------------------------------------
     template<>
-    std::string Row::get<std::string>(int column) const {
+    std::string Row::as<std::string>(int column) const {
       assert(result_.pgresult_ != nullptr);
       if (PQgetisnull(result_, 0, column)) {
         return std::string();
@@ -342,7 +374,7 @@ namespace db {
     // "char"
     // -------------------------------------------------------------------------
     template<>
-    char Row::get<char>(int column) const {
+    char Row::as<char>(int column) const {
       assert(result_.pgresult_ != nullptr);
       if (PQgetisnull(result_, 0, column)) {
         return '\0';
@@ -355,7 +387,7 @@ namespace db {
     // bytea
     // -------------------------------------------------------------------------
     template<>
-    std::vector<uint8_t> Row::get<std::vector<uint8_t>>(int column) const {
+    std::vector<uint8_t> Row::as<std::vector<uint8_t>>(int column) const {
       assert(result_.pgresult_ != nullptr);
       assert_oid(PQftype(result_, column), BYTEAOID);
       int length = PQgetlength(result_, 0, column);
@@ -364,34 +396,38 @@ namespace db {
     }
 
     template<>
-    date_t Row::get<date_t>(int column) const {
+    date_t Row::as<date_t>(int column) const {
       return read<date_t>(result_, DATEOID, column, date_t { 0 });
     }
 
     template<>
-    timestamptz_t Row::get<timestamptz_t>(int column) const {
+    timestamptz_t Row::as<timestamptz_t>(int column) const {
       return read<timestamptz_t>(result_, TIMESTAMPTZOID, column, timestamptz_t { 0 });
     }
 
     template<>
-    timestamp_t Row::get<timestamp_t>(int column) const {
+    timestamp_t Row::as<timestamp_t>(int column) const {
       return read<timestamp_t>(result_, TIMESTAMPOID, column, timestamp_t { 0 });
     }
 
     template<>
-    timetz_t Row::get<timetz_t>(int column) const {
+    timetz_t Row::as<timetz_t>(int column) const {
       return read<timetz_t>(result_, TIMETZOID, column, timetz_t { 0, 0 });
     }
 
     template<>
-    time_t Row::get<time_t>(int column) const {
+    time_t Row::as<time_t>(int column) const {
       return read<time_t>(result_, TIMEOID, column, time_t { 0 });
     }
 
     template<>
-    interval_t Row::get<interval_t>(int column) const {
+    interval_t Row::as<interval_t>(int column) const {
       return read<interval_t>(result_, INTERVALOID, column, interval_t { 0, 0, 0 });
     }
+
+    // -------------------------------------------------------------------------
+    // Arrays
+    // -------------------------------------------------------------------------
 
     template<>
     std::vector<bool> Row::asArray<bool>(int column) const {
@@ -407,6 +443,52 @@ namespace db {
     std::vector<int32_t> Row::asArray<int32_t>(int column) const {
       return readArray<int32_t>(result_, INT4OID, column, 0);
     }
+
+    template<>
+    std::vector<int64_t> Row::asArray<int64_t>(int column) const {
+      return readArray<int64_t>(result_, INT8OID, column, 0);
+    }
+
+    template<>
+    std::vector<float> Row::asArray<float>(int column) const {
+      return readArray<float>(result_, FLOAT4OID, column, 0.f);
+    }
+
+    template<>
+    std::vector<double> Row::asArray<double>(int column) const {
+      return readArray<double>(result_, FLOAT8OID, column, 0.);
+    }
+
+    template<>
+    std::vector<date_t> Row::asArray<date_t>(int column) const {
+      return readArray<date_t>(result_, DATEOID, column, date_t { 0 });
+    }
+
+    template<>
+    std::vector<timestamptz_t> Row::asArray<timestamptz_t>(int column) const {
+      return readArray<timestamptz_t>(result_, TIMESTAMPTZOID, column, timestamptz_t { 0 });
+    }
+
+    template<>
+    std::vector<timestamp_t> Row::asArray<timestamp_t>(int column) const {
+      return readArray<timestamp_t>(result_, TIMESTAMPOID, column, timestamp_t { 0 });
+    }
+
+    template<>
+    std::vector<timetz_t> Row::asArray<timetz_t>(int column) const {
+      return readArray<timetz_t>(result_, TIMETZOID, column, timetz_t { 0, 0 });
+    }
+
+    template<>
+    std::vector<time_t> Row::asArray<time_t>(int column) const {
+      return readArray<time_t>(result_, TIMEOID, column, time_t { 0 });
+    }
+
+    template<>
+    std::vector<interval_t> Row::asArray<interval_t>(int column) const {
+      return readArray<interval_t>(result_, INTERVALOID, column, interval_t { 0, 0, 0 });
+    }
+
 
     // -------------------------------------------------------------------------
     // Result contructor

@@ -35,7 +35,7 @@ TEST(transaction, sync_commit) {
   cnx.begin();
   cnx.execute("INSERT INTO tmpTrans (a) VALUES ('hello')");
   cnx.commit();
-  EXPECT_STREQ(cnx.execute("SELECT a FROM tmpTrans WHERE a='hello'").get<std::string>(0).c_str(), "hello");
+  EXPECT_STREQ(cnx.execute("SELECT a FROM tmpTrans WHERE a='hello'").as<std::string>(0).c_str(), "hello");
   cnx.execute("DROP TABLE tmpTrans");
 
 }

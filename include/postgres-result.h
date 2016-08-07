@@ -40,12 +40,22 @@ namespace db {
     public:
 
       /**
-       * Test a field for a null value.
+       * Test a column for a null value.
        *
-       * Column numbers start at 0.
+       * @param column Column number. Column numbers start at 0.
        * @return true if the column value is a null value.
        **/
       bool isNull(int column) const;
+
+      /**
+       * Return null values for a column containing an array.
+       *
+       * @param column Column number. Column numbers start at 0.
+       * @return A vector of booleans that contains a value for all items in the
+       *         array. Items with a null value have a value set to `true` at
+       *         their respective position.
+       **/
+      std::vector<bool> nullValues(int column) const;
 
       /**
        * Get a column value.
@@ -94,7 +104,17 @@ namespace db {
        *            in non debug modes is undertermined.
        **/
       template<typename T>
-      T get(int column) const;
+      T as(int column) const;
+
+      /**
+       * Get a column value.
+       *
+       * @deprecated use as(int column) for replacement.
+       **/
+      template<typename T>
+      T get(int column) const {
+        return as<T>(column);
+      }
 
       template<typename T>
       std::vector<T> asArray(int column) const;

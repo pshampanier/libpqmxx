@@ -46,13 +46,13 @@ TEST(result_sync, integer_types) {
   Connection cnx;
   cnx.connect();
 
-  EXPECT_EQ(cnx.execute("SELECT true").get<bool>(0), true);
-  EXPECT_EQ(cnx.execute("SELECT false").get<bool>(0), false);
-  EXPECT_EQ(cnx.execute("SELECT CAST(32767 AS SMALLINT)").get<int16_t>(0), 32767);
-  EXPECT_EQ(cnx.execute("SELECT 2147483647").get<int32_t>(0), 2147483647);
-  EXPECT_EQ(cnx.execute("SELECT 9223372036854775807").get<int64_t>(0), 9223372036854775807);
-  EXPECT_FLOAT_EQ(cnx.execute("SELECT CAST(4.46678 AS REAL)").get<float>(0), 4.46678f);
-  EXPECT_DOUBLE_EQ(cnx.execute("SELECT CAST(4.46678 AS DOUBLE PRECISION)").get<double>(0), 4.46678);
+  EXPECT_EQ(cnx.execute("SELECT true").as<bool>(0), true);
+  EXPECT_EQ(cnx.execute("SELECT false").as<bool>(0), false);
+  EXPECT_EQ(cnx.execute("SELECT CAST(32767 AS SMALLINT)").as<int16_t>(0), 32767);
+  EXPECT_EQ(cnx.execute("SELECT 2147483647").as<int32_t>(0), 2147483647);
+  EXPECT_EQ(cnx.execute("SELECT 9223372036854775807").as<int64_t>(0), 9223372036854775807);
+  EXPECT_FLOAT_EQ(cnx.execute("SELECT CAST(4.46678 AS REAL)").as<float>(0), 4.46678f);
+  EXPECT_DOUBLE_EQ(cnx.execute("SELECT CAST(4.46678 AS DOUBLE PRECISION)").as<double>(0), 4.46678);
 
 }
 
@@ -61,8 +61,8 @@ TEST(result_sync, floating_point_types) {
   Connection cnx;
   cnx.connect();
 
-  EXPECT_FLOAT_EQ(cnx.execute("SELECT CAST(4.46678 AS REAL)").get<float>(0), 4.46678f);
-  EXPECT_DOUBLE_EQ(cnx.execute("SELECT CAST(4.46678 AS DOUBLE PRECISION)").get<double>(0), 4.46678);
+  EXPECT_FLOAT_EQ(cnx.execute("SELECT CAST(4.46678 AS REAL)").as<float>(0), 4.46678f);
+  EXPECT_DOUBLE_EQ(cnx.execute("SELECT CAST(4.46678 AS DOUBLE PRECISION)").as<double>(0), 4.46678);
 
 }
 
@@ -74,9 +74,9 @@ TEST(result_sync, serial_types) {
   cnx.execute("CREATE TABLE tmp(id16 smallserial, id32 serial, id64 bigserial, val integer)");
   cnx.execute("INSERT INTO tmp(val) SELECT 0");
   Result &result = cnx.execute("SELECT id16, id32, id64 FROM tmp");
-  EXPECT_EQ(result.get<int16_t>(0), 1);
-  EXPECT_EQ(result.get<int32_t>(1), 1);
-  EXPECT_EQ(result.get<int64_t>(2), 1);
+  EXPECT_EQ(result.as<int16_t>(0), 1);
+  EXPECT_EQ(result.as<int32_t>(1), 1);
+  EXPECT_EQ(result.as<int64_t>(2), 1);
   cnx.execute("DROP TABLE tmp");
 
 }
@@ -86,11 +86,11 @@ TEST(result_sync, char_types) {
   Connection cnx;
   cnx.connect();
 
-  EXPECT_STREQ("hello     ", cnx.execute("SELECT CAST('hello' AS CHAR(10))").get<std::string>(0).c_str());
-  EXPECT_STREQ("world", cnx.execute("SELECT CAST('world' AS VARCHAR(10))").get<std::string>(0).c_str());
-  EXPECT_STREQ("hello world", cnx.execute("SELECT CAST('hello world' AS TEXT)").get<std::string>(0).c_str());
-  EXPECT_EQ('X', cnx.execute("SELECT CAST('X' AS \"char\")").get<char>(0));
-  EXPECT_STREQ("name", cnx.execute("SELECT CAST('name' AS NAME)").get<std::string>(0).c_str());
+  EXPECT_STREQ("hello     ", cnx.execute("SELECT CAST('hello' AS CHAR(10))").as<std::string>(0).c_str());
+  EXPECT_STREQ("world", cnx.execute("SELECT CAST('world' AS VARCHAR(10))").as<std::string>(0).c_str());
+  EXPECT_STREQ("hello world", cnx.execute("SELECT CAST('hello world' AS TEXT)").as<std::string>(0).c_str());
+  EXPECT_EQ('X', cnx.execute("SELECT CAST('X' AS \"char\")").as<char>(0));
+  EXPECT_STREQ("name", cnx.execute("SELECT CAST('name' AS NAME)").as<std::string>(0).c_str());
 
 }
 
@@ -99,8 +99,8 @@ TEST(result_sync, utf8) {
   Connection cnx;
   cnx.connect();
 
-  EXPECT_STREQ(u8"Günter", cnx.execute("SELECT 'Günter'").get<std::string>(0).c_str());
-  EXPECT_STREQ(u8"メインページ", cnx.execute("SELECT 'メインページ'").get<std::string>(0).c_str());
+  EXPECT_STREQ(u8"Günter", cnx.execute("SELECT 'Günter'").as<std::string>(0).c_str());
+  EXPECT_STREQ(u8"メインページ", cnx.execute("SELECT 'メインページ'").as<std::string>(0).c_str());
 
 }
 
@@ -109,24 +109,24 @@ TEST(result_sync, date_time_types) {
   Connection cnx;
   cnx.connect();
 
-  EXPECT_EQ(0, cnx.execute("SELECT TIMESTAMP WITH TIME ZONE '1970-01-01 00:00:00+00'").get<timestamptz_t>(0));
-  EXPECT_EQ(600123, cnx.execute("SELECT TIMESTAMP WITH TIME ZONE '1970-01-01 00:00:00.600123+00'").get<timestamptz_t>(0));
-  EXPECT_EQ(0, cnx.execute("SELECT DATE '1970-01-01'").get<date_t>(0));
-  EXPECT_EQ(1451606400, cnx.execute("SELECT DATE '2016-01-01'").get<date_t>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT TIMESTAMP WITH TIME ZONE '1970-01-01 00:00:00+00'").as<timestamptz_t>(0));
+  EXPECT_EQ(600123, cnx.execute("SELECT TIMESTAMP WITH TIME ZONE '1970-01-01 00:00:00.600123+00'").as<timestamptz_t>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT DATE '1970-01-01'").as<date_t>(0));
+  EXPECT_EQ(1451606400, cnx.execute("SELECT DATE '2016-01-01'").as<date_t>(0));
 
-  auto timetz = cnx.execute("SELECT TIME WITH TIME ZONE '00:00:01.000001-07'").get<timetz_t>(0);
+  auto timetz = cnx.execute("SELECT TIME WITH TIME ZONE '00:00:01.000001-07'").as<timetz_t>(0);
   EXPECT_EQ(1000001, timetz.time);
   EXPECT_EQ(7*3600, timetz.offset);
 
-  EXPECT_EQ(39602000101, cnx.execute("SELECT TIME '11:00:02.000101'").get<db::postgres::time_t>(0));
+  EXPECT_EQ(39602000101, cnx.execute("SELECT TIME '11:00:02.000101'").as<db::postgres::time_t>(0));
 
-  auto interval = cnx.execute("SELECT INTERVAL '3 months 7 days 2:03:04'").get<interval_t>(0);
+  auto interval = cnx.execute("SELECT INTERVAL '3 months 7 days 2:03:04'").as<interval_t>(0);
   EXPECT_EQ(7384000000, interval.time);
   EXPECT_EQ(7, interval.days);
   EXPECT_EQ(3, interval.months);
 
   cnx.execute("set timezone TO 'GMT'");
-  EXPECT_EQ(cnx.execute("SELECT TIMESTAMP '1970-01-01 00:00:00.600123'").get<timestamp_t>(0), 600123);
+  EXPECT_EQ(cnx.execute("SELECT TIMESTAMP '1970-01-01 00:00:00.600123'").as<timestamp_t>(0), 600123);
 
 }
 
@@ -141,7 +141,7 @@ TEST(result_sync, bytea_type) {
   expected.push_back(0xBE);
   expected.push_back(0xEF);
 
-  std::vector<uint8_t> actual = cnx.execute("SELECT CAST(E'\\\\xDEADBEEF' AS BYTEA)").get<std::vector<uint8_t>>(0);
+  std::vector<uint8_t> actual = cnx.execute("SELECT CAST(E'\\\\xDEADBEEF' AS BYTEA)").as<std::vector<uint8_t>>(0);
   EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
 
 }
@@ -159,6 +159,17 @@ TEST(result_sync, arrays) {
     EXPECT_EQ(expected, actual);
   TEST_VECTOR_END;
 
+  TEST_VECTOR(cnx.execute("SELECT ARRAY[7::bigint,8::bigint,9::bigint,10::bigint]").asArray<int64_t>(0), ARRAY({7, 8, 9, 10}), int64_t);
+    EXPECT_EQ(expected, actual);
+  TEST_VECTOR_END;
+
+  TEST_VECTOR(cnx.execute("SELECT array[1.89::real,-9.998::real,3::real]").asArray<float>(0), ARRAY({1.89f, -9.998f, 3.f}), float);
+    EXPECT_FLOAT_EQ(expected, actual);
+  TEST_VECTOR_END;
+
+  TEST_VECTOR(cnx.execute("SELECT array[7.123::double precision,0.98::double precision]").asArray<double>(0), ARRAY({7.123, 0.98}), double);
+    EXPECT_DOUBLE_EQ(expected, actual);
+  TEST_VECTOR_END;
 
 }
 
@@ -168,23 +179,51 @@ TEST(result_sync, null_values) {
   cnx.connect();
 
   EXPECT_TRUE(cnx.execute("SELECT NULL::bigint").isNull(0));
-  EXPECT_FALSE(cnx.execute("SELECT NULL::bool").get<bool>(0));
-  EXPECT_EQ(0, cnx.execute("SELECT NULL::smallint").get<int16_t>(0));
-  EXPECT_EQ(0, cnx.execute("SELECT NULL::integer").get<int32_t>(0));
-  EXPECT_EQ(0., cnx.execute("SELECT NULL::float4").get<float>(0));
-  EXPECT_EQ(0., cnx.execute("SELECT NULL::float8").get<double>(0));
-  EXPECT_EQ(0, cnx.execute("SELECT NULL::bytea").get<std::vector<uint8_t>>(0).size());
-  EXPECT_EQ(0, cnx.execute("SELECT NULL::date").get<date_t>(0));
-  EXPECT_EQ(0, cnx.execute("SELECT NULL::timestamptz").get<timestamptz_t>(0));
-  EXPECT_EQ(0, cnx.execute("SELECT NULL::timestamp").get<timestamp_t>(0));
-  EXPECT_EQ(0, cnx.execute("SELECT NULL::time").get<db::postgres::time_t>(0));
-  auto timetz = cnx.execute("SELECT NULL::timetz").get<db::postgres::timetz_t>(0);
+  EXPECT_FALSE(cnx.execute("SELECT NULL::bool").as<bool>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::smallint").as<int16_t>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::integer").as<int32_t>(0));
+  EXPECT_EQ(0., cnx.execute("SELECT NULL::float4").as<float>(0));
+  EXPECT_EQ(0., cnx.execute("SELECT NULL::float8").as<double>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::bytea").as<std::vector<uint8_t>>(0).size());
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::date").as<date_t>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::timestamptz").as<timestamptz_t>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::timestamp").as<timestamp_t>(0));
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::time").as<db::postgres::time_t>(0));
+  auto timetz = cnx.execute("SELECT NULL::timetz").as<db::postgres::timetz_t>(0);
   EXPECT_EQ(0, timetz.time);
   EXPECT_EQ(0, timetz.offset);
-  auto interval = cnx.execute("SELECT NULL::interval").get<db::postgres::interval_t>(0);
+  auto interval = cnx.execute("SELECT NULL::interval").as<db::postgres::interval_t>(0);
   EXPECT_EQ(0, interval.time);
   EXPECT_EQ(0, interval.days);
   EXPECT_EQ(0, interval.months);
+
+}
+
+TEST(result_sync, arrays_null_values) {
+
+  Connection cnx;
+  cnx.connect();
+
+  {
+    auto actual = cnx.execute("SELECT ARRAY[1, null, 3]").nullValues(0);
+    EXPECT_FALSE(actual[0]);
+    EXPECT_TRUE(actual[1]);
+    EXPECT_FALSE(actual[2]);
+  }
+
+  {
+    auto actual = cnx.execute("SELECT ARRAY[null::bigint, null::bigint, 3::bigint, 4::bigint]").nullValues(0);
+    EXPECT_TRUE(actual[0]);
+    EXPECT_TRUE(actual[1]);
+    EXPECT_FALSE(actual[2]);
+    EXPECT_FALSE(actual[3]);
+  }
+
+  {
+    auto actual = cnx.execute("SELECT ARRAY[null::bigint, 777::bigint]").asArray<int64_t>(0);
+    EXPECT_EQ(actual[0], 0);
+    EXPECT_EQ(actual[1], 777);
+  }
 
 }
 

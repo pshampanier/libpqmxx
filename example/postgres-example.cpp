@@ -90,8 +90,8 @@ int main() {
     )SQL");
 
     for (auto &row: oldest) {
-      std::cout << "- " << row.get<std::string>(0) << " " << row.get<std::string>(1)
-        << ", " << row.get<double>(2) << " years old." << std::endl;
+      std::cout << "- " << row.as<std::string>(0) << " " << row.as<std::string>(1)
+        << ", " << row.as<double>(2) << " years old." << std::endl;
     }
 
     auto &employee = cnx.execute(R"SQL(
@@ -101,9 +101,9 @@ int main() {
 
     )SQL", "1973-11-07");
 
-    std::cout << employee.get<std::string>(0) << " "
-      << employee.get<std::string>(1) << " is born in "
-      << employee.get<double>(2) << std::endl;
+    std::cout << employee.as<std::string>(0) << " "
+      << employee.as<std::string>(1) << " is born in "
+      << employee.as<double>(2) << std::endl;
 
     int64_t deleted = cnx.execute(R"SQL(
 
