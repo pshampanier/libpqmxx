@@ -61,7 +61,7 @@ namespace db {
        * Get a column value.
        *
        * ```
-       * int32_t emp_no = row.get<int32_t>(0);
+       * int32_t emp_no = row.as<int32_t>(0);
        * ```
        *
        * The `typename` used to call the function must by compatible with the
@@ -107,15 +107,21 @@ namespace db {
       T as(int column) const;
 
       /**
-       * Get a column value.
+       * Get a column values for arrays.
        *
-       * @deprecated use as(int column) for replacement.
+       * ```
+       * std::vector<int32_t> quarters = row.asArray<int32_t>(0);
+       * ```
+       *
+       * Usage is the similar to using `T as(int column)` and binding between
+       * SQL names and C++ types are the same. Only "char" and bytea are not
+       * supported.
+       *
+       * Only array of one dimention are supported.
+       *
+       * @param column Column number. Column numbers start at 0.
+       * @return The value of the column.
        **/
-      template<typename T>
-      T get(int column) const {
-        return as<T>(column);
-      }
-
       template<typename T>
       std::vector<T> asArray(int column) const;
 
@@ -142,6 +148,16 @@ namespace db {
        *         selected has a num() of 1, the second has 2, and so on.
        **/
       int num() const noexcept;
+
+      /**
+       * Get a column value.
+       *
+       * @deprecated use as(int column) for replacement.
+       **/
+      template<typename T>
+      T get(int column) const {
+        return as<T>(column);
+      }
 
     private:
       Result &result_;  /**< The result set by the constructor **/

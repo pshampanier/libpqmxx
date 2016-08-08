@@ -27,6 +27,18 @@
 namespace db {
   namespace postgres {
 
+    template <typename T>
+    struct array {
+      int32_t ndim; /* Number of dimensions */
+      int32_t ign;  /* offset for data, removed by libpq */
+      Oid elemtype; /* type of element in the array */
+
+      /* First dimension */
+      int32_t size;  /* Number of elements */
+      int32_t index; /* Index of first element */
+      T first_value; /* Beginning of the data */
+    };
+
     /**
      * A private class to bind SQL command paramters.
      **/
@@ -35,13 +47,15 @@ namespace db {
       friend class Connection;
 
     private:
-      std::vector<Oid>    types_;
-      std::vector<char *> values_;
-      std::vector<int>    lengths_;
-      std::vector<int>    formats_;
+      std::vector<Oid>     types_;
+      std::vector<char *>  values_;
+      std::vector<int>     lengths_;
+      std::vector<int>     formats_;
+      std::vector<char *>  buffers_;
 
       Params(int size);
-      ~Params();
+
+      char *bind(Oid type, size_t length);
 
       void bind() const {}
       void bind(std::nullptr_t);
@@ -51,7 +65,13 @@ namespace db {
       template<typename T>
       void bind(T v);
 
+      template<typename T>
+      void bind(Oid elemType, std::vector<T> value);
+
       void bind(Oid type, char *value, size_t length);
+
+      template <typename T>
+      T *bind(Oid type, size_t length);
     };
 
   } // namespace postgres

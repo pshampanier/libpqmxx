@@ -52,70 +52,20 @@ namespace db {
       formats_.reserve(size);
     }
 
-    //--------------------------------------------------------------------------
-    // Destructor
-    //--------------------------------------------------------------------------
-    Params::~Params() {
-      for (size_t i=0; i < types_.size(); i++) {
-        switch (types_[i]) {
-          case INT2OID:
-          case INT4OID:
-          case INT8OID:
-          case FLOAT4OID:
-          case FLOAT8OID:
-          case BOOLOID:
-          case DATEOID:
-          case TIMESTAMPTZOID:
-          case TIMESTAMPOID:
-          case TIMETZOID:
-          case TIMEOID:
-          case INTERVALOID:
-          case CHAROID:
-            delete [] values_[i];
-            break;
+    template <typename T>
+    void write(T value, char *buf);
 
-          default:
-            break;
-        }
-      }
+    char *Params::bind(Oid type, size_t length) {
+      char *buf = new char[length];
+      buffers_.push_back(buf);
+      bind(type, buf, length);
+      return buf;
     }
 
     //--------------------------------------------------------------------------
     // Bind any value
     //--------------------------------------------------------------------------
     void Params::bind(Oid type, char *value, size_t length) {
-
-      char *copy = nullptr;
-      int format = 1; /* binary */
-
-      switch (type) {
-        case INT2OID:
-        case INT4OID:
-        case INT8OID:
-        case FLOAT4OID:
-        case FLOAT8OID:
-        case BOOLOID:
-        case DATEOID:
-        case TIMESTAMPTZOID:
-        case TIMESTAMPOID:
-        case TIMETZOID:
-        case TIMEOID:
-        case INTERVALOID:
-        case CHAROID:
-          copy = new char[length];
-          std::memcpy(copy, value, length);
-          value = copy;
-          break;
-
-        case VARCHAROID:
-        case BYTEAOID:
-        case UNKNOWNOID:
-          break;
-
-        default:
-          assert(false);
-      }
-
     #ifdef __clang__
       // Seems the std::make_tuple does not behave the same on clang and other
       // compilers.
@@ -123,12 +73,12 @@ namespace db {
       types_.push_back(type);
       values_.push_back(value);
       lengths_.push_back(length);
-      formats_.push_back(format);
+      formats_.push_back(1 /* binary */);
     #else
       types_.insert(types_.begin(), type);
       values_.insert(values_.begin(), value);
       lengths_.insert(lengths_.begin(), int(length));
-      formats_.insert(formats_.begin(), format);
+      formats_.insert(formats_.begin(), 1 /* binary */);
     #endif
     }
 
@@ -142,67 +92,117 @@ namespace db {
     //--------------------------------------------------------------------------
     // bool
     //--------------------------------------------------------------------------
+
+    template <>
+    void write(bool value, char *buf) {
+      *reinterpret_cast<bool *>(buf) = value;
+    }
+
     template<>
     void Params::bind(bool b) {
-      bind(BOOLOID, (char *)&b, sizeof(b));
+      write(b, bind(BOOLOID, sizeof(b)));
     }
 
     //--------------------------------------------------------------------------
     // smallint
     //--------------------------------------------------------------------------
+
+    template <>
+    void write(int16_t value, char *buf) {
+      *reinterpret_cast<int16_t *>(buf) = htons(value);
+    }
+
     template<>
     void Params::bind(int16_t i) {
-      int16_t v = htons(i);
-      bind(INT2OID, (char *)&v, sizeof(v));
+      write(i, bind(INT2OID, sizeof(i)));
     }
 
     //--------------------------------------------------------------------------
     // integer
     //--------------------------------------------------------------------------
+
+    template <>
+    void write(int32_t value, char *buf) {
+      *reinterpret_cast<int32_t *>(buf) = htonl(value);
+    }
+
     template<>
     void Params::bind(int32_t i) {
-      int32_t v = htonl(i);
-      bind(INT4OID, (char *)&v, sizeof(v));
+      write(i, bind(INT4OID, sizeof(i)));
     }
 
     //--------------------------------------------------------------------------
     // bigint
     //--------------------------------------------------------------------------
+
+    template <>
+    void write(int64_t value, char *buf) {
+      *reinterpret_cast<int64_t *>(buf) = htonll(value);
+    }
+
     template<>
     void Params::bind(int64_t i) {
-      int64_t v = htonll(i);
-      bind(INT8OID, (char *)&v, sizeof(v));
+      write(i, bind(INT8OID, sizeof(i)));
     }
 
     //--------------------------------------------------------------------------
     // float
     //--------------------------------------------------------------------------
+
+    template <>
+    void write(float value, char *buf) {
+      int32_t v = *reinterpret_cast<int32_t *>(&value);
+      write(v, buf);
+    }
+
     template<>
     void Params::bind(float f) {
-      uint32_t v = htonl(*reinterpret_cast<uint32_t *>(&f));
-      bind(FLOAT4OID, (char *)&v, sizeof(v));
+      write(f, bind(FLOAT4OID, sizeof(f)));
     }
 
     //--------------------------------------------------------------------------
     // double precision
     //--------------------------------------------------------------------------
+
+    template <>
+    void write(double value, char *buf) {
+      int64_t v = *reinterpret_cast<int64_t *>(&value);
+      write(v, buf);
+    }
+
     template<>
     void Params::bind(double d) {
-      uint64_t v = htonll(*reinterpret_cast<uint64_t *>(&d));
-      bind(FLOAT8OID, (char *)&v, sizeof(v));
+      write(d, bind(FLOAT8OID, sizeof(d)));
     }
 
     //--------------------------------------------------------------------------
-    // bool
+    // "char"
     //--------------------------------------------------------------------------
+
+    template <>
+    void write(char value, char *buf) {
+      *buf = value;
+    }
+
     template<>
     void Params::bind(char c) {
-      bind(CHAROID, &c, sizeof(c));
+      write(c, bind(CHAROID, sizeof(c)));
     }
 
     //--------------------------------------------------------------------------
     // varchar
     //--------------------------------------------------------------------------
+
+    template <>
+    void write(const char *value, char *buf) {
+      std::memcpy(buf, value, std::strlen(value));
+    }
+
+    template <>
+    void write(const std::string &value, char *buf) {
+      std::memcpy(buf, value.c_str(), value.length());
+    }
+
     template<>
     void Params::bind(const char *sz) {
       bind(VARCHAROID, (char *)sz, std::strlen(sz));
@@ -222,63 +222,106 @@ namespace db {
     //--------------------------------------------------------------------------
     // date
     //--------------------------------------------------------------------------
+
+    template <>
+    void write(date_t d, char *buf) {
+      int32_t v = ((d.epoch_date - (d.epoch_date % 86400)) / 86400) - DAYS_UNIX_TO_J2000_EPOCH;
+      write(v, buf);
+    }
+
     template<>
     void Params::bind(date_t d) {
-      int32_t v = ((d.epoch_date - (d.epoch_date % 86400)) / 86400) - DAYS_UNIX_TO_J2000_EPOCH;
-      v = htonl(v);
-      bind(DATEOID, (char *)&v, sizeof(v));
+      write(d, bind(DATEOID, sizeof(d)));
     }
 
     //--------------------------------------------------------------------------
     // timestamptz
     //--------------------------------------------------------------------------
+
+    template <>
+    void write(timestamptz_t d, char *buf) {
+      int64_t v = d.epoch_time - MICROSEC_UNIX_TO_J2000_EPOCH;
+      write(v, buf);
+    }
+
     template<>
     void Params::bind(timestamptz_t d) {
-      int64_t v = d.epoch_time - MICROSEC_UNIX_TO_J2000_EPOCH;
-      v = htonll(v);
-      bind(TIMESTAMPTZOID, (char *)&v, sizeof(v));
+      write(d, bind(TIMESTAMPTZOID, sizeof(d)));
     }
 
     //--------------------------------------------------------------------------
     // timestamp
     //--------------------------------------------------------------------------
+
+    void write(timestamp_t d, char *buf) {
+      int64_t v = d.epoch_time - MICROSEC_UNIX_TO_J2000_EPOCH;
+      write(v, buf);
+    }
+
     template<>
     void Params::bind(timestamp_t d) {
-      int64_t v = d.epoch_time - MICROSEC_UNIX_TO_J2000_EPOCH;
-      v = htonll(v);
-      bind(TIMESTAMPOID, (char *)&v, sizeof(v));
+      write(d, bind(TIMESTAMPOID, sizeof(d)));
     }
 
     //--------------------------------------------------------------------------
     // timetz
     //--------------------------------------------------------------------------
+
+    void write(timetz_t d, char *buf) {
+      timetz_t *v = reinterpret_cast<timetz_t *>(buf);
+      write(d.time, reinterpret_cast<char *>(&v->time));
+      write(d.offset, reinterpret_cast<char *>(&v->offset));
+    }
+
     template<>
     void Params::bind(timetz_t t) {
-      t.time = htonll(t.time);
-      t.offset = htonl(t.offset);
-      bind(TIMETZOID, (char *)&t, 12);
+      write(t, bind(TIMETZOID, 12));
     }
 
     //--------------------------------------------------------------------------
     // time
     //--------------------------------------------------------------------------
+
+    void write(time_t t, char *buf) {
+      write(t.time, buf);
+    }
+
     template<>
     void Params::bind(time_t t) {
-      int64_t v = htonll(t);
-      bind(TIMEOID, (char *)&v, sizeof(v));
+      write(t, bind(TIMEOID, sizeof(t)));
     }
 
     //--------------------------------------------------------------------------
     // timetz
     //--------------------------------------------------------------------------
+
+    void write(interval_t t, char *buf) {
+      interval_t *v = reinterpret_cast<interval_t *>(buf);
+      write(t.months, reinterpret_cast<char *>(&v->months));
+      write(t.days, reinterpret_cast<char *>(&v->days));
+      write(t.time, reinterpret_cast<char *>(&v->time));
+    }
+
     template<>
     void Params::bind(interval_t t) {
       assert(sizeof(t) == 16);
-      t.months = htonl(t.months);
-      t.days = htonl(t.days);
-      t.time = htonll(t.time);
-      bind(INTERVALOID, (char *)&t, sizeof(t));
+      write(t, bind(INTERVALOID, sizeof(t)));
     }
+
+    //--------------------------------------------------------------------------
+    // Arrays
+    //--------------------------------------------------------------------------
+
+    template<typename T>
+    void Params::bind(Oid itemsType, std::vector<T> value) {
+
+
+    }
+
+    template<>
+    void Params::bind(std::vector<int16_t> values) {
+      return;
+    };
 
   } // namespace postgres
 }   // namespace db

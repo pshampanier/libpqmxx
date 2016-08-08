@@ -24,15 +24,14 @@
 #include "postgres-exceptions.h"
 
 #define ARRAY(...) __VA_ARGS__
-#define TEST_VECTOR(expr, _expected, type)                                      \
+#define TEST_VECTOR(expr, _expected, expected_size, type)                       \
 {                                                                               \
   auto res = expr;                                                              \
-  type exp[] = _expected;                                                       \
-  size_t expected_size = sizeof(exp) / sizeof(type);                            \
+  type exp[] = _expected;                                                \
   EXPECT_EQ(res.size(), expected_size);                                         \
   for (size_t i=0; i < res.size() && expected_size == res.size(); i++) {        \
-    auto &actual = res[i];                                                      \
-    auto &expected = exp[i];
+    auto actual = res[i];                                                       \
+    auto expected = exp[i];
 
 
 #define TEST_VECTOR_END                                                        \
@@ -151,24 +150,28 @@ TEST(result_sync, arrays) {
   Connection cnx;
   cnx.connect();
 
-  TEST_VECTOR(cnx.execute("SELECT array[1::smallint,2::smallint,3::smallint]").asArray<int16_t>(0), ARRAY({1, 2, 3}), int16_t);
+  TEST_VECTOR(cnx.execute("SELECT array[1::smallint,2::smallint,3::smallint]").asArray<int16_t>(0), ARRAY({1, 2, 3}), 3, int16_t);
     EXPECT_EQ(expected, actual);
   TEST_VECTOR_END;
 
-  TEST_VECTOR(cnx.execute("SELECT ARRAY[4,5,6]").asArray<int32_t>(0), ARRAY({4, 5, 6}), int32_t);
+  TEST_VECTOR(cnx.execute("SELECT ARRAY[4,5,6]").asArray<int32_t>(0), ARRAY({4, 5, 6}), 3, int32_t);
     EXPECT_EQ(expected, actual);
   TEST_VECTOR_END;
 
-  TEST_VECTOR(cnx.execute("SELECT ARRAY[7::bigint,8::bigint,9::bigint,10::bigint]").asArray<int64_t>(0), ARRAY({7, 8, 9, 10}), int64_t);
+  TEST_VECTOR(cnx.execute("SELECT ARRAY[7::bigint,8::bigint,9::bigint,10::bigint]").asArray<int64_t>(0), ARRAY({7, 8, 9, 10}), 4, int64_t);
     EXPECT_EQ(expected, actual);
   TEST_VECTOR_END;
 
-  TEST_VECTOR(cnx.execute("SELECT array[1.89::real,-9.998::real,3::real]").asArray<float>(0), ARRAY({1.89f, -9.998f, 3.f}), float);
+  TEST_VECTOR(cnx.execute("SELECT array[1.89::real,-9.998::real,3::real]").asArray<float>(0), ARRAY({1.89f, -9.998f, 3.f}), 3, float);
     EXPECT_FLOAT_EQ(expected, actual);
   TEST_VECTOR_END;
 
-  TEST_VECTOR(cnx.execute("SELECT array[7.123::double precision,0.98::double precision]").asArray<double>(0), ARRAY({7.123, 0.98}), double);
+  TEST_VECTOR(cnx.execute("SELECT array[7.123::double precision,0.98::double precision]").asArray<double>(0), ARRAY({7.123, 0.98}), 2, double);
     EXPECT_DOUBLE_EQ(expected, actual);
+  TEST_VECTOR_END;
+
+  TEST_VECTOR(cnx.execute("SELECT ARRAY['hello','world']").asArray<std::string>(0), ARRAY({"hello", "world"}), 2, std::string);
+    EXPECT_STREQ(expected.c_str(), actual.c_str());
   TEST_VECTOR_END;
 
 }
@@ -217,6 +220,13 @@ TEST(result_sync, arrays_null_values) {
     EXPECT_TRUE(actual[1]);
     EXPECT_FALSE(actual[2]);
     EXPECT_FALSE(actual[3]);
+  }
+
+  {
+    auto actual = cnx.execute("SELECT ARRAY['hello', null, 'world']").nullValues(0);
+    EXPECT_FALSE(actual[0]);
+    EXPECT_TRUE(actual[1]);
+    EXPECT_FALSE(actual[2]);
   }
 
   {

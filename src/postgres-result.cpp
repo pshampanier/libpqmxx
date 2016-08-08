@@ -55,7 +55,7 @@ namespace db {
 
     void assert_oid(int expected, int actual) {
       const char *_expected = nullptr;
-      if (expected != actual) {
+      if (expected != UNKNOWNOID && expected != actual) {
         switch (expected) {
           case BOOLOID: _expected = "std::vector<uint_8>"; break;
           case BYTEAOID: _expected = "char"; break;
@@ -79,7 +79,7 @@ namespace db {
             assert(false); // unsupported type. try std::string
         }
 
-        std::cerr << "Unexpected C++ type. Please use get<" << _expected
+        std::cerr << "Unexpected C++ type. Please use as<" << _expected
           << ">(int column)" << std::endl;
         assert(false);
       }
@@ -87,65 +87,74 @@ namespace db {
 #endif
 
     // -------------------------------------------------------------------------
+    // Return the start of a buffer and then move it forward by `size`
+    // -------------------------------------------------------------------------
+    inline char *move(char **buf, size_t size) {
+      char *start = *buf;
+      *buf += size;
+      return start;
+    }
+
+    // -------------------------------------------------------------------------
     // Reading a value from a postgresql value buffer
     // -------------------------------------------------------------------------
     template <typename T>
-    T read(char **buf);
+    T read(char **buf, size_t size = sizeof(T));
 
     // -------------------------------------------------------------------------
     // bool
     // -------------------------------------------------------------------------
     template <>
-    bool read<bool>(char **buf) {
-      auto v = *reinterpret_cast<bool*>(*buf);
-      *buf += sizeof(bool);
-      return v;
+    bool read<bool>(char **buf, size_t size) {
+      return *reinterpret_cast<bool*>(move(buf, size));
     }
 
     // -------------------------------------------------------------------------
     // smallint
     // -------------------------------------------------------------------------
     template <>
-    int16_t read<int16_t>(char **buf) {
-      auto v = be16toh(*reinterpret_cast<int16_t*>(*buf));
-      *buf += sizeof(int16_t);
-      return v;
+    int16_t read<int16_t>(char **buf, size_t size) {
+      return be16toh(*reinterpret_cast<int16_t*>(move(buf, size)));
     }
 
     // -------------------------------------------------------------------------
     // integer
     // -------------------------------------------------------------------------
     template <>
-    int32_t read<int32_t>(char **buf) {
-      auto v = be32toh(*reinterpret_cast<int32_t*>(*buf));
-      *buf += sizeof(int32_t);
-      return v;
+    int32_t read<int32_t>(char **buf, size_t size) {
+      return be32toh(*reinterpret_cast<int32_t*>(move(buf, size)));
     }
 
     // -------------------------------------------------------------------------
     // bigint
     // -------------------------------------------------------------------------
     template <>
-    int64_t read<int64_t>(char **buf) {
-      auto v = be64toh(*reinterpret_cast<int64_t*>(*buf));
-      *buf += sizeof(int64_t);
-      return v;
+    int64_t read<int64_t>(char **buf, size_t size) {
+      return be64toh(*reinterpret_cast<int64_t*>(move(buf, size)));
     }
 
     // -------------------------------------------------------------------------
     // real
     // -------------------------------------------------------------------------
     template <>
-    float read<float>(char **buf) {
+    float read<float>(char **buf, size_t size) {
       int32_t v = read<int32_t>(buf);
       return *reinterpret_cast<float*>(&v);
+    }
+
+    // -------------------------------------------------------------------------
+    // char, varchar, text
+    // -------------------------------------------------------------------------
+    template <>
+    std::string read<std::string>(char **buf, size_t size) {
+      return std::string(move(buf, size), size);
     }
 
     // -------------------------------------------------------------------------
     // double precision
     // -------------------------------------------------------------------------
     template <>
-    double read<double>(char **buf) {
+    double read<double>(char **buf, size_t size) {
       int64_t v = read<int64_t>(buf);
       return *reinterpret_cast<double*>(&v);
     }
@@ -154,7 +163,7 @@ namespace db {
     // date
     // -------------------------------------------------------------------------
     template <>
-    date_t read<date_t>(char **buf) {
+    date_t read<date_t>(char **buf, size_t size) {
       return date_t {
         (read<int32_t>(buf) + DAYS_UNIX_TO_J2000_EPOCH) * 86400
       };
@@ -164,7 +173,7 @@ namespace db {
     // timestamp
     // -------------------------------------------------------------------------
     template <>
-    timestamp_t read<timestamp_t>(char **buf) {
+    timestamp_t read<timestamp_t>(char **buf, size_t size) {
       return timestamp_t {
         read<int64_t>(buf) + MICROSEC_UNIX_TO_J2000_EPOCH
       };
@@ -174,7 +183,7 @@ namespace db {
     // timestamptz
     // -------------------------------------------------------------------------
     template <>
-    timestamptz_t read<timestamptz_t>(char **buf) {
+    timestamptz_t read<timestamptz_t>(char **buf, size_t size) {
       return timestamptz_t {
         read<int64_t>(buf) + MICROSEC_UNIX_TO_J2000_EPOCH
       };
@@ -184,7 +193,7 @@ namespace db {
     // timetz
     // -------------------------------------------------------------------------
     template <>
-    timetz_t read<timetz_t>(char **buf) {
+    timetz_t read<timetz_t>(char **buf, size_t size) {
       return timetz_t {
         read<int64_t>(buf),
         read<int32_t>(buf)
@@ -195,7 +204,7 @@ namespace db {
     // time
     // -------------------------------------------------------------------------
     template <>
-    time_t read<time_t>(char **buf) {
+    time_t read<time_t>(char **buf, size_t size) {
       return time_t { read<int64_t>(buf) };
     }
 
@@ -203,7 +212,7 @@ namespace db {
     // interval
     // -------------------------------------------------------------------------
     template <>
-    interval_t read<interval_t>(char **buf) {
+    interval_t read<interval_t>(char **buf, size_t size) {
       return interval_t {
         read<int64_t>(buf),
         read<int32_t>(buf),
@@ -248,7 +257,7 @@ namespace db {
         int32_t ndim = read<int32_t>(&buf);
         read<int32_t>(&buf); // skip
         int32_t elemType = read<int32_t>(&buf);
-        assert_oid(elemType, oid);
+        assert_oid(oid, elemType);
         assert(ndim == 1); // only array of 1 dimmension are supported so far.
 
         // First dimension
@@ -259,7 +268,7 @@ namespace db {
         array.reserve(size);
         for (int32_t i=0; i < size; i++) {
           elemSize = read<int32_t>(&buf);
-          array.push_back(elemSize == -1 ? defVal : read<T>(&buf));
+          array.push_back(elemSize == -1 ? defVal : read<T>(&buf, elemSize));
         }
       }
 
@@ -357,9 +366,6 @@ namespace db {
       return read<double>(result_, FLOAT8OID, column, 0.);
     }
 
-    // -------------------------------------------------------------------------
-    // char, varchar, text
-    // -------------------------------------------------------------------------
     template<>
     std::string Row::as<std::string>(int column) const {
       assert(result_.pgresult_ != nullptr);
@@ -367,7 +373,8 @@ namespace db {
         return std::string();
       }
       int length = PQgetlength(result_, 0, column);
-      return std::string(PQgetvalue(result_, 0, column), length);
+      char *buf  = PQgetvalue(result_, 0, column);
+      return read<std::string>(&buf, length);
     }
 
     // -------------------------------------------------------------------------
@@ -489,6 +496,10 @@ namespace db {
       return readArray<interval_t>(result_, INTERVALOID, column, interval_t { 0, 0, 0 });
     }
 
+    template<>
+    std::vector<std::string> Row::asArray<std::string>(int column) const {
+      return readArray<std::string>(result_, UNKNOWNOID, column, std::string());
+    }
 
     // -------------------------------------------------------------------------
     // Result contructor

@@ -22,8 +22,8 @@ used to make the programing interface slick, very easy to use and the code to re
 * **One single method to get a column value from a row independently of the data type**.
 
     ```cpp
-    int32_t emp_no = row.get<int32_t>(0);
-    std::string title = row.get<std::string>(1);
+    int32_t emp_no = row.as<int32_t>(0);
+    std::string title = row.as<std::string>(1);
     ```
     
 * **Use of the range-based for statement to iterate through the result.**
@@ -31,14 +31,14 @@ used to make the programing interface slick, very easy to use and the code to re
     ```cpp
     auto &employees = cnx.execute("SELECT emp_no, first_name || ' ' || last_name FROM employees");
     for (auto &employee: employees) {
-      std::cout << row.get<int32_t>(0) << row.get<std::string>(1) << std::endl;
+      std::cout << row.as<int32_t>(0) << row.as<std::string>(1) << std::endl;
     }
     ```  
 * **Results with only one row can be accessed directly without using the iterator**:
 
     ```cpp
     auto &employee = cnx.execute("SELECT last_name FROM employees WHERE emp_no=$1", 10001);
-    std::cout << employee.get<std::string>(0) << std::endl;
+    std::cout << employee.as<std::string>(0) << std::endl;
     ```
     
 * **`nullptr` can be used to set a null value**.
@@ -125,8 +125,8 @@ int main() {
     )SQL");
 
     for (auto &row: oldest) {
-      std::cout << "- " << row.get<std::string>(0) << " " << row.get<std::string>(1)
-        << ", " << row.get<double>(2) << " years old." << std::endl;
+      std::cout << "- " << row.as<std::string>(0) << " " << row.as<std::string>(1)
+        << ", " << row.as<double>(2) << " years old." << std::endl;
     }
 
     auto &employee = cnx.execute(R"SQL(
@@ -136,9 +136,9 @@ int main() {
 
     )SQL", "1973-11-07");
 
-    std::cout << employee.get<std::string>(0) << " "
-      << employee.get<std::string>(1) << " is born in "
-      << employee.get<double>(2) << std::endl;
+    std::cout << employee.as<std::string>(0) << " "
+      << employee.as<std::string>(1) << " is born in "
+      << employee.as<double>(2) << std::endl;
 
     int deleted = cnx.execute(R"SQL(
 

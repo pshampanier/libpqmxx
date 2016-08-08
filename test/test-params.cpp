@@ -95,6 +95,18 @@ TEST(param_sync, bytea_type) {
 
 }
 
+TEST(param_sync, array_types) {
+
+  Connection cnx;
+  cnx.connect();
+
+  std::vector<int16_t> expected({1, 2, 3});
+
+  // std::vector<int16_t> actual = cnx.execute("SELECT $1", expected).asArray<int16_t>(0);
+  // EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+
+}
+
 TEST(param_sync, multi) {
 
   Connection cnx;
