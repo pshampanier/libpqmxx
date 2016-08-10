@@ -21,23 +21,13 @@
  **/
 #pragma once
 
+#include "postgres-types.h"
+
 #include <string>
 #include <vector>
 
 namespace db {
   namespace postgres {
-
-    template <typename T>
-    struct array {
-      int32_t ndim; /* Number of dimensions */
-      int32_t ign;  /* offset for data, removed by libpq */
-      Oid elemtype; /* type of element in the array */
-
-      /* First dimension */
-      int32_t size;  /* Number of elements */
-      int32_t index; /* Index of first element */
-      T first_value; /* Beginning of the data */
-    };
 
     /**
      * A private class to bind SQL command paramters.

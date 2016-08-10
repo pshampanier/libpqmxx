@@ -27,12 +27,11 @@
 #define TEST_VECTOR(expr, _expected, expected_size, type)                       \
 {                                                                               \
   auto res = expr;                                                              \
-  type exp[] = _expected;                                                \
+  type exp[] = _expected;                                                       \
   EXPECT_EQ(res.size(), expected_size);                                         \
   for (size_t i=0; i < res.size() && expected_size == res.size(); i++) {        \
     auto actual = res[i];                                                       \
     auto expected = exp[i];
-
 
 #define TEST_VECTOR_END                                                        \
   }                                                                            \
@@ -150,28 +149,39 @@ TEST(result_sync, arrays) {
   Connection cnx;
   cnx.connect();
 
+  TEST_VECTOR(cnx.execute("SELECT array[true,false,true]").asArray<bool>(0), ARRAY({true, false, true}), 3, int16_t);
+    EXPECT_EQ(expected, actual.value);
+    EXPECT_FALSE(actual.isNull);
+  TEST_VECTOR_END;
+
   TEST_VECTOR(cnx.execute("SELECT array[1::smallint,2::smallint,3::smallint]").asArray<int16_t>(0), ARRAY({1, 2, 3}), 3, int16_t);
-    EXPECT_EQ(expected, actual);
+    EXPECT_EQ(expected, actual.value);
+    EXPECT_FALSE(actual.isNull);
   TEST_VECTOR_END;
 
   TEST_VECTOR(cnx.execute("SELECT ARRAY[4,5,6]").asArray<int32_t>(0), ARRAY({4, 5, 6}), 3, int32_t);
-    EXPECT_EQ(expected, actual);
+    EXPECT_EQ(expected, actual.value);
+    EXPECT_FALSE(actual.isNull);
   TEST_VECTOR_END;
 
   TEST_VECTOR(cnx.execute("SELECT ARRAY[7::bigint,8::bigint,9::bigint,10::bigint]").asArray<int64_t>(0), ARRAY({7, 8, 9, 10}), 4, int64_t);
-    EXPECT_EQ(expected, actual);
+    EXPECT_EQ(expected, actual.value);
+    EXPECT_FALSE(actual.isNull);
   TEST_VECTOR_END;
 
   TEST_VECTOR(cnx.execute("SELECT array[1.89::real,-9.998::real,3::real]").asArray<float>(0), ARRAY({1.89f, -9.998f, 3.f}), 3, float);
-    EXPECT_FLOAT_EQ(expected, actual);
+    EXPECT_FLOAT_EQ(expected, actual.value);
+    EXPECT_FALSE(actual.isNull);
   TEST_VECTOR_END;
 
   TEST_VECTOR(cnx.execute("SELECT array[7.123::double precision,0.98::double precision]").asArray<double>(0), ARRAY({7.123, 0.98}), 2, double);
-    EXPECT_DOUBLE_EQ(expected, actual);
+    EXPECT_DOUBLE_EQ(expected, actual.value);
+    EXPECT_FALSE(actual.isNull);
   TEST_VECTOR_END;
 
   TEST_VECTOR(cnx.execute("SELECT ARRAY['hello','world']").asArray<std::string>(0), ARRAY({"hello", "world"}), 2, std::string);
-    EXPECT_STREQ(expected.c_str(), actual.c_str());
+    EXPECT_STREQ(expected.c_str(), actual.value.c_str());
+    EXPECT_FALSE(actual.isNull);
   TEST_VECTOR_END;
 
 }
@@ -207,33 +217,17 @@ TEST(result_sync, arrays_null_values) {
   Connection cnx;
   cnx.connect();
 
-  {
-    auto actual = cnx.execute("SELECT ARRAY[1, null, 3]").nullValues(0);
-    EXPECT_FALSE(actual[0]);
-    EXPECT_TRUE(actual[1]);
-    EXPECT_FALSE(actual[2]);
-  }
+  TEST_VECTOR(cnx.execute("SELECT array[1, null, 3]").asArray<int32_t>(0), ARRAY({false, true, false}), 3, bool);
+    EXPECT_EQ(expected, actual.isNull);
+  TEST_VECTOR_END;
 
-  {
-    auto actual = cnx.execute("SELECT ARRAY[null::bigint, null::bigint, 3::bigint, 4::bigint]").nullValues(0);
-    EXPECT_TRUE(actual[0]);
-    EXPECT_TRUE(actual[1]);
-    EXPECT_FALSE(actual[2]);
-    EXPECT_FALSE(actual[3]);
-  }
+  TEST_VECTOR(cnx.execute("SELECT ARRAY[null::bigint, null::bigint, 3::bigint, 4::bigint]").asArray<int64_t>(0), ARRAY({true, true, false, false}), 4, bool);
+    EXPECT_EQ(expected, actual.isNull);
+  TEST_VECTOR_END;
 
-  {
-    auto actual = cnx.execute("SELECT ARRAY['hello', null, 'world']").nullValues(0);
-    EXPECT_FALSE(actual[0]);
-    EXPECT_TRUE(actual[1]);
-    EXPECT_FALSE(actual[2]);
-  }
-
-  {
-    auto actual = cnx.execute("SELECT ARRAY[null::bigint, 777::bigint]").asArray<int64_t>(0);
-    EXPECT_EQ(actual[0], 0);
-    EXPECT_EQ(actual[1], 777);
-  }
+  TEST_VECTOR(cnx.execute("SELECT ARRAY['hello', null, 'world']").asArray<std::string>(0), ARRAY({false, true, false}), 3, bool);
+    EXPECT_EQ(expected, actual.isNull);
+  TEST_VECTOR_END;
 
 }
 

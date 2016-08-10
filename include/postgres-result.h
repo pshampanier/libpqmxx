@@ -21,6 +21,8 @@
  **/
 #pragma once
 
+#include "postgres-types.h"
+
 namespace db {
   namespace postgres {
     
@@ -46,16 +48,6 @@ namespace db {
        * @return true if the column value is a null value.
        **/
       bool isNull(int column) const;
-
-      /**
-       * Return null values for a column containing an array.
-       *
-       * @param column Column number. Column numbers start at 0.
-       * @return A vector of booleans that contains a value for all items in the
-       *         array. Items with a null value have a value set to `true` at
-       *         their respective position.
-       **/
-      std::vector<bool> nullValues(int column) const;
 
       /**
        * Get a column value.
@@ -109,21 +101,25 @@ namespace db {
       /**
        * Get a column values for arrays.
        *
-       * ```
-       * std::vector<int32_t> quarters = row.asArray<int32_t>(0);
-       * ```
+
+        ```
+        array_int32_t quarters = row.asArray<int32_t>(0);
+        ```
+
        *
        * Usage is the similar to using `T as(int column)` and binding between
-       * SQL names and C++ types are the same. Only "char" and bytea are not
+       * SQL names and C++ types are the same. Only bytea is not
        * supported.
        *
        * Only array of one dimention are supported.
        *
        * @param column Column number. Column numbers start at 0.
-       * @return The value of the column.
+       * @return The value of the column. The value is actually a vector
+       *         of array_item<T>. Each item has two properties (`value` and
+       *         `isNull`).
        **/
       template<typename T>
-      std::vector<T> asArray(int column) const;
+      std::vector<array_item<T>> asArray(int column) const;
 
       /**
        * Get a column name.
@@ -152,7 +148,7 @@ namespace db {
       /**
        * Get a column value.
        *
-       * @deprecated use as(int column) for replacement.
+       * @deprecated use Row::as(int column) for replacement.
        **/
       template<typename T>
       T get(int column) const {

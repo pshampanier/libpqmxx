@@ -237,8 +237,8 @@ namespace db {
     }
 
     template<typename T>
-    std::vector<T> readArray(const PGresult *pgresult, int oid, int column, T defVal) {
-      std::vector<T> array;
+    std::vector<array_item<T>> readArray(const PGresult *pgresult, int oid, int column, T defVal) {
+      std::vector<array_item<T>> array;
 
       if (!PQgetisnull(pgresult, 0, column)) {
         // The data should look like this:
@@ -268,7 +268,18 @@ namespace db {
         array.reserve(size);
         for (int32_t i=0; i < size; i++) {
           elemSize = read<int32_t>(&buf);
-          array.push_back(elemSize == -1 ? defVal : read<T>(&buf, elemSize));
+          array_item<T> elem;
+          if (elemSize == -1) {
+            // null value
+            elem.isNull = true;
+            elem.value = defVal;
+          }
+          else {
+            elem.isNull = false;
+            elem.value = read<T>(&buf, elemSize);
+          }
+
+          array.push_back(std::move(elem));
         }
       }
 
@@ -292,38 +303,6 @@ namespace db {
     bool Row::isNull(int column) const {
       assert(result_.pgresult_ != nullptr);
       return PQgetisnull(result_, 0, column) == 1;
-    }
-
-    // -------------------------------------------------------------------------
-    // Test a column for a null value in an array.
-    // -------------------------------------------------------------------------
-    std::vector<bool> Row::nullValues(int column) const {
-      std::vector<bool> nullValues;
-      if (!PQgetisnull(result_, 0, column)) {
-        // See readArray() for the description of the data structure...
-        char *buf = PQgetvalue(result_, 0, column);
-        int32_t ndim = read<int32_t>(&buf);
-        read<int32_t>(&buf); // skip
-        read<int32_t>(&buf); // skip the type of element in the array.
-        assert(ndim == 1);   // only array of 1 dimmension are supported so far.
-
-        // First dimension
-        int32_t size = read<int32_t>(&buf);
-        read<int32_t>(&buf); // skip the index of first element.
-
-        int32_t elemSize;
-        for (int32_t i=0; i < size; i++) {
-          elemSize = read<int32_t>(&buf);
-          if (elemSize == -1) {
-            nullValues.push_back(true);
-          }
-          else {
-            nullValues.push_back(false);
-            buf += elemSize;  // skip the value
-          }
-        }
-      }
-      return nullValues;
     }
 
     // -------------------------------------------------------------------------
@@ -437,67 +416,67 @@ namespace db {
     // -------------------------------------------------------------------------
 
     template<>
-    std::vector<bool> Row::asArray<bool>(int column) const {
+    std::vector<array_item<bool>> Row::asArray(int column) const {
       return readArray<bool>(result_, BOOLOID, column, 0);
     }
 
     template<>
-    std::vector<int16_t> Row::asArray<int16_t>(int column) const {
+    std::vector<array_item<int16_t>> Row::asArray<int16_t>(int column) const {
       return readArray<int16_t>(result_, INT2OID, column, 0);
     }
 
     template<>
-    std::vector<int32_t> Row::asArray<int32_t>(int column) const {
+    std::vector<array_item<int32_t>> Row::asArray<int32_t>(int column) const {
       return readArray<int32_t>(result_, INT4OID, column, 0);
     }
 
     template<>
-    std::vector<int64_t> Row::asArray<int64_t>(int column) const {
+    std::vector<array_item<int64_t>> Row::asArray<int64_t>(int column) const {
       return readArray<int64_t>(result_, INT8OID, column, 0);
     }
 
     template<>
-    std::vector<float> Row::asArray<float>(int column) const {
+    std::vector<array_item<float>> Row::asArray<float>(int column) const {
       return readArray<float>(result_, FLOAT4OID, column, 0.f);
     }
 
     template<>
-    std::vector<double> Row::asArray<double>(int column) const {
+    std::vector<array_item<double>> Row::asArray<double>(int column) const {
       return readArray<double>(result_, FLOAT8OID, column, 0.);
     }
 
     template<>
-    std::vector<date_t> Row::asArray<date_t>(int column) const {
+    std::vector<array_item<date_t>> Row::asArray<date_t>(int column) const {
       return readArray<date_t>(result_, DATEOID, column, date_t { 0 });
     }
 
     template<>
-    std::vector<timestamptz_t> Row::asArray<timestamptz_t>(int column) const {
+    std::vector<array_item<timestamptz_t>> Row::asArray<timestamptz_t>(int column) const {
       return readArray<timestamptz_t>(result_, TIMESTAMPTZOID, column, timestamptz_t { 0 });
     }
 
     template<>
-    std::vector<timestamp_t> Row::asArray<timestamp_t>(int column) const {
+    std::vector<array_item<timestamp_t>> Row::asArray<timestamp_t>(int column) const {
       return readArray<timestamp_t>(result_, TIMESTAMPOID, column, timestamp_t { 0 });
     }
 
     template<>
-    std::vector<timetz_t> Row::asArray<timetz_t>(int column) const {
+    std::vector<array_item<timetz_t>> Row::asArray<timetz_t>(int column) const {
       return readArray<timetz_t>(result_, TIMETZOID, column, timetz_t { 0, 0 });
     }
 
     template<>
-    std::vector<time_t> Row::asArray<time_t>(int column) const {
+    std::vector<array_item<time_t>> Row::asArray<time_t>(int column) const {
       return readArray<time_t>(result_, TIMEOID, column, time_t { 0 });
     }
 
     template<>
-    std::vector<interval_t> Row::asArray<interval_t>(int column) const {
+    std::vector<array_item<interval_t>> Row::asArray<interval_t>(int column) const {
       return readArray<interval_t>(result_, INTERVALOID, column, interval_t { 0, 0, 0 });
     }
 
     template<>
-    std::vector<std::string> Row::asArray<std::string>(int column) const {
+    std::vector<array_item<std::string>> Row::asArray<std::string>(int column) const {
       return readArray<std::string>(result_, UNKNOWNOID, column, std::string());
     }
 
