@@ -100,10 +100,79 @@ TEST(param_sync, array_types) {
   Connection cnx;
   cnx.connect();
 
-  std::vector<int16_t> expected({1, 2, 3});
+  {
+    array_bool_t expected({{false}, nullptr, {true}});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<bool>(0);
+    EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+  }
 
-  // std::vector<int16_t> actual = cnx.execute("SELECT $1", expected).asArray<int16_t>(0);
-  // EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+  {
+    array_int16_t expected({{1}, nullptr, {3}});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<int16_t>(0);
+    EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+  }
+
+  {
+    array_int32_t expected({{320000}, nullptr, {-1000}});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<int32_t>(0);
+    EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+  }
+
+  {
+    array_int64_t expected({{7000000000}, nullptr, {-7000000000}});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<int64_t>(0);
+    EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+  }
+
+  {
+    array_float_t expected({{7.1f}, nullptr, {-23.8f}});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<float>(0);
+    EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+  }
+
+  {
+    array_double_t expected({{877.198f}, nullptr, {-2300.8008f}});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<double>(0);
+    EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+  }
+
+  {
+    array_string_t expected({{"hello"}, nullptr, {u8"メインページ"}});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<std::string>(0);
+    EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+  }
+
+  {
+    array_date_t expected({date_t({1470960000}), nullptr, date_t({0})});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<date_t>(0);
+    EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+  }
+
+  {
+    array_time_t expected({db::postgres::time_t({3600000000}), nullptr, db::postgres::time_t({0})});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<db::postgres::time_t>(0);
+    EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+  }
+
+  {
+    array_timetz_t expected({timetz_t({4321000001, 25200}), timetz_t({0, 0})});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<timetz_t>(0);
+    if (expected.size() == actual.size()) {
+      for (int i = 0; i < expected.size(); i++) {
+        if (expected[i].isNull) {
+          EXPECT_TRUE(actual[i].isNull);
+        }
+        else {
+          EXPECT_EQ(expected[i].value.time, actual[i].value.time);
+          EXPECT_EQ(expected[i].value.offset, actual[i].value.offset);
+        }
+      }
+    }
+    else {
+      EXPECT_TRUE(false);
+    }
+  }
+
 
 }
 

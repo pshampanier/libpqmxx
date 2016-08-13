@@ -30,7 +30,7 @@ namespace db {
   namespace postgres {
 
     /**
-     * A private class to bind SQL command paramters.
+     * A private class to bind SQL command parameters.
      **/
     class Params {
 
@@ -50,18 +50,24 @@ namespace db {
       void bind() const {}
       void bind(std::nullptr_t);
       void bind(const std::string &s);
-      void bind(const std::vector<uint8_t> &d);
+      void bind(const std::vector<uint8_t> &bytes);
 
       template<typename T>
       void bind(T v);
-
-      template<typename T>
-      void bind(Oid elemType, std::vector<T> value);
 
       void bind(Oid type, char *value, size_t length);
 
       template <typename T>
       T *bind(Oid type, size_t length);
+
+      /**
+       * Arrays
+       **/
+      template<typename T>
+      void bind(const std::vector<array_item<T>> &array);
+
+      template<typename T>
+      void bind(Oid type, Oid elemType, const std::vector<array_item<T>> &array);
     };
 
   } // namespace postgres

@@ -21,7 +21,6 @@
  **/
 #pragma once
 
-#include "libpq-fe.h"
 #include "postgres-params.h"
 #include "postgres-result.h"
 
@@ -31,9 +30,6 @@
 
 namespace db {
   namespace postgres {
-
-    const int32_t DAYS_UNIX_TO_J2000_EPOCH = int32_t(10957);
-    const int64_t MICROSEC_UNIX_TO_J2000_EPOCH = int64_t(946684800) * 1000000;
 
     /**
      * Settings of a PostgreSQL connection.
