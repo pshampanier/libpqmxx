@@ -21,6 +21,8 @@
  **/
 #include "postgres-types.h"
 
+#include <cstring>
+
 #ifdef __linux__
   #include <arpa/inet.h>
   #include <endian.h>
