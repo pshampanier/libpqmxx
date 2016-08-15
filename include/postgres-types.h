@@ -291,6 +291,7 @@ namespace db {
     };
 
     int32_t length(const std::string &value);
+    int32_t length(timetz_t);
 
   } // namespace postgres
 }   // namespace db

@@ -47,13 +47,12 @@
 namespace db {
   namespace postgres {
 
-    template <>
     int32_t length(timetz_t) {
       return 12;
     };
 
     int32_t length(const std::string &s) {
-      return s.length();
+      return int32_t(s.length());
     };
 
     // -------------------------------------------------------------------------

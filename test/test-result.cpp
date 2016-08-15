@@ -150,7 +150,7 @@ TEST(result_sync, arrays) {
   cnx.connect();
 
   TEST_VECTOR(cnx.execute("SELECT array[true,false,true]")
-              .asArray<bool>(0), ARRAY({true, false, true}), 3, int16_t);
+              .asArray<bool>(0), ARRAY({bool(true), bool(false), bool(true)}), 3, int16_t);
     EXPECT_EQ(expected, actual.value);
     EXPECT_FALSE(actual.isNull);
   TEST_VECTOR_END;
