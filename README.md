@@ -11,7 +11,7 @@ The aim of this library is to provide an API very simple to use without any
 compromise on performances. Modern C++ features such as variadic templates are 
 used to make the programing interface slick, very easy to use and the code to read.
 
-* **Automatic detection of the PostgresSQL datatype from C++ parameter's type**.
+* **Automatic detection of the PostgresSQL datatype from C++ parameter's type**:
 
     ```cpp
     cnx.execute("SELECT from_date FROM titles WHERE emp_no=$1", 10020);
@@ -19,11 +19,19 @@ used to make the programing interface slick, very easy to use and the code to re
     
     Because `10020` is an `int` in C++, the library will bind this parameter to a PostgreSQL `integer`.  
     
-* **One single method to get a column value from a row independently of the data type**.
+* **One single method to get a column value from a row independently of the data type**:
 
     ```cpp
     int32_t emp_no = row.as<int32_t>(0);
     std::string title = row.as<std::string>(1);
+    ```
+    
+* **Supports of PostgreSQL arrays:**
+
+    ```cpp
+    auto array = cnx.execute("SELECT ARRAY['hello', 'world']").asArray<std::string>(0);
+    std::string hello = array[0];
+    std::string world = array[1];
     ```
     
 * **Use of the range-based for statement to iterate through the result.**

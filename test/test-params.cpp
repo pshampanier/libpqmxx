@@ -155,7 +155,7 @@ TEST(param_sync, array_types) {
   }
 
   {
-    array_timetz_t expected({timetz_t({4321000001, 25200}), timetz_t({0, 0})});
+    array_timetz_t expected({timetz_t({4321000001, 25200}), nullptr, timetz_t({0, 0})});
     auto actual = cnx.execute("SELECT $1", expected).asArray<timetz_t>(0);
     if (expected.size() == actual.size()) {
       for (int i = 0; i < expected.size(); i++) {

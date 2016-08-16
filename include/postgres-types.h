@@ -28,120 +28,120 @@
 #include <vector>
 #include <stdint.h>
 
-#define 	BOOLOID   16
-#define 	BYTEAOID   17
-#define 	CHAROID   18
-#define 	NAMEOID   19
-#define 	INT8OID   20
-#define 	INT2OID   21
-#define 	INT2VECTOROID   22
-#define 	INT4OID   23
-#define 	REGPROCOID   24
-#define 	TEXTOID   25
-#define 	OIDOID   26
-#define 	TIDOID   27
-#define 	XIDOID   28
-#define 	CIDOID   29
-#define 	OIDVECTOROID   30
-#define 	JSONOID   114
-#define 	XMLOID   142
-#define 	PGNODETREEOID   194
-#define   JSONARRAYOID 199
-#define 	PGDDLCOMMANDOID   32
-#define 	POINTOID   600
-#define 	LSEGOID   601
-#define 	PATHOID   602
-#define 	BOXOID   603
-#define 	POLYGONOID   604
-#define 	LINEOID   628
-#define 	FLOAT4OID   700
-#define 	FLOAT8OID   701
-#define 	ABSTIMEOID   702
-#define 	RELTIMEOID   703
-#define 	TINTERVALOID   704
-#define 	UNKNOWNOID   705
-#define 	CIRCLEOID   718
-#define 	CASHOID   790
-#define   CASHARRAYOID 791
-#define 	MACADDROID   829
-#define 	INETOID   869
-#define 	CIDROID   650
-#define   BOOLARRAYOID 1000
-#define   BYTEAARRAYOID 1001
-#define   CHARARRAYOID 1002
-#define 	INT2ARRAYOID   1005
-#define 	INT4ARRAYOID   1007
-#define 	TEXTARRAYOID   1009
-#define   XIDARRAYOID 1011
-#define   CIDARRAYOID 1012
-#define   BPCHARARRAYOID 1014
-#define   VARCHARARRAYOID 1015
-#define   INT8ARRAYOID 1016
-#define   FLOAT8ARRAYOID 1022
-#define   ABSTIMEARRAYOID 1023
-#define   RELTIMEARRAYOID 1024
-#define   TIMESTAMPARRAYOID 1115
-#define   DATEARRAYOID 1182
-#define   TIMEARRAYOID 1183
-#define   TIMESTAMPTZARRAYOID 1185
-#define   INTERVALARRAYOID 1187
-#define   NUMERICARRAYOID 1231
-#define   TIMETZARRAYOID 1270
-#define 	OIDARRAYOID   1028
-#define 	FLOAT4ARRAYOID   1021
-#define 	ACLITEMOID   1033
-#define 	CSTRINGARRAYOID   1263
-#define 	BPCHAROID   1042
-#define 	VARCHAROID   1043
-#define 	DATEOID   1082
-#define 	TIMEOID   1083
-#define 	TIMESTAMPOID   1114
-#define 	TIMESTAMPTZOID   1184
-#define 	INTERVALOID   1186
-#define 	TIMETZOID   1266
-#define 	BITOID   1560
-#define 	VARBITOID   1562
-#define 	NUMERICOID   1700
-#define 	REFCURSOROID   1790
-#define 	REGPROCEDUREOID   2202
-#define 	REGOPEROID   2203
-#define 	REGOPERATOROID   2204
-#define 	REGCLASSOID   2205
-#define 	REGTYPEOID   2206
-#define 	REGROLEOID   4096
-#define 	REGNAMESPACEOID   4089
-#define 	REGTYPEARRAYOID   2211
-#define 	UUIDOID   2950
-#define 	LSNOID   3220
-#define 	TSVECTOROID   3614
-#define 	GTSVECTOROID   3642
-#define 	TSQUERYOID   3615
-#define 	REGCONFIGOID   3734
-#define 	REGDICTIONARYOID   3769
-#define 	JSONBOID   3802
-#define 	INT4RANGEOID   3904
-#define 	RECORDOID   2249
-#define 	RECORDARRAYOID   2287
-#define 	CSTRINGOID   2275
-#define 	ANYOID   2276
-#define 	ANYARRAYOID   2277
-#define 	VOIDOID   2278
-#define 	TRIGGEROID   2279
-#define 	EVTTRIGGEROID   3838
-#define 	LANGUAGE_HANDLEROID   2280
-#define 	INTERNALOID   2281
-#define 	OPAQUEOID   2282
-#define 	ANYELEMENTOID   2283
-#define 	ANYNONARRAYOID   2776
-#define 	ANYENUMOID   3500
-#define 	FDW_HANDLEROID   3115
-#define 	INDEX_AM_HANDLEROID   325
-#define 	TSM_HANDLEROID   3310
-#define   JSONBARRAYOID 3807
-#define 	ANYRANGEOID   3831
-
 namespace db {
   namespace postgres {
+
+    const Oid BOOLOID = 16;
+    const Oid BYTEAOID = 17;
+    const Oid CHAROID = 18;
+    const Oid NAMEOID = 19;
+    const Oid INT8OID = 20;
+    const Oid INT2OID = 21;
+    const Oid INT2VECTOROID = 22;
+    const Oid INT4OID = 23;
+    const Oid REGPROCOID = 24;
+    const Oid TEXTOID = 25;
+    const Oid OIDOID = 26;
+    const Oid TIDOID = 27;
+    const Oid XIDOID = 28;
+    const Oid CIDOID = 29;
+    const Oid OIDVECTOROID = 30;
+    const Oid JSONOID = 114;
+    const Oid XMLOID = 142;
+    const Oid PGNODETREEOID = 194;
+    const Oid JSONARRAYOID = 199;
+    const Oid PGDDLCOMMANDOID = 32;
+    const Oid POINTOID = 600;
+    const Oid LSEGOID = 601;
+    const Oid PATHOID = 602;
+    const Oid BOXOID = 603;
+    const Oid POLYGONOID = 604;
+    const Oid LINEOID = 628;
+    const Oid FLOAT4OID = 700;
+    const Oid FLOAT8OID = 701;
+    const Oid ABSTIMEOID = 702;
+    const Oid RELTIMEOID = 703;
+    const Oid TINTERVALOID = 704;
+    const Oid UNKNOWNOID = 705;
+    const Oid CIRCLEOID = 718;
+    const Oid CASHOID = 790;
+    const Oid CASHARRAYOID = 791;
+    const Oid MACADDROID = 829;
+    const Oid INETOID = 869;
+    const Oid CIDROID = 650;
+    const Oid BOOLARRAYOID = 1000;
+    const Oid BYTEAARRAYOID = 1001;
+    const Oid CHARARRAYOID = 1002;
+    const Oid INT2ARRAYOID = 1005;
+    const Oid INT4ARRAYOID = 1007;
+    const Oid TEXTARRAYOID = 1009;
+    const Oid XIDARRAYOID = 1011;
+    const Oid CIDARRAYOID = 1012;
+    const Oid BPCHARARRAYOID = 1014;
+    const Oid VARCHARARRAYOID = 1015;
+    const Oid INT8ARRAYOID = 1016;
+    const Oid FLOAT8ARRAYOID = 1022;
+    const Oid ABSTIMEARRAYOID = 1023;
+    const Oid RELTIMEARRAYOID = 1024;
+    const Oid TIMESTAMPARRAYOID = 1115;
+    const Oid DATEARRAYOID = 1182;
+    const Oid TIMEARRAYOID = 1183;
+    const Oid TIMESTAMPTZARRAYOID = 1185;
+    const Oid INTERVALARRAYOID = 1187;
+    const Oid NUMERICARRAYOID = 1231;
+    const Oid TIMETZARRAYOID = 1270;
+    const Oid OIDARRAYOID = 1028;
+    const Oid FLOAT4ARRAYOID = 1021;
+    const Oid ACLITEMOID = 1033;
+    const Oid CSTRINGARRAYOID = 1263;
+    const Oid BPCHAROID = 1042;
+    const Oid VARCHAROID = 1043;
+    const Oid DATEOID = 1082;
+    const Oid TIMEOID = 1083;
+    const Oid TIMESTAMPOID = 1114;
+    const Oid TIMESTAMPTZOID = 1184;
+    const Oid INTERVALOID = 1186;
+    const Oid TIMETZOID = 1266;
+    const Oid BITOID = 1560;
+    const Oid VARBITOID = 1562;
+    const Oid NUMERICOID = 1700;
+    const Oid REFCURSOROID = 1790;
+    const Oid REGPROCEDUREOID = 2202;
+    const Oid REGOPEROID = 2203;
+    const Oid REGOPERATOROID = 2204;
+    const Oid REGCLASSOID = 2205;
+    const Oid REGTYPEOID = 2206;
+    const Oid REGROLEOID = 4096;
+    const Oid REGNAMESPACEOID = 4089;
+    const Oid REGTYPEARRAYOID = 2211;
+    const Oid UUIDOID = 2950;
+    const Oid LSNOID = 3220;
+    const Oid TSVECTOROID = 3614;
+    const Oid GTSVECTOROID = 3642;
+    const Oid TSQUERYOID = 3615;
+    const Oid REGCONFIGOID = 3734;
+    const Oid REGDICTIONARYOID = 3769;
+    const Oid JSONBOID = 3802;
+    const Oid INT4RANGEOID = 3904;
+    const Oid RECORDOID = 2249;
+    const Oid RECORDARRAYOID = 2287;
+    const Oid CSTRINGOID = 2275;
+    const Oid ANYOID = 2276;
+    const Oid ANYARRAYOID = 2277;
+    const Oid VOIDOID = 2278;
+    const Oid TRIGGEROID = 2279;
+    const Oid EVTTRIGGEROID = 3838;
+    const Oid LANGUAGE_HANDLEROID = 2280;
+    const Oid INTERNALOID = 2281;
+    const Oid OPAQUEOID = 2282;
+    const Oid ANYELEMENTOID = 2283;
+    const Oid ANYNONARRAYOID = 2776;
+    const Oid ANYENUMOID = 3500;
+    const Oid FDW_HANDLEROID = 3115;
+    const Oid INDEX_AM_HANDLEROID = 325;
+    const Oid TSM_HANDLEROID = 3310;
+    const Oid JSONBARRAYOID = 3807;
+    const Oid ANYRANGEOID = 3831;
 
     /**
      * A `date` value.
@@ -223,21 +223,29 @@ namespace db {
      **/
     template <typename T>
     struct array_item {
-      T     value;
-      bool  isNull;
+      T     value;    /**< The value for non null values. **/
+      bool  isNull;   /**< `true` if the value is null. **/
 
       array_item() = default;
 
+      /** Constructor of a non null value.
+        *
+        * @param v  The value.
+        **/
       array_item(T v) {
         value = v;
         isNull = false;
       }
 
       /**
-       * null value in an array.
+       * Constructor of a null value.
        **/
       array_item(std::nullptr_t) {
         isNull = true;
+      }
+
+      operator const T &() const {
+        return value;
       }
 
       bool operator==(const array_item<T> &other) const {
@@ -280,18 +288,29 @@ namespace db {
     template <typename T>
     T read(char **buf, size_t size = sizeof(T));
 
+    /**
+     * Writing a value to a postgresql buffer.
+     *
+     * @param value The value to write.
+     * @param buf   The start of the PostgreSQL buffer.
+     * @return The position next to the end of the value in the PostreSQL buffer `buf`.
+     **/
     template <typename T>
     char *write(T value, char *buf);
-
     char *write(const std::string &value, char *buf);
 
+    /**
+     * Length of a value in PostgreSQL buffer.
+     *
+     * @param value A value of any type.
+     * @return The number of bytes the value will take in a PostgreSQL buffer.
+     **/
     template <typename T>
-    int32_t length(T v) {
-      return sizeof(v);
+    int32_t length(T value) {
+      return sizeof(value);
     };
-
     int32_t length(const std::string &value);
-    int32_t length(timetz_t);
+    int32_t length(timetz_t value);
 
   } // namespace postgres
 }   // namespace db

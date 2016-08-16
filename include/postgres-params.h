@@ -37,13 +37,14 @@ namespace db {
       friend class Connection;
 
     private:
-      std::vector<Oid>     types_;
-      std::vector<char *>  values_;
-      std::vector<int>     lengths_;
-      std::vector<int>     formats_;
-      std::vector<char *>  buffers_;
+      std::vector<Oid>      types_;
+      std::vector<char *>   values_;
+      std::vector<int>      lengths_;
+      std::vector<int>      formats_;
+      std::vector<char *>   buffers_;
+      const struct Settings &settings_;
 
-      Params(int size);
+      Params(const Settings &settings, int size);
 
       char *bind(Oid type, size_t length);
 

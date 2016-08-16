@@ -185,7 +185,7 @@ TEST(result_sync, arrays) {
     EXPECT_FALSE(actual.isNull);
   TEST_VECTOR_END;
 
-  TEST_VECTOR(cnx.execute("SELECT ARRAY['hello','world']")
+  TEST_VECTOR(cnx.execute("SELECT ARRAY['hello', 'world']")
               .asArray<std::string>(0), ARRAY({"hello", "world"}), 2, std::string);
     EXPECT_STREQ(expected.c_str(), actual.value.c_str());
     EXPECT_FALSE(actual.isNull);
@@ -196,6 +196,22 @@ TEST(result_sync, arrays) {
   EXPECT_EQ(expected.time, actual.value.time);
   EXPECT_EQ(expected.offset, actual.value.offset);
   TEST_VECTOR_END;
+
+  {
+    auto array = cnx.execute("SELECT ARRAY['hello', 'world']").asArray<std::string>(0);
+    std::string hello = array[0];
+    std::string world = array[1];
+    EXPECT_STREQ("hello", hello.c_str());
+    EXPECT_STREQ("world", world.c_str());
+  }
+
+  {
+    auto array = cnx.execute("SELECT ARRAY[7::bigint,8::bigint,9::bigint,10::bigint]").asArray<int64_t>(0);
+    int64_t v1 = array[0];
+    int64_t v2 = array[1];
+    EXPECT_EQ(7, v1);
+    EXPECT_EQ(8, v2);
+  }
 
 }
 

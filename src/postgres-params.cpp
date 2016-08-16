@@ -32,7 +32,8 @@ namespace db {
     //--------------------------------------------------------------------------
     // Constructor
     //--------------------------------------------------------------------------
-    Params::Params(int size) {
+    Params::Params(const Settings &settings, int size)
+    : settings_(settings) {
       types_.reserve(size);
       values_.reserve(size);
       lengths_.reserve(size);
@@ -137,11 +138,21 @@ namespace db {
     //--------------------------------------------------------------------------
     template<>
     void Params::bind(const char *sz) {
-      bind(VARCHAROID, (char *)sz, std::strlen(sz));
+      if (sz[0] == '\0' && settings_.emptyStringAsNull) {
+        bind(nullptr);
+      }
+      else {
+        bind(VARCHAROID, (char *)sz, std::strlen(sz));
+      }
     }
 
     void Params::bind(const std::string &s) {
-      bind(VARCHAROID, (char *)s.c_str(), s.length());
+      if (s.length() == 0 && settings_.emptyStringAsNull) {
+        bind(nullptr);
+      }
+      else {
+        bind(VARCHAROID, (char *)s.c_str(), s.length());
+      }
     }
 
     //--------------------------------------------------------------------------
@@ -235,7 +246,10 @@ namespace db {
       buf = write(int32_t(array.size()), buf); /* Number of elements */
       buf = write(int32_t(1), buf);            /* Index of first element */
       for (auto &i: array) {
-        if (i.isNull) {
+        if (i.isNull
+            || (elemType == VARCHAROID
+                && settings_.emptyStringAsNull
+                && length(i.value) == 0)) {
           buf = write(int32_t(-1), buf);
         }
         else {

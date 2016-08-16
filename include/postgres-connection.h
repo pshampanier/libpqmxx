@@ -193,7 +193,7 @@ namespace db {
          **/
         template<typename... Args>
         Result &execute(const char *sql, Args... args) {
-          Params params(sizeof...(args));
+          Params params(settings_, sizeof...(args));
           std::make_tuple((params.bind(std::forward<Args>(args)), 0)...);
           execute(sql, params);
           return result_;

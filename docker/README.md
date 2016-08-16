@@ -5,11 +5,11 @@
 ### Build
 
 ```bash
-docker build -t db-postgres-cpp .
+docker build -t libpqmxx .
 ```
 
 ### Start
 
 ```
-docker run --rm -ti --name=db-postgres-cpp -v ~/Sources/:/home/build/Sources db-postgres-cpp
+docker run --rm -ti --name=libpqmxx -v ~/Sources/:/home/build/Sources libpqmxx
 ```
