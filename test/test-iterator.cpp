@@ -34,7 +34,7 @@ TEST(iterator, sync_no_row) {
 
   auto &result = cnx.execute("SELECT 1 WHERE 1=2");
   for (auto &row: result) {
-    actual += row.get<int32_t>(0);
+    actual += row.as<int32_t>(0);
   }
 
   EXPECT_EQ(actual, 0);
@@ -50,7 +50,7 @@ TEST(iterator, sync_one_row) {
 
   auto &result = cnx.execute("SELECT 42");
   for (auto &row: result) {
-    actual += row.get<int32_t>(0);
+    actual += row.as<int32_t>(0);
   }
 
   EXPECT_EQ(actual, 42);
@@ -66,7 +66,7 @@ TEST(iterator, sync_multiple_rows) {
 
   auto &result = cnx.execute("SELECT generate_series(1, 3)");
   for (auto &row: result) {
-    actual += row.get<int32_t>(0);
+    actual += row.as<int32_t>(0);
   }
 
   EXPECT_EQ(actual, 6);

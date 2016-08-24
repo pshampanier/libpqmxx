@@ -21,7 +21,6 @@
  **/
 #pragma once
 
-#include "libpq-fe.h"
 #include "postgres-params.h"
 #include "postgres-result.h"
 
@@ -32,8 +31,19 @@
 namespace db {
   namespace postgres {
 
-    const int32_t DAYS_UNIX_TO_J2000_EPOCH = int32_t(10957);
-    const int64_t MICROSEC_UNIX_TO_J2000_EPOCH = int64_t(946684800) * 1000000;
+    /**
+     * Settings of a PostgreSQL connection.
+     *
+     * Those settings are internal setting of the libpqmxx library. Other
+     * standard PostgreSQL seetings should be set when calling connect().
+     **/
+    struct Settings {
+      /**
+       * If true (the default), empty strings passed as parameter to execute() are
+       * considered as null values.
+       **/
+      bool emptyStringAsNull = true;
+    };
 
     /**
      * A connection to a PostgreSQL database.
@@ -50,7 +60,7 @@ namespace db {
          * Copy and move constructor have been explicitly deleted to prevent the
          * copy of the connection object.
          **/
-        Connection();
+        Connection(Settings settings = Settings());
 
         /**
          * Destructor.
@@ -183,7 +193,7 @@ namespace db {
          **/
         template<typename... Args>
         Result &execute(const char *sql, Args... args) {
-          Params params(sizeof...(args));
+          Params params(settings_, sizeof...(args));
           std::make_tuple((params.bind(std::forward<Args>(args)), 0)...);
           execute(sql, params);
           return result_;
@@ -296,6 +306,11 @@ namespace db {
       private:
 
         /**
+         * Connection settings.
+         **/
+        Settings settings_;
+
+        /**
          * Current transaction level.
          *
          * * 0 → no transaction in progress.
@@ -318,82 +333,7 @@ namespace db {
     };
     
     /**
-     * A `date` value.
-     *
-     * This struct can be used set a date parameter when calling execute, or to
-     * get a date value from a Row. An alternative for date parameters is to use
-     * a date literal with an explict cast of the parameter in the sql command.
-     *
-     * ```
-     * execute("SELECT $1::date", "2014-11-01");
-     * ```
-     **/
-    typedef struct {
-      int32_t epoch_date; /**< Number of seconds sine Unix epoch time. **/
-      operator int32_t() const { return epoch_date; } /**< Cast to `int32_t`. **/
-    } date_t;
-
-    /**
-     * A `timestamp with timezone` value.
-     *
-     * This struct can be used set a timestamptz parameter when calling execute,
-     * or to get a timestamptz value from a Row. An alternative for timestamptz
-     * parameters is to use a timestamp literal with an explict cast of the
-     * parameter in the sql command.
-     *
-     * ```
-     * execute("SELECT $1::timestamptz", "2014-11-01T05:19:00-500");
-     * ```
-     **/
-    typedef struct {
-      int64_t epoch_time; /**< Number of microsecondes since Unix epoch time. **/
-      operator int64_t() const { return epoch_time; } /**< Cast to int64_t. **/
-    } timestamptz_t;
-
-    /**
-     * A `timestamp` value (without time zone).
-     *
-     * This struct can be used set a timestamp parameter when calling execute,
-     * or to get a timestamp value from a Row. An alternative for timestamp
-     * parameters is to use a timestamp literal with an explict cast of the
-     * parameter in the sql command.
-     *
-     * ```
-     * execute("SELECT $1::timestamp", "2014-11-01T05:19:00");
-     * ```
-     **/
-    typedef struct {
-      int64_t epoch_time; /**< Number of microsecondes since Unix epoch time. **/
-      operator int64_t() const { return epoch_time; }   /**< Cast to int64_t. **/
-    } timestamp_t;
-
-    /**
-     * A `time with timezone` value.
-     **/
-    typedef struct {
-      int64_t time;   /**< Number of microseconds since 00:00:00. **/
-      int32_t offset; /**< Offset from GMT in seconds. **/
-    } timetz_t;
-
-    /**
-     * A `time` value.
-     **/
-    typedef struct {
-      int64_t time;              /**< Number of microseconds since 00:00:00. **/
-      operator int64_t() const { return time; }        /**< Cast to int64_t. **/
-    } time_t;
-
-    /**
-     * An `interval` value.
-     **/
-    typedef struct {
-      int64_t time;   /**< Number of microseconds on the day since 00:00:00. **/
-      int32_t days;   /**< Number of days. **/
-      int32_t months; /**< Number of months. **/
-    } interval_t;
-
-    /**
-     * Check if an sql command contains one or more statements.
+     * Check if a sql command contains one or more statements.
      *
      * This method does not perform a strict parsing of the SQL. If the `sql`
      * parameter is syntactically incorrect, the return value of this method

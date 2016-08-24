@@ -250,7 +250,7 @@ namespace db {
     // -------------------------------------------------------------------------
     // Constructor.
     // -------------------------------------------------------------------------
-    Connection::Connection()
+    Connection::Connection(Settings settings)
       : result_(*this) {
       pgconn_ = nullptr;
       transaction_ = 0;
@@ -259,6 +259,7 @@ namespace db {
       done_ = nullptr;
       error_ = nullptr;
       always_ = nullptr;
+      settings_ = settings;
     }
 
     // -------------------------------------------------------------------------

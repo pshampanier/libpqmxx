@@ -134,8 +134,8 @@ TEST(result_sync, statements) {
   char gender;
   int32_t males = 0, females = 0, ids = 0;
   for (auto &row: genders) {
-    ids += row.get<std::int32_t>(0);
-    gender = row.get<char>(1);
+    ids += row.as<std::int32_t>(0);
+    gender = row.as<char>(1);
     if (gender == 'M') {
       males++;
     }
@@ -156,7 +156,7 @@ TEST(result_sync, statements) {
 
   EXPECT_EQ(883440000, cnx.execute(R"SQL(
     SELECT from_date FROM titles WHERE  to_date=$1::date AND emp_no=$2
-  )SQL", "1988-02-10", 10020).get<date_t>(0));
+  )SQL", "1988-02-10", 10020).as<date_t>(0));
 
   // Cleanup
   cnx.execute(R"SQL(

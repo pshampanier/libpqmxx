@@ -11,8 +11,10 @@
 `class `[``ExecutionException``](#classdb_1_1postgres_1_1_execution_exception)    | Exception thrown on any runtime error except a connection failure.
 `class `[``Result``](#classdb_1_1postgres_1_1_result)    | A result from an SQL command.
 `class `[``Row``](#classdb_1_1postgres_1_1_row)    | A row in a [Result](#classdb_1_1postgres_1_1_result).
+`struct `[``array_item``](#structdb_1_1postgres_1_1array__item)    | A values in an array.
 `struct `[``date_t``](#structdb_1_1postgres_1_1date__t)    | A `date` value.
 `struct `[``interval_t``](#structdb_1_1postgres_1_1interval__t)    | An `interval` value.
+`struct `[``Settings``](#structdb_1_1postgres_1_1_settings)    | [Settings](#structdb_1_1postgres_1_1_settings) of a PostgreSQL connection.
 `struct `[``time_t``](#structdb_1_1postgres_1_1time__t)    | A `time` value.
 `struct `[``timestamp_t``](#structdb_1_1postgres_1_1timestamp__t)    | A `timestamp` value (without time zone).
 `struct `[``timestamptz_t``](#structdb_1_1postgres_1_1timestamptz__t)    | A `timestamp with timezone` value.
@@ -33,7 +35,7 @@ A connection to a PostgreSQL database.
 
  Members                        | Descriptions                                
 --------------------------------|---------------------------------------------
-`public  Connection()` | Constructor.
+`public  Connection(`[`Settings`](#structdb_1_1postgres_1_1_settings)` settings)` | Constructor.
 `public  ~Connection()` | Destructor.
 `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & connect(const char * connInfo)` | Open a connection to the database.
 `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & close() noexcept` | Close the database connection.
@@ -49,7 +51,7 @@ A connection to a PostgreSQL database.
 
 ## Members
 
-### `public  Connection()` {#classdb_1_1postgres_1_1_connection_1aeed46214f02e5586a59fa963ec738aa0}
+### `public  Connection(`[`Settings`](#structdb_1_1postgres_1_1_settings)` settings)` {#classdb_1_1postgres_1_1_connection_1ac55be960c65f00b17772cc5cb4fdbb62}
 
 Constructor.
 
@@ -77,7 +79,8 @@ postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
 ```
 
 
-[https://www.postgresql.org/docs/9.5/static/libpq-connect.html#LIBPQ-CONNSTRING](https://www.postgresql.org/docs/9.5/static/libpq-connect.html#LIBPQ-CONNSTRING)
+
+**See also**: [https://www.postgresql.org/docs/9.5/static/libpq-connect.html#LIBPQ-CONNSTRING](https://www.postgresql.org/docs/9.5/static/libpq-connect.html#LIBPQ-CONNSTRING)
 
 
 #### Returns
@@ -400,27 +403,35 @@ Rows can be accessed using the [Result::iterator](#classdb_1_1postgres_1_1_resul
 
  Members                        | Descriptions                                
 --------------------------------|---------------------------------------------
-`public bool isNull(int column) const` | Test a field for a null value.
-`public template<typename T>`  <br/>`T get(int column) const` | Get a column value.
+`public bool isNull(int column) const` | Test a column for a null value.
+`public template<typename T>`  <br/>`T as(int column) const` | Get a column value.
+`public template<typename T>`  <br/>`std::vector< `[`array_item`](#structdb_1_1postgres_1_1array__item)`< T > > asArray(int column) const` | Get a column values for arrays.
 `public const char * columnName(int column) const` | Get a column name.
 `public int num() const noexcept` | Get the row number.
+`public template<typename T>`  <br/>`inline T get(int column) const` | Get a column value.
 
 ## Members
 
 ### `public bool isNull(int column) const` {#classdb_1_1postgres_1_1_row_1a38e8b7b279e1a05b6a7abdc995238e3e}
 
-Test a field for a null value.
+Test a column for a null value.
 
-Column numbers start at 0. 
+#### Parameters
+* `column` Column number. Column numbers start at 0. 
+
+
+
+
+
 #### Returns
 true if the column value is a null value.
 
-### `public template<typename T>`  <br/>`T get(int column) const` {#classdb_1_1postgres_1_1_row_1afc50bb75e1ed70b0d718c4c600268e47}
+### `public template<typename T>`  <br/>`T as(int column) const` {#classdb_1_1postgres_1_1_row_1abe01bd7b402aabbadf98c9e6805e22ae}
 
 Get a column value.
 
 ```cpp
-int32_t emp_no = row.get<int32_t>(0);
+int32_t emp_no = row.as<int32_t>(0);
 ```
 
 
@@ -465,6 +476,30 @@ The value of the column.
 
 > Calling this method with incompatible types is treated as programming errors, not user or run-time errors. Those errors will be captured by an assert in debug mode and the behavior in non debug modes is undertermined.
 
+### `public template<typename T>`  <br/>`std::vector< `[`array_item`](#structdb_1_1postgres_1_1array__item)`< T > > asArray(int column) const` {#classdb_1_1postgres_1_1_row_1abc7c15eb90efcd69ea605524918da381}
+
+Get a column values for arrays.
+
+```cpp
+array_int32_t quarters = row.asArray<int32_t>(0);
+```
+
+
+Usage is the similar to using `T as(int column)` and binding between SQL names and C++ types are the same. Only bytea is not supported.
+
+Only array of one dimention are supported.
+
+
+#### Parameters
+* `column` Column number. Column numbers start at 0. 
+
+
+
+
+
+#### Returns
+The value of the column. The value is actually a vector of array_item<T>. Each item has two properties (`value` and `isNull`).
+
 ### `public const char * columnName(int column) const` {#classdb_1_1postgres_1_1_row_1a36da64e5fead10d999dd41e3e1cd6adf}
 
 Get a column name.
@@ -490,6 +525,77 @@ Get the row number.
 
 #### Returns
 For each row returned by a query, [num()](#classdb_1_1postgres_1_1_row_1a450ab7a4e2945826f8c4f35cb8af9cf4) returns a number indicating the order of the row in the result. The first row selected has a [num()](#classdb_1_1postgres_1_1_row_1a450ab7a4e2945826f8c4f35cb8af9cf4) of 1, the second has 2, and so on.
+
+### `public template<typename T>`  <br/>`inline T get(int column) const` {#classdb_1_1postgres_1_1_row_1afc50bb75e1ed70b0d718c4c600268e47}
+
+Get a column value.
+
+> Deprecated: use Row::as(int column) for replacement.
+
+
+# struct `array_item` {#structdb_1_1postgres_1_1array__item}
+
+
+A values in an array.
+
+
+
+## Summary
+
+ Members                        | Descriptions                                
+--------------------------------|---------------------------------------------
+`public T value` | The value for non null values.
+`public bool isNull` | `true` if the value is null.
+`public  array_item() = default` | 
+`public inline  array_item(T v)` | Constructor of a non null value.
+`public inline  array_item(std::nullptr_t)` | Constructor of a null value.
+`public inline  operator const T &() const` | 
+`public inline bool operator==(const `[`array_item`](#structdb_1_1postgres_1_1array__item)`< T > & other) const` | 
+
+## Members
+
+### `public T value` {#structdb_1_1postgres_1_1array__item_1a12b55fab4d1ed6bd7f5cf22c20d5c3fc}
+
+The value for non null values.
+
+
+
+### `public bool isNull` {#structdb_1_1postgres_1_1array__item_1a981900c5341377d5cb5d32ffe6bafd25}
+
+`true` if the value is null.
+
+
+
+### `public  array_item() = default` {#structdb_1_1postgres_1_1array__item_1a1147b2c5aa0503b228743b575133866f}
+
+
+
+
+
+### `public inline  array_item(T v)` {#structdb_1_1postgres_1_1array__item_1aedae122292fef60bb1b9854675b19b3d}
+
+Constructor of a non null value.
+
+#### Parameters
+* `v` The value.
+
+### `public inline  array_item(std::nullptr_t)` {#structdb_1_1postgres_1_1array__item_1a523d134253b40d890ca94b30e858944b}
+
+Constructor of a null value.
+
+
+
+### `public inline  operator const T &() const` {#structdb_1_1postgres_1_1array__item_1a69514ebbf7a1e4f50748cca26ac312a4}
+
+
+
+
+
+### `public inline bool operator==(const `[`array_item`](#structdb_1_1postgres_1_1array__item)`< T > & other) const` {#structdb_1_1postgres_1_1array__item_1a409565908e45d02e600d6e47a6d49aa9}
+
+
+
+
 
 
 # struct `date_t` {#structdb_1_1postgres_1_1date__t}
@@ -558,6 +664,28 @@ Number of days.
 ### `public int32_t months` {#structdb_1_1postgres_1_1interval__t_1a032c05d15f12d1eca703fe005633af36}
 
 Number of months.
+
+
+
+
+# struct `Settings` {#structdb_1_1postgres_1_1_settings}
+
+
+[Settings](#structdb_1_1postgres_1_1_settings) of a PostgreSQL connection.
+
+Those settings are internal setting of the libpqmxx library. Other standard PostgreSQL seetings should be set when calling connect().
+
+## Summary
+
+ Members                        | Descriptions                                
+--------------------------------|---------------------------------------------
+`public bool emptyStringAsNull` | If true, empty strings passed as parameters to exectute() are considered as null values.
+
+## Members
+
+### `public bool emptyStringAsNull` {#structdb_1_1postgres_1_1_settings_1a5c20471464317fd999d1d39d9560bfed}
+
+If true, empty strings passed as parameters to exectute() are considered as null values.
 
 
 
