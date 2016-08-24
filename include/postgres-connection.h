@@ -39,7 +39,7 @@ namespace db {
      **/
     struct Settings {
       /**
-       * If true, empty strings passed as parameters to exectute() are
+       * If true (the default), empty strings passed as parameter to execute() are
        * considered as null values.
        **/
       bool emptyStringAsNull = true;
