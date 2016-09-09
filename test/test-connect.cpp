@@ -33,14 +33,3 @@ TEST(connect, sync) {
   EXPECT_THROW(cnx.connect("postgresql://invalid_user@localhost"), ConnectionException);
 
 }
-
-TEST(connect, async) {
-
-  auto cnx = std::make_shared<boost::Connection>();
-  cnx->connect("postgresql://ci-test@localhost").done([](int) {
-    EXPECT_TRUE(true);
-  });
-
-//   EXPECT_THROW(cnx.connect("postgresql://invalid_user@localhost"), ConnectionException);
-
-}

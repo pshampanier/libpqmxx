@@ -1,3 +1,22 @@
+# Release 2.0
+
+1. Support of asynchronous mode.
+
+2. Notice Processing. You can now register a handler to process notices.
+
+    ```c++
+    cnx.notice([](const char *message) {
+        std::cout << message << std::endl;    
+    });
+    ```
+    
+    By default, notices are displayed on stderr, to disable notices register nullptr as the notice handler:
+    
+    ```c++
+    cnx.notice(nullptr);
+    
+    ```
+
 # Release 1.1
 
 1. Adding support of arrays.

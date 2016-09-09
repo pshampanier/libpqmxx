@@ -48,9 +48,10 @@ namespace db {
     /**
      * A connection to a PostgreSQL database.
      **/
-    class Connection : public std::enable_shared_from_this<Connection> {
+    class Connection {
 
       friend class Result;
+      friend class ResultHandle;
 
       public:
       
@@ -68,7 +69,7 @@ namespace db {
          * The destuctor will implicitly close the connection to the server and
          * associated results if necessary.
          **/
-        ~Connection();
+        virtual ~Connection();
       
         /**
          * Open a connection to the database.
@@ -93,7 +94,7 @@ namespace db {
          *
          * This method is automatically called by the destructor.
          **/
-        Connection &close() noexcept;
+        virtual Connection &close();
 
         /**
          * Cancel queries in progress.
@@ -196,7 +197,7 @@ namespace db {
           Params params(settings_, sizeof...(args));
           std::make_tuple((params.bind(std::forward<Args>(args)), 0)...);
           execute(sql, params);
-          return result_;
+          return *lastResult_;
         }
 
         /**
@@ -228,37 +229,56 @@ namespace db {
          **/
         Connection &rollback();
 
-        Connection &once(std::function<bool (const Result &result)> callback);
-        Connection &each(std::function<bool (const Result &result)> callback);
-        Connection &done(std::function<void (int count)> callback);
         Connection &always(std::function<void ()> callback);
+
+        Connection &done(std::function<void ()> callback);
+
+        /**
+         * Registration of the default error handler for asynchronous connections.
+         **/
         Connection &error(std::function<void (std::exception_ptr reason)> callback);
+
+        Connection &notice(std::function<void (const char *message)> callback) noexcept;
 
       protected:
 
-        PGconn *pgconn_;  /**< The native connection pointer. **/
-        Result  result_;  /**< Result of the current query. **/
-        bool    async_;   /**< `true` when running on asynchronous mode **/
+        PGconn                 *pgconn_;      /**< The native connection pointer. **/
+        std::shared_ptr<Result> lastResult_;  /**< Result of the last execution. **/
+        bool                    async_;       /**< `true` when running on asynchronous mode. **/
+        std::exception_ptr lastException_;    /**< capture of the last exception for async mode. **/
 
         /**
          * Callbacks for asynchonous operations in non bloking mode.
          **/
-        std::function<bool (Result &)>           iterator_; // once and each
-        std::function<void (int)>                done_;
-        std::function<void (std::exception_ptr)> error_;
-        std::function<void ()>                   always_;
+        std::function<void ()>                    done_;
+        std::function<void (std::exception_ptr)>  error_;
+        std::function<void (const char *message)> notice_;
+
+        /**
+         * Internal callbacks for asynchrous operations.
+         **/
+        std::function<void ()> inputReady_;
+
+        template <class E>
+        void throwException(std::string what) {
+          if (async_) {
+            lastException_ = std::make_exception_ptr(E(what));
+            if (error_) {
+              error_(lastException_);
+            }
+          }
+          else {
+            throw E(what);
+          }
+        }
 
         /**
          * Process available data retreived from the server.
          *
          * This method must be called by the owner of the event loop when
          * some data are available in the connection.
-         *
-         * @return true if more data are expected. In this case the event loop
-         *         owner must call again `consumeInput()` when more data will
-         *         become available.
          **/
-        bool consumeInput();
+        void consumeInput(std::function <void ()> callback);
 
         /**
          * Flush the data pending to be send throught the connection.
@@ -270,15 +290,15 @@ namespace db {
          *         event loop owner must call again `flush()` when the server
          *         is ready to access more data.
          **/
-        bool flush();
+        void flush(std::function <void ()> callback);
 
         /**
          * Check the connection progress status.
          **/
         void connectPoll();
 
-        virtual void asyncRead(int socket, std::function<void ()> handler) const noexcept {}
-        virtual void asyncWrite(int socket, std::function<void ()> handler) const noexcept {}
+        virtual void asyncWait(std::function<void (bool)> readCallback,
+                               std::function<void (bool)> writeCallback) {}
 
         /**
          * Get the native socket identifier.

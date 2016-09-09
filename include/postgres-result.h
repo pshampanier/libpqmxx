@@ -23,11 +23,14 @@
 
 #include "postgres-types.h"
 
+#include <functional>
+
 namespace db {
   namespace postgres {
     
     class Connection;
     class Result;
+    class ResultHandle;
 
     /**
      * A row in a Result.
@@ -183,6 +186,7 @@ namespace db {
 
       friend class Connection;
       friend class Row;
+      friend class ResultHandle;
 
     public:
       
@@ -199,6 +203,13 @@ namespace db {
        **/
       uint64_t count() const noexcept;
       
+      void discard();
+
+      Result &once(std::function<void (const Row &row)> callback);
+      Result &each(std::function<bool (const Row &row)> callback);
+      Result &done(std::function<void (uint64_t count)> callback);
+      Result &error(std::function<void (std::exception_ptr reason)> callback);
+
       /**
        * Support of the range-based for loops.
        *
@@ -237,24 +248,19 @@ namespace db {
        **/
       iterator end();
 
+      Result(Connection &conn);
+      Result(ResultHandle &handle);
+
     private:
 
-      PGresult *pgresult_;  /**< Native result **/
-      Connection &conn_;    /**< Connection owning the result. **/
+      std::shared_ptr<ResultHandle> handle_;  /**< Native result **/
+
       Row begin_, end_;     /**< Virtual begin and end of the result. **/
-      int num_;             /**< Current row number. */
-
-      ExecStatusType status_ = PGRES_EMPTY_QUERY;
-
-      Result(Connection &conn);
-      ~Result();
 
       /**
        * Cast to the native PostgreSQL result.
        **/
-      operator const PGresult *() const {
-        return pgresult_;
-      }
+      operator const PGresult *() const;
 
       /**
        * Get the first result from the server.
@@ -265,11 +271,6 @@ namespace db {
        * Get the next result from the server.
        **/
       void next();
-
-      /**
-       * Clear the previous result of the connection.
-       **/
-      void clear();
 
       Result(const Result&) = delete;
       Result(const Result&&) = delete;

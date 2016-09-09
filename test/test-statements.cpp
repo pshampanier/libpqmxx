@@ -29,6 +29,7 @@ TEST(result_sync, statements) {
 
   Connection cnx;
   cnx.connect();
+  cnx.notice(nullptr);
 
   cnx.execute(R"SQL(
 

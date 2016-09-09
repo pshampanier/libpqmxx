@@ -16,12 +16,22 @@ elseif (CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
 
-# Boost
-set(Boost_DEBUG                 OFF)
-set(Boost_USE_STATIC_LIBS        ON)
+# Configure Boost
+set(Boost_DEBUG OFF)
+set(Boost_NO_SYSTEM_PATHS        ON)
+set(Boost_USE_STATIC_LIBS        ON) # only find static libs
 set(Boost_USE_MULTITHREADED      ON)
-set(Boost_USE_STATIC_RUNTIME    OFF)
-find_package(Boost COMPONENTS system)
+set(Boost_USE_STATIC_RUNTIME     OFF)
+find_package(Boost 1.61.0 EXACT REQUIRED COMPONENTS system date_time regex)
+
+# Add boost to the include path.
+include_directories(${Boost_INCLUDE_DIRS})
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  # Specify the minimum version to be supported by the library (Windows 7)
+  # see https://msdn.microsoft.com/en-us/library/6sehtctf.aspx
+  add_definitions(-D_WIN32_WINNT=0x0601)
+endif()
 
 # Configure Googletest
 find_package(GTest REQUIRED)
@@ -43,6 +53,7 @@ macro(postgres_test target)
   file(GLOB TEST_FILES ${CMAKE_CURRENT_LIST_DIR}/test/*.cpp)
   add_executable(${target} ${TEST_FILES} ${INCLUDE_FILES} ${SOURCE_FILES})
   target_link_libraries(${target} ${GTEST_LIBRARIES} ${LIBPQMXX_LIBRARIES} ${PostgreSQL_LIBRARIES})
+  target_link_libraries(${target} ${Boost_SYSTEM_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_REGEX_LIBRARY})
 endmacro(postgres_test)
 
 #

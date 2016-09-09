@@ -247,18 +247,29 @@ namespace db {
       return true;
     }
 
+    typedef std::function<void (const char *)> notice_handler;
+
+    // -------------------------------------------------------------------------
+    // Notice processor (dispatch the notice to the registered handler).
+    // -------------------------------------------------------------------------
+    static void noticeProcessor(void *arg, const char *message) {
+      notice_handler *notice = (notice_handler *)arg;
+      if (notice) {
+        (*notice)(message);
+      }
+    }
+
     // -------------------------------------------------------------------------
     // Constructor.
     // -------------------------------------------------------------------------
-    Connection::Connection(Settings settings)
-      : result_(*this) {
+    Connection::Connection(Settings settings) {
       pgconn_ = nullptr;
       transaction_ = 0;
       async_ = false;
-      iterator_ = nullptr;
       done_ = nullptr;
       error_ = nullptr;
-      always_ = nullptr;
+      notice_ = nullptr;
+      inputReady_ = nullptr;
       settings_ = settings;
     }
 
@@ -270,16 +281,23 @@ namespace db {
     }
     
     // -------------------------------------------------------------------------
+    // Set the notice handler
+    // -------------------------------------------------------------------------
+    Connection &Connection::notice(std::function<void (const char *)> callback) noexcept {
+      notice_handler *notice = callback ? &callback : nullptr;
+      PQsetNoticeProcessor(pgconn_, noticeProcessor, notice);
+      return *this;
+    }
+
+    // -------------------------------------------------------------------------
     // Open a connection to the database.
     // -------------------------------------------------------------------------
     Connection &Connection::connect(const char *connInfo) {
-      pgconn_ = PQconnectdb(connInfo == nullptr ? "" : connInfo);
+      connInfo = connInfo == nullptr ? "" : connInfo;
       if (async_) {
         pgconn_ = PQconnectStart(connInfo);
-        if (pgconn_ == nullptr) {
-          // ## TO DO
-        }
-        else {
+        if (pgconn_) {
+          PQsetnonblocking(pgconn_, 1);
           connectPoll();
         }
       }
@@ -288,8 +306,11 @@ namespace db {
         if( PQstatus(pgconn_) != CONNECTION_OK ) {
           PQfinish(pgconn_);
           pgconn_ = nullptr;
-          throw ConnectionException(lastError());
         }
+      }
+
+      if (pgconn_ == nullptr) {
+        throwException<ConnectionException>(lastError());
       }
 
       return *this;
@@ -298,7 +319,7 @@ namespace db {
     // -------------------------------------------------------------------------
     // Close the database connection.
     // -------------------------------------------------------------------------
-    Connection &Connection::close() noexcept {
+    Connection &Connection::close() {
       assert(pgconn_);
       PQfinish(pgconn_);
       pgconn_ = nullptr;
@@ -317,16 +338,18 @@ namespace db {
     // -------------------------------------------------------------------------
     void Connection::execute(const char *sql, const Params &params) {
 
-      result_.clear();
+      if (lastResult_) {
+        lastResult_->discard();
+      }
 
       int success;
       if (isSingleStatement(sql)) {
         success = PQsendQueryParams(pgconn_, sql, int(params.values_.size()),
-                                      params.types_.data(),
-                                      params.values_.data(),
-                                      params.lengths_.data(),
-                                      params.formats_.data(),
-                                      1 /* binary results */);
+                                    params.types_.data(),
+                                    params.values_.data(),
+                                    params.lengths_.data(),
+                                    params.formats_.data(),
+                                    1 /* binary results */);
       }
       else {
         assert(!params.values_.size()); // parameters are allowed only for single commands
@@ -337,11 +360,13 @@ namespace db {
         // Switch to the single row mode to avoid loading the all result in memory.
         success = PQsetSingleRowMode(pgconn_);
         assert(success);
-        result_.first();
+
+        lastResult_ = std::make_shared<Result>(*this);
+        lastResult_->first();
       }
 
       if (!success) {
-        throw ExecutionException(lastError());
+        throwException<ExecutionException>(lastError());
       }
     }
 
@@ -384,7 +409,7 @@ namespace db {
 
       int success = PQcancel(pgcancel, errbuf, sizeof(errbuf));
       if (!success) {
-        throw ExecutionException(errbuf);
+        throwException<ExecutionException>(errbuf);
       }
 
       PQfreeCancel(pgcancel);
@@ -394,17 +419,52 @@ namespace db {
     // -------------------------------------------------------------------------
     // Process available data retreived from the server.
     // -------------------------------------------------------------------------
-    bool Connection::consumeInput() {
-
-      return false;
+    void Connection::consumeInput(std::function <void ()> callback) {
+      if (PQconsumeInput(pgconn_)) {
+        if (PQisBusy(pgconn_)) {
+          asyncWait([this, callback](bool aborted) {
+            if (!aborted) {
+              consumeInput(callback);
+            }
+          }, nullptr);
+        }
+        else {
+          callback();
+        }
+      }
+      else {
+        throwException<ExecutionException>(lastError());
+      }
     }
 
     // -------------------------------------------------------------------------
     // Flush the data pending to be send throught the connection.
     // -------------------------------------------------------------------------
-    bool Connection::flush() {
+    void Connection::flush(std::function <void ()> callback) {
 
-      return false;
+      asyncWait(nullptr, [this, callback](bool aborted) {
+        if (!aborted) {
+          int res = PQflush(pgconn_);
+          if (res == 1) {
+            asyncWait([this, callback](bool aborted) {
+              if (!aborted) {
+                consumeInput(callback);
+              }
+            }, [this, callback](bool aborted) {
+              if (!aborted) {
+                flush(callback);
+              }
+            });
+          }
+          else if (res == -1) {
+            throwException<ExecutionException>(lastError());
+          }
+          else {
+            callback();
+          }
+        }
+      });
+
     }
 
     // -------------------------------------------------------------------------
@@ -414,31 +474,31 @@ namespace db {
       PostgresPollingStatusType status = PQconnectPoll(pgconn_);
       switch (status) {
         case PGRES_POLLING_FAILED: {
-          assert(error_ != nullptr);
-          std::exception_ptr err = std::make_exception_ptr(new db::postgres::ConnectionException(lastError()));
-          error_(err);
+          throwException<db::postgres::ConnectionException>(lastError());
           break;
         }
 
         case PGRES_POLLING_READING: {
-          auto self(shared_from_this());
-          asyncRead(socket(), [self]() {
-            self->connectPoll();
-          });
+          asyncWait([this](bool aborted) {
+            if (!aborted) {
+              connectPoll();
+            }
+          }, nullptr);
           break;
         }
 
         case PGRES_POLLING_WRITING: {
-          auto self(shared_from_this());
-          asyncWrite(socket(), [self]() {
-            self->connectPoll();
+          asyncWait(nullptr, [this](bool aborted) {
+            if (!aborted) {
+              connectPoll();
+            }
           });
           break;
         }
 
         case PGRES_POLLING_OK:
           assert(done_ != nullptr);
-          done_(0);
+          done_();
           break;
 
         default:
@@ -454,24 +514,9 @@ namespace db {
      return PQsocket(pgconn_);
     }
 
-    Connection &Connection::once(std::function<bool (const Result &)> cb) {
-     iterator_ = cb;
-     return *this;
-    }
-
-    Connection &Connection::each(std::function<bool (const Result &)> cb) {
-     iterator_ = cb;
-     return *this;
-    }
-
-    Connection &Connection::done(std::function<void (int)> cb) {
-     done_ = cb;
-     return *this;
-    }
-
-    Connection &Connection::always(std::function<void ()> cb) {
-     always_ = cb;
-     return *this;
+    Connection &Connection::done(std::function<void ()> cb) {
+      done_ = cb;
+      return *this;
     }
 
     // -------------------------------------------------------------------------
@@ -479,6 +524,11 @@ namespace db {
     // -------------------------------------------------------------------------
     Connection &Connection::error(std::function<void (std::exception_ptr)> cb) {
       error_ = cb;
+      if (lastException_) {
+        // An exception happened before the registration of the handler, we can
+        // call the handler now.
+        error_(lastException_);
+      }
       return *this;
     }
 

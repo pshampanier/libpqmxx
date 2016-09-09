@@ -22,6 +22,12 @@
 #pragma once
 #include "postgres-connection.h"
 
+#pragma warning( disable : 4068)  // Visual Studio: ignore #pragma GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#include "boost/asio.hpp"
+#pragma GCC diagnostic pop
+
 namespace db {
   namespace postgres {
     namespace boost {
@@ -31,20 +37,84 @@ namespace db {
        **/
       class Connection : public db::postgres::Connection {
       public:
-        Connection() {
+
+        Connection(::boost::asio::io_service& ioService)
+        : socket_(ioService) {
           async_ = true;
         }
 
-        virtual void asyncRead(int socket, std::function<void ()> handler) const noexcept override {
+        // ---------------------------------------------------------------------
+        // Close the connection to the database server.
+        // ---------------------------------------------------------------------
+        virtual Connection &close() override {
+          if (readCallback_ || writeCallback_) {
+            // Cancel the pending io.
+            this->socket_.cancel();
+          }
 
+          return Connection::close();
+        }
+
+        // ---------------------------------------------------------------------
+        // Wait for the next io event.
+        // ---------------------------------------------------------------------
+        virtual void asyncWait(std::function<void (bool)> readCallback,
+                               std::function<void (bool)> writeCallback) override {
+
+          if (socket_.native() == -1) {
+            socket_.assign(::boost::asio::ip::tcp::v4(), socket());
+          }
+
+          if (readCallback) {
+            assert(readCallback_ == nullptr);
+            readCallback_ = readCallback;
+            socket_.async_read_some(::boost::asio::null_buffers(),
+              [this, readCallback, writeCallback](::boost::system::error_code ec, size_t) {
+                if (!ec && writeCallback) {
+                  // There was also a write operation pending, we need to cancel it.
+                  ec = this->socket_.cancel(ec);
+                }
+                bool aborted = (ec == ::boost::asio::error::operation_aborted);
+                if (!ec || aborted) {
+                  readCallback_ = nullptr;
+                  readCallback(aborted);
+                }
+                else {
+                  // throw an exception
+                  this->throwException<std::runtime_error>(ec.message());
+                }
+              }
+            );
+          }
+
+          if (writeCallback) {
+            assert(writeCallback_ == nullptr);
+            writeCallback_ = writeCallback;
+            socket_.async_write_some(::boost::asio::null_buffers(),
+              [this, readCallback, writeCallback](::boost::system::error_code ec, size_t) {
+                if (!ec && readCallback) {
+                  // There was also a read operation pending, we need to cancel it.
+                  ec = this->socket_.cancel(ec);
+                }
+                bool aborted = (ec == ::boost::asio::error::operation_aborted);
+                if (!ec || aborted) {
+                  writeCallback_ = nullptr;
+                  writeCallback(aborted);
+                }
+                else {
+                  // throw an exception
+                  this->throwException<std::runtime_error>(ec.message());
+                }
+              }
+            );
+          }
 
         }
 
-        virtual void asyncWrite(int socket, std::function<void ()> handler) const noexcept override {
-
-
-        }
-
+      private:
+        ::boost::asio::ip::tcp::socket socket_;
+        std::function<void (bool)>     readCallback_ = nullptr;
+        std::function<void (bool)>     writeCallback_ = nullptr;
       };
 
     } // namespace boost
