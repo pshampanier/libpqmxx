@@ -17,8 +17,7 @@ elseif (CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 # Configure Googletest
-find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS})
+find_package(GTest)
 
 # Configure libpq
 find_package(PostgreSQL REQUIRED)
@@ -46,5 +45,9 @@ macro(postgres_example target)
   target_link_libraries(${target} ${LIBPQMXX_LIBRARIES} ${PostgreSQL_LIBRARIES})
 endmacro(postgres_example)
 
-postgres_test(postgres-test)
+if(GTest_FOUND)
+    include_directories(${GTEST_INCLUDE_DIRS})
+    postgres_test(postgres-test)
+endif()
+
 postgres_example(postgres-example)
