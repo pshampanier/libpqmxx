@@ -60,7 +60,7 @@
     #define IS_LITTLE_ENDIAN false
   #endif
 #elif defined (__APPLE__)
-  #ifdef _LITTLE_ENDIAN__
+  #ifdef __LITTLE_ENDIAN__
     #define IS_LITTLE_ENDIAN true
   #else
     #define IS_LITTLE_ENDIAN false
@@ -95,6 +95,7 @@
     inline int32_t network_cast(int32_t v){return byteorder_swaplc(v);}
     inline int64_t network_cast(int64_t v){return byteorder_swapllc(v);}
 #else
+    template <typename T>
     inline T network_cast(T v){return v;}
 #endif
 
