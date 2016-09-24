@@ -15,6 +15,9 @@ createuser ci-test
 createdb ci-test --owner=ci-test --encoding=UTF8 
 ```
 
+You can set the location of the PostgreSQL server by using 
+[Environment Variables](https://www.postgresql.org/docs/current/static/libpq-envars.html).
+
 ### Dependancies
 
 * MacOS: `brew install postgresql`.
