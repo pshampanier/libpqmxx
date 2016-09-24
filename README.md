@@ -39,7 +39,7 @@ used to make the programing interface slick, very easy to use and the code to re
     ```cpp
     auto &employees = cnx.execute("SELECT emp_no, first_name || ' ' || last_name FROM employees");
     for (auto &employee: employees) {
-      std::cout << row.as<int32_t>(0) << row.as<std::string>(1) << std::endl;
+      std::cout << employee.as<int32_t>(0) << employee.as<std::string>(1) << std::endl;
     }
     ```  
 * **Results with only one row can be accessed directly without using the iterator**:

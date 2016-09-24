@@ -31,6 +31,35 @@
 namespace db {
   namespace postgres {
 
+    /**
+     * A reference to the connection.
+     *
+     * In asynchonous mode, it's mandatory to create the connection on the heap
+     * using a shared_ptr while on blocking mode it's practical to be able to
+     * create the Connection on the stack. The ConnectionRef make both possible
+     * by keeping a reference to connection in both cases but also keeping a
+     * shared_ptr when the connection is asynchronous. This way the owner of
+     * a ConnectionRef can extend the scope of an asynchronous Connection to its
+     * own scope and acommodate with blocking Connection created on the stack.
+     **/
+    struct ConnectionRef {
+
+      Connection &conn;
+      std::shared_ptr<Connection> conn_ptr;
+
+      ConnectionRef(Connection &conn)
+      : conn(conn) {
+        if (conn.async()) {
+          conn_ptr = conn.shared_from_this();
+        }
+      }
+
+      Connection & operator * () const noexcept {
+        return conn;
+      }
+
+    };
+
     /**************************************************************************
      * Handle to the native PostgreSQL result.
      **************************************************************************/
@@ -39,8 +68,9 @@ namespace db {
       PGresult                   *pgresult = nullptr;              /** libpq result        */
       ExecStatusType              status   = PGRES_EMPTY_QUERY;    /** Current status      */
       int                         rowNum;                          /** Current row number. */
-      Connection                 &conn;
+      ConnectionRef               conn;
       std::exception_ptr          lastException;
+      bool                        asyncIterator = false; /** true if once() or each() have been called */
 
       std::function<void (uint64_t)>           done = nullptr;
       std::function<void (std::exception_ptr)> error = nullptr;
@@ -57,7 +87,7 @@ namespace db {
 
       template <class E>
       void throwException(std::string what) {
-        if (conn.async_) {
+        if ((*conn).async_) {
           lastException = std::make_exception_ptr(E(what));
           if (error) {
             error(lastException);
@@ -69,7 +99,7 @@ namespace db {
       }
 
       void throwException(std::exception_ptr eptr) {
-        assert(conn.async_);
+        assert((*conn).async_);
         lastException = eptr;
         if (error) {
           error(lastException);
@@ -79,8 +109,8 @@ namespace db {
       void asyncGetResult(std::function<void ()> callback) {
 
         auto self(shared_from_this());
-        conn.flush([self, callback]() {
-          self->conn.consumeInput([self, callback]() {
+        (*conn).flush([self, callback]() {
+          (*self->conn).consumeInput([self, callback]() {
             try {
               callback();
             }
@@ -98,7 +128,7 @@ namespace db {
       void first() {
         assert(pgresult == nullptr);
         rowNum = 0;
-        if (!conn.async_) {
+        if (!(*conn).async_) {
           next();
         }
       }
@@ -114,9 +144,9 @@ namespace db {
           pgresult = nullptr;
         }
 
-        assert(!(conn.async_ && PQisBusy(conn)));
+        assert(!((*conn).async_ && PQisBusy(*conn)));
 
-        pgresult = PQgetResult(conn);
+        pgresult = PQgetResult(*conn);
         assert(pgresult);
         status = PQresultStatus(pgresult);
         switch (status) {
@@ -134,7 +164,7 @@ namespace db {
 
           case PGRES_BAD_RESPONSE:
           case PGRES_FATAL_ERROR:
-            throw ExecutionException(conn.lastError());
+            throw ExecutionException((*conn).lastError());
             break;
 
           case PGRES_COMMAND_OK:
@@ -156,7 +186,7 @@ namespace db {
           case PGRES_COMMAND_OK:
             do {
               PQclear(pgresult);
-              pgresult = PQgetResult(conn);
+              pgresult = PQgetResult(*conn);
               if (pgresult == nullptr) {
                 status = PGRES_EMPTY_QUERY;
               }
@@ -168,7 +198,7 @@ namespace db {
 
                   case PGRES_BAD_RESPONSE:
                   case PGRES_FATAL_ERROR:
-                    throwException<ExecutionException>(conn.lastError());
+                    throwException<ExecutionException>((*conn).lastError());
                     break;
 
                   case PGRES_SINGLE_TUPLE:
@@ -190,7 +220,7 @@ namespace db {
           case PGRES_FATAL_ERROR:
           case PGRES_TUPLES_OK:
             PQclear(pgresult);
-            pgresult = PQgetResult(conn);
+            pgresult = PQgetResult(*conn);
             assert(pgresult == nullptr);
             status = PGRES_EMPTY_QUERY;
             break;
@@ -200,11 +230,11 @@ namespace db {
             if (status == PGRES_SINGLE_TUPLE) {
               // All results of the previous query have not been processed, we
               // need to cancel it.
-              conn.cancel();
+              (*conn).cancel();
             }
             else if (status == PGRES_TUPLES_OK) {
               PQclear(pgresult);
-              pgresult = PQgetResult(conn);
+              pgresult = PQgetResult(*conn);
               status = PGRES_EMPTY_QUERY;
             }
             assert(pgresult == nullptr);
@@ -271,6 +301,7 @@ namespace db {
         assert(false);
       }
     }
+
 #endif
 
     // -------------------------------------------------------------------------
@@ -346,6 +377,9 @@ namespace db {
     : result_(result) {
     }
 
+    // -------------------------------------------------------------------------
+    // Row number.
+    // -------------------------------------------------------------------------
     int Row::num() const noexcept {
       return result_.handle_->rowNum;
     }
@@ -570,8 +604,9 @@ namespace db {
     // -------------------------------------------------------------------------
     // Discard the result.
     // -------------------------------------------------------------------------
-    void Result::discard() {
+    Result & Result::discard() {
       handle_->discard();
+      return *this;
     }
 
     // -------------------------------------------------------------------------
@@ -616,8 +651,12 @@ namespace db {
      * Registration handlers for the asynchronous mode.
      *************************************************************************/
 
-    Result &Result::once(std::function<void (const Row &)> callback) {
+    Result &Result::once(std::function<void (const Row &)> callback,
+                         std::function<void (std::exception_ptr reason)> error) {
+
+      assert(!handle_->asyncIterator); // not supported to register once & each
       auto handle = handle_;
+      handle_->asyncIterator = true;
       handle_->asyncGetResult([callback, handle]() {
         Result result(*handle);
         result.next();
@@ -626,12 +665,22 @@ namespace db {
           handle->done(result.count());
         }
       });
+
+      if (error) {
+        // Register the error handler.
+        this->error(error);
+      }
+
       return *this;
+
     }
 
-    Result &Result::each(std::function<bool (const Row &)> callback) {
+    Result &Result::each(std::function<bool (const Row &)> callback,
+                         std::function<void (std::exception_ptr reason)> error) {
 
+      assert((*handle_->conn).async_);
       auto handle = handle_;
+      handle_->asyncIterator = true;
       handle_->asyncGetResult([callback, handle]() {
         Result result(*handle);
         bool abort = false;
@@ -646,23 +695,31 @@ namespace db {
           else {
             abort = !callback(result);
           }
-        } while (!abort && handle->status != PGRES_TUPLES_OK && !PQisBusy(handle->conn));
+        } while (!abort && handle->status != PGRES_TUPLES_OK && !PQisBusy(*handle->conn));
 
-        if (!abort && handle->status != PGRES_TUPLES_OK && PQisBusy(handle->conn)) {
+        if (!abort && handle->status != PGRES_TUPLES_OK && PQisBusy(*handle->conn)) {
           // There are more records to fetch from the server.
-          result.each(callback);
+          result.each(callback, nullptr);
         }
 
       });
+
+      if (error) {
+        // Register the error handler.
+        this->error(error);
+      }
 
       return *this;
     }
 
     Result &Result::done(std::function<void (uint64_t)> callback) {
+
+      assert((*handle_->conn).async_);
+
       if (handle_->status == PGRES_TUPLES_OK) {
         callback(count());
       }
-      else if (handle_->pgresult == nullptr) {
+      else if (!handle_->asyncIterator) {
         // Neither once() nor each() have been registred, the call done()
         // trigger the fetch of the query result.
         auto handle = handle_;
@@ -679,6 +736,9 @@ namespace db {
     }
 
     Result &Result::error(std::function<void (std::exception_ptr)> callback) {
+
+      assert((*handle_->conn).async_);
+
       if (handle_->lastException) {
         callback(handle_->lastException);
       }

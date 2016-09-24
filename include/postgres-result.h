@@ -31,6 +31,7 @@ namespace db {
     class Connection;
     class Result;
     class ResultHandle;
+    class Row;
 
     /**
      * A row in a Result.
@@ -203,12 +204,105 @@ namespace db {
        **/
       uint64_t count() const noexcept;
       
-      void discard();
+      Result &discard();
 
-      Result &once(std::function<void (const Row &row)> callback);
-      Result &each(std::function<bool (const Row &row)> callback);
-      Result &done(std::function<void (uint64_t count)> callback);
-      Result &error(std::function<void (std::exception_ptr reason)> callback);
+      /**
+       * Attach an event handler for the first row (asynchronous api).
+       *
+       * If the result contains at least once row, the handler will be called.
+       *
+       * ```
+       * cnx->execute("SELECT from_date FROM titles WHERE emp_no=$1", 10020)
+       *   .once([](const Row &row) {
+       *   ...
+       * });
+       * ```
+       *
+       * @param once A function to execute at the time the event is triggered.
+       * @param error A function to execute if an error occurs. An alternative
+       *        is to register that function using error().
+       * @return The result itself to eventually chain another event handler.
+       **/
+      Result &once(std::function<void (const Row &row)> once,
+                   std::function<void (std::exception_ptr reason)> error = nullptr);
+
+      /**
+       * Attach an event handler for the each row in the result (asynchronous api).
+       *
+       * The event handler will be called for each row in the result until it
+       * return false.
+       *
+       * ```
+       * cnx->execute(""SELECT emp_no, first_name || ' ' || last_name FROM employees")
+       *   .each([](const Row &employee) {
+       *     std::cout << "Employee #: " << employee.as<int32_t>(0)
+       *               << "Name: " << employee.as<std::string>(1) << std::endl;
+       *     return true;
+       *   });
+       * ```
+       *
+       * @param each  A function to execute at the time the event is triggered.
+       * @param error A function to execute if an error occurs. An alternative
+       *        is to register that function using error().
+       * @return The result itself to eventually chain another event handler.
+       **/
+      Result &each(std::function<bool (const Row &row)> each,
+                   std::function<void (std::exception_ptr reason)> error = nullptr);
+
+      /**
+       * Attach an event handler on the command execution completion (asynchronous api).
+       *
+       * The event handler will be called once the command execution is completed.
+       * If the call to execute() contains more than one SQL command, the event
+       * handler will be called only once with the number of record impacted by
+       * the last SQL command.
+       *
+       * ```
+       * cnx->execute(""SELECT emp_no, first_name || ' ' || last_name FROM employees")
+       *   .each([](const Row &employee) {
+       *     ...
+       *     return true;
+       * }).done([](int64_t count) {
+       *   ...
+       * });
+       * ```
+       *
+       * @param done  A function to execute at the time the event is triggered.
+       * @return The result itself to eventually chain another event handler.
+       **/
+      Result &done(std::function<void (uint64_t count)> done);
+
+      /**
+       * Attach an event handler on the command execution throws an error (asynchronous api).
+       *
+       * The event handler will be called once if the command execution complete
+       * with an error.
+       *
+       * If the call to execute() contains more than one SQL command, the first
+       * SQL command completing with an error will trigger the call of the
+       * handler and stop the execution of the next commands.
+       *
+       * ```
+       * cnx->execute(""SELECT emp_no, first_name || ' ' || last_name FROM employees")
+       *   .each([](const Row &employee) {
+       *     ...
+       *     return true;
+       * }).done([](int64_t count) {
+       *   ...
+       * }).error([](std::exception_ptr reason) {
+       *   try {
+       *     std::rethrow_exception(e);
+       *   }
+       *   catch (const std::runtime_error &e) {
+       *     ...
+       *   }
+       * });
+       * ```
+       *
+       * @param error  A function to execute at the time the event is triggered.
+       * @return The result itself to eventually chain another event handler.
+       **/
+      Result &error(std::function<void (std::exception_ptr reason)> error);
 
       /**
        * Support of the range-based for loops.
@@ -248,8 +342,19 @@ namespace db {
        **/
       iterator end();
 
-      Result(Connection &conn);
+      /**
+       * Constructor.
+       *
+       * Reserved. Do not use.
+       **/
       Result(ResultHandle &handle);
+
+      /**
+       * Constructor.
+       *
+       * Reserved. Do not use.
+       **/
+      Result(Connection &conn);
 
     private:
 

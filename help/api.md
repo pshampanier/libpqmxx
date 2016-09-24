@@ -6,6 +6,7 @@
 
  Members                        | Descriptions                                
 --------------------------------|---------------------------------------------
+`namespace `[``boost``](#namespacedb_1_1postgres_1_1boost)    | 
 `class `[``Connection``](#classdb_1_1postgres_1_1_connection)    | A connection to a PostgreSQL database.
 `class `[``ConnectionException``](#classdb_1_1postgres_1_1_connection_exception)    | Exception thrown on connection failure.
 `class `[``ExecutionException``](#classdb_1_1postgres_1_1_execution_exception)    | Exception thrown on any runtime error except a connection failure.
@@ -19,6 +20,53 @@
 `struct `[``timestamp_t``](#structdb_1_1postgres_1_1timestamp__t)    | A `timestamp` value (without time zone).
 `struct `[``timestamptz_t``](#structdb_1_1postgres_1_1timestamptz__t)    | A `timestamp with timezone` value.
 `struct `[``timetz_t``](#structdb_1_1postgres_1_1timetz__t)    | A `time with timezone` value.
+# namespace `boost`
+
+
+
+## Summary
+
+ Members                        | Descriptions                                
+--------------------------------|---------------------------------------------
+`class `[``Connection``](#classdb_1_1postgres_1_1boost_1_1_connection)    | An asynchronous implementation of a postgresql connection based on boost.
+# class `Connection` {#classdb_1_1postgres_1_1boost_1_1_connection}
+
+```
+class Connection
+  : public db::postgres::Connection
+```  
+
+An asynchronous implementation of a postgresql connection based on boost.
+
+
+
+## Summary
+
+ Members                        | Descriptions                                
+--------------------------------|---------------------------------------------
+`public inline  Connection(::boost::asio::io_service & ioService)` | 
+`public inline virtual `[`Connection`](#classdb_1_1postgres_1_1boost_1_1_connection)` & close()` | Close the database connection.
+`public inline virtual void asyncWait(std::function< void(bool)> readCallback,std::function< void(bool)> writeCallback)` | 
+
+## Members
+
+### `public inline  Connection(::boost::asio::io_service & ioService)` {#classdb_1_1postgres_1_1boost_1_1_connection_1aa0289e342d853b441a80a10becb70007}
+
+
+
+
+
+### `public inline virtual `[`Connection`](#classdb_1_1postgres_1_1boost_1_1_connection)` & close()` {#classdb_1_1postgres_1_1boost_1_1_connection_1aa9edc2055e77264e2c8b89f4eb7e3e79}
+
+Close the database connection.
+
+This method is automatically called by the destructor.
+
+### `public inline virtual void asyncWait(std::function< void(bool)> readCallback,std::function< void(bool)> writeCallback)` {#classdb_1_1postgres_1_1boost_1_1_connection_1aef6e7bae3d4542654c5f292514e68a91}
+
+
+
+
 
 # class `Connection` {#classdb_1_1postgres_1_1_connection}
 
@@ -36,16 +84,33 @@ A connection to a PostgreSQL database.
  Members                        | Descriptions                                
 --------------------------------|---------------------------------------------
 `public  Connection(`[`Settings`](#structdb_1_1postgres_1_1_settings)` settings)` | Constructor.
-`public  ~Connection()` | Destructor.
+`public virtual  ~Connection()` | Destructor.
+`public inline bool async() const noexcept` | Asynchronous mode.
 `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & connect(const char * connInfo)` | Open a connection to the database.
-`public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & close() noexcept` | Close the database connection.
+`public virtual `[`Connection`](#classdb_1_1postgres_1_1_connection)` & close()` | Close the database connection.
 `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & cancel()` | Cancel queries in progress.
 `public template<typename... Args>`  <br/>`inline `[`Result`](#classdb_1_1postgres_1_1_result)` & execute(const char * sql,Args... args)` | Execute one or more SQL commands.
 `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & begin()` | Start a transaction.
 `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & commit()` | Commit a transaction.
 `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & rollback()` | Rollback a transaction.
+`public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & always(std::function< void()> callback)` | 
+`public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & done(std::function< void()> callback)` | 
+`public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & error(std::function< void(std::exception_ptr reason)> callback)` | Registration of the default error handler for asynchronous connections.
+`public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & notice(std::function< void(const char *message)> callback) noexcept` | 
 `protected PGconn * pgconn_` | The native connection pointer.
-`protected `[`Result`](#classdb_1_1postgres_1_1_result)` result_` | [Result](#classdb_1_1postgres_1_1_result) of the current query.
+`protected std::shared_ptr< `[`Result`](#classdb_1_1postgres_1_1_result)` > lastResult_` | [Result](#classdb_1_1postgres_1_1_result) of the last execution.
+`protected bool async_` | `true` when running on asynchronous mode.
+`protected std::exception_ptr lastException_` | capture of the last exception for async mode.
+`protected std::function< void()> done_` | Callbacks for asynchonous operations in non bloking mode.
+`protected std::function< void(std::exception_ptr)> error_` | 
+`protected std::function< void(const char *message)> notice_` | 
+`protected std::function< void()> inputReady_` | Internal callbacks for asynchrous operations.
+`protected template<class E>`  <br/>`inline void throwException(std::string what)` | 
+`protected void consumeInput(std::function< void()> callback)` | Process available data retreived from the server.
+`protected void flush(std::function< void()> callback)` | Flush the data pending to be send throught the connection.
+`protected void connectPoll()` | Check the connection progress status.
+`protected inline virtual void asyncWait(std::function< void(bool)> readCallback,std::function< void(bool)> writeCallback)` | 
+`protected int socket() const noexcept` | Get the native socket identifier.
 `protected std::string lastError() const noexcept` | Last error messages sent by the server.
 `protected inline  operator PGconn *()` | Cast operator to the native connection pointer.
 
@@ -57,11 +122,18 @@ Constructor.
 
 Copy and move constructor have been explicitly deleted to prevent the copy of the connection object.
 
-### `public  ~Connection()` {#classdb_1_1postgres_1_1_connection_1ab0771ae2470a6ee9625a8adfd551f496}
+### `public virtual  ~Connection()` {#classdb_1_1postgres_1_1_connection_1a351476d3b8a2ff138e5b22a25bcb0a51}
 
 Destructor.
 
 The destuctor will implicitly close the connection to the server and associated results if necessary.
+
+### `public inline bool async() const noexcept` {#classdb_1_1postgres_1_1_connection_1af97af5528a833e305795a23afcd53cc9}
+
+Asynchronous mode.
+
+#### Returns
+true if the connection is in non-blocking mode.
 
 ### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & connect(const char * connInfo)` {#classdb_1_1postgres_1_1_connection_1aaf2fe1607169b7118735655bd695576b}
 
@@ -86,7 +158,7 @@ postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
 #### Returns
 The connection itself.
 
-### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & close() noexcept` {#classdb_1_1postgres_1_1_connection_1a31910dd96d809b69c13d01a59941a335}
+### `public virtual `[`Connection`](#classdb_1_1postgres_1_1_connection)` & close()` {#classdb_1_1postgres_1_1_connection_1a39bb482842cc9e585ff52dced6a8aa0a}
 
 Close the database connection.
 
@@ -205,17 +277,119 @@ Rollback a transaction.
 #### Returns
 The connection itself.
 
+### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & always(std::function< void()> callback)` {#classdb_1_1postgres_1_1_connection_1a49af1f6353be1035da1f1666b1e218b1}
+
+
+
+
+
+### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & done(std::function< void()> callback)` {#classdb_1_1postgres_1_1_connection_1a56d48c0d3965df0e6a7561636d65c47c}
+
+
+
+
+
+### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & error(std::function< void(std::exception_ptr reason)> callback)` {#classdb_1_1postgres_1_1_connection_1aef675c9f847e30d30494df9207b9d609}
+
+Registration of the default error handler for asynchronous connections.
+
+
+
+### `public `[`Connection`](#classdb_1_1postgres_1_1_connection)` & notice(std::function< void(const char *message)> callback) noexcept` {#classdb_1_1postgres_1_1_connection_1a174bbf6404f986c7b3798c7b2e8aaeca}
+
+
+
+
+
 ### `protected PGconn * pgconn_` {#classdb_1_1postgres_1_1_connection_1aebe710e91ed7a7978d585ddeaffaab2b}
 
 The native connection pointer.
 
 
 
-### `protected `[`Result`](#classdb_1_1postgres_1_1_result)` result_` {#classdb_1_1postgres_1_1_connection_1aa29316537e596fd8f4dcc51950da3612}
+### `protected std::shared_ptr< `[`Result`](#classdb_1_1postgres_1_1_result)` > lastResult_` {#classdb_1_1postgres_1_1_connection_1a9ccbb3c8389a0dc60bcbb0c424a9d154}
 
-[Result](#classdb_1_1postgres_1_1_result) of the current query.
+[Result](#classdb_1_1postgres_1_1_result) of the last execution.
 
 
+
+### `protected bool async_` {#classdb_1_1postgres_1_1_connection_1a3caae8bd0543a0881434323039005eee}
+
+`true` when running on asynchronous mode.
+
+
+
+### `protected std::exception_ptr lastException_` {#classdb_1_1postgres_1_1_connection_1acfc09a35dec45c008bf7ef825a9e62ef}
+
+capture of the last exception for async mode.
+
+
+
+### `protected std::function< void()> done_` {#classdb_1_1postgres_1_1_connection_1a20c43b8fefa2ceeb2fff0639ff2c30b8}
+
+Callbacks for asynchonous operations in non bloking mode.
+
+
+
+### `protected std::function< void(std::exception_ptr)> error_` {#classdb_1_1postgres_1_1_connection_1a46c57a103687f58f7cb40ac9001dffdb}
+
+
+
+
+
+### `protected std::function< void(const char *message)> notice_` {#classdb_1_1postgres_1_1_connection_1a6e02d7925e7a9484944695da2320e40f}
+
+
+
+
+
+### `protected std::function< void()> inputReady_` {#classdb_1_1postgres_1_1_connection_1a1dd71252ce2dd1204a35f589490ce528}
+
+Internal callbacks for asynchrous operations.
+
+
+
+### `protected template<class E>`  <br/>`inline void throwException(std::string what)` {#classdb_1_1postgres_1_1_connection_1a689450896fd9e0879fa0db04e31874a1}
+
+
+
+
+
+### `protected void consumeInput(std::function< void()> callback)` {#classdb_1_1postgres_1_1_connection_1a00e096618e63c4ce6c4d41b66400afa3}
+
+Process available data retreived from the server.
+
+This method must be called by the owner of the event loop when some data are available in the connection.
+
+### `protected void flush(std::function< void()> callback)` {#classdb_1_1postgres_1_1_connection_1afadf1381a9d4075e671273ca27ee8b8a}
+
+Flush the data pending to be send throught the connection.
+
+This method must be called by the event loop owner when the connection is ready to accept to write data to the server.
+
+
+#### Returns
+true if not all data have been flushed. In this case the event loop owner must call again `[flush()](#classdb_1_1postgres_1_1_connection_1afadf1381a9d4075e671273ca27ee8b8a)` when the server is ready to access more data.
+
+### `protected void connectPoll()` {#classdb_1_1postgres_1_1_connection_1a2d3bd82f8c63fb08ec3368cbf6115dad}
+
+Check the connection progress status.
+
+
+
+### `protected inline virtual void asyncWait(std::function< void(bool)> readCallback,std::function< void(bool)> writeCallback)` {#classdb_1_1postgres_1_1_connection_1ab56fff9477abf3ecb973524c6cc69fcf}
+
+
+
+
+
+### `protected int socket() const noexcept` {#classdb_1_1postgres_1_1_connection_1ad3aeb7452a5abc7e24598a1c90b8d27e}
+
+Get the native socket identifier.
+
+See [PQsocket](https://www.postgresql.org/docs/current/static/libpq-status.html). 
+#### Returns
+The file descriptor number of the connection socket to the server.
 
 ### `protected std::string lastError() const noexcept` {#classdb_1_1postgres_1_1_connection_1a860cf6e150e5b3e230fb2a6cfe2c2b93}
 
@@ -227,7 +401,6 @@ The error message most recently generated by an operation on the connection.
 ### `protected inline  operator PGconn *()` {#classdb_1_1postgres_1_1_connection_1ae8ae6e3848a5d74a0460fd4d90224092}
 
 Cast operator to the native connection pointer.
-
 
 
 
@@ -257,7 +430,6 @@ Constructor.
 #### Parameters
 * `what` - The error message returned by the server.
 
-
 # class `ExecutionException` {#classdb_1_1postgres_1_1_execution_exception}
 
 ```
@@ -284,7 +456,6 @@ Constructor.
 #### Parameters
 * `what` - The error message returned by the server.
 
-
 # class `Result` {#classdb_1_1postgres_1_1_result}
 
 ```
@@ -304,8 +475,15 @@ When executing more than one SQL command, the iterator can also be used to acces
 --------------------------------|---------------------------------------------
 `class `[``iterator``](#classdb_1_1postgres_1_1_result_1_1iterator)        | Support of the range-based for loops.
 `public uint64_t count() const noexcept` | Number of rows affected by the SQL command.
+`public `[`Result`](#classdb_1_1postgres_1_1_result)` & discard()` | 
+`public `[`Result`](#classdb_1_1postgres_1_1_result)` & once(std::function< void(const `[`Row`](#classdb_1_1postgres_1_1_row) &row)`> once,std::function< void(std::exception_ptr reason)> error)` | Attach an event handler for the first row (asynchronous api).
+`public `[`Result`](#classdb_1_1postgres_1_1_result)` & each(std::function< bool(const `[`Row`](#classdb_1_1postgres_1_1_row) &row)`> each,std::function< void(std::exception_ptr reason)> error)` | Attach an event handler for the each row in the result (asynchronous api).
+`public `[`Result`](#classdb_1_1postgres_1_1_result)` & done(std::function< void(uint64_t `[`count`](#classdb_1_1postgres_1_1_result_1af66b6b7b685ee6d1d0fe2f517b53557e))`> done)` | Attach an event handler on the command execution completion (asynchronous api).
+`public `[`Result`](#classdb_1_1postgres_1_1_result)` & error(std::function< void(std::exception_ptr reason)> error)` | Attach an event handler on the command execution throws an error (asynchronous api).
 `public `[`iterator`](#classdb_1_1postgres_1_1_result_1_1iterator)` begin()` | First row of the result.
 `public `[`iterator`](#classdb_1_1postgres_1_1_result_1_1iterator)` end()` | Last row of the result.
+`public  Result(ResultHandle & handle)` | Constructor.
+`public  Result(`[`Connection`](#classdb_1_1postgres_1_1_connection)` & conn)` | Constructor.
 
 ## Members
 
@@ -329,6 +507,139 @@ This function can only be used following the execution of a SELECT, CREATE TABLE
 #### Returns
 The number of rows affected by the SQL statement.
 
+### `public `[`Result`](#classdb_1_1postgres_1_1_result)` & discard()` {#classdb_1_1postgres_1_1_result_1a86f99701268fb9b373dfeda28d29227d}
+
+
+
+
+
+### `public `[`Result`](#classdb_1_1postgres_1_1_result)` & once(std::function< void(const `[`Row`](#classdb_1_1postgres_1_1_row) &row)`> once,std::function< void(std::exception_ptr reason)> error)` {#classdb_1_1postgres_1_1_result_1ac440f05601192cc858f8873fb1afd68e}
+
+Attach an event handler for the first row (asynchronous api).
+
+If the result contains at least once row, the handler will be called.
+
+
+```cpp
+cnx->execute("SELECT from_date FROM titles WHERE emp_no=$1", 10020)
+  .once([](const Row &row) {
+  ...
+});
+```
+
+
+
+#### Parameters
+* `once` A function to execute at the time the event is triggered. 
+
+
+* `error` A function to execute if an error occurs. An alternative is to register that function using [error()](#classdb_1_1postgres_1_1_result_1a3de86a0dae371064208504d7563b0cb1). 
+
+
+
+
+
+#### Returns
+The result itself to eventually chain another event handler.
+
+### `public `[`Result`](#classdb_1_1postgres_1_1_result)` & each(std::function< bool(const `[`Row`](#classdb_1_1postgres_1_1_row) &row)`> each,std::function< void(std::exception_ptr reason)> error)` {#classdb_1_1postgres_1_1_result_1aaa458735264a2d60c8273e604daee7ad}
+
+Attach an event handler for the each row in the result (asynchronous api).
+
+The event handler will be called for each row in the result until it return false.
+
+
+```cpp
+cnx->execute(""SELECT emp_no, first_name || ' ' || last_name FROM employees")
+  .each([](const Row &employee) {
+    std::cout << "Employee #: " << employee.as<int32_t>(0)
+              << "Name: " << employee.as<std::string>(1) << std::endl;
+    return true;
+  });
+```
+
+
+
+#### Parameters
+* `each` A function to execute at the time the event is triggered. 
+
+
+* `error` A function to execute if an error occurs. An alternative is to register that function using [error()](#classdb_1_1postgres_1_1_result_1a3de86a0dae371064208504d7563b0cb1). 
+
+
+
+
+
+#### Returns
+The result itself to eventually chain another event handler.
+
+### `public `[`Result`](#classdb_1_1postgres_1_1_result)` & done(std::function< void(uint64_t `[`count`](#classdb_1_1postgres_1_1_result_1af66b6b7b685ee6d1d0fe2f517b53557e))`> done)` {#classdb_1_1postgres_1_1_result_1ace63ccf5a35223f90ebc63b30f01941a}
+
+Attach an event handler on the command execution completion (asynchronous api).
+
+The event handler will be called once the command execution is completed. If the call to execute() contains more than one SQL command, the event handler will be called only once with the number of record impacted by the last SQL command.
+
+
+```cpp
+cnx->execute(""SELECT emp_no, first_name || ' ' || last_name FROM employees")
+  .each([](const Row &employee) {
+    ...
+    return true;
+}).done([](int64_t count) {
+  ...
+});
+```
+
+
+
+#### Parameters
+* `done` A function to execute at the time the event is triggered. 
+
+
+
+
+
+#### Returns
+The result itself to eventually chain another event handler.
+
+### `public `[`Result`](#classdb_1_1postgres_1_1_result)` & error(std::function< void(std::exception_ptr reason)> error)` {#classdb_1_1postgres_1_1_result_1a3de86a0dae371064208504d7563b0cb1}
+
+Attach an event handler on the command execution throws an error (asynchronous api).
+
+The event handler will be called once if the command execution complete with an error.
+
+If the call to execute() contains more than one SQL command, the first SQL command completing with an error will trigger the call of the handler and stop the execution of the next commands.
+
+
+```cpp
+cnx->execute(""SELECT emp_no, first_name || ' ' || last_name FROM employees")
+  .each([](const Row &employee) {
+    ...
+    return true;
+}).done([](int64_t count) {
+  ...
+}).error([](std::exception_ptr reason) {
+  try {
+    std::rethrow_exception(e);
+  }
+  catch (const std::runtime_error &e) {
+    ...
+  }
+});
+```
+
+
+
+#### Parameters
+* `error` A function to execute at the time the event is triggered. 
+
+
+
+
+
+#### Returns
+The result itself to eventually chain another event handler.
+
 ### `public `[`iterator`](#classdb_1_1postgres_1_1_result_1_1iterator)` begin()` {#classdb_1_1postgres_1_1_result_1abad750449a1aa1814b1d080f1626a19c}
 
 First row of the result.
@@ -343,6 +654,17 @@ Last row of the result.
 #### Returns
 An iterator pointing to the past-the-end row of the result.
 
+### `public  Result(ResultHandle & handle)` {#classdb_1_1postgres_1_1_result_1a7396cd16eb61da5fb0d560c8f235086f}
+
+Constructor.
+
+Reserved. Do not use.
+
+### `public  Result(`[`Connection`](#classdb_1_1postgres_1_1_connection)` & conn)` {#classdb_1_1postgres_1_1_result_1a643e9bc720da3eb9fc4aa50a123b608e}
+
+Constructor.
+
+Reserved. Do not use.
 
 # class `iterator` {#classdb_1_1postgres_1_1_result_1_1iterator}
 
@@ -386,7 +708,6 @@ Next row in the resultset.
 
 
 ### `public inline `[`Row`](#classdb_1_1postgres_1_1_row)` & operator*()` {#classdb_1_1postgres_1_1_result_1_1iterator_1a9100a2370c979582f3ad8de0a3539bac}
-
 
 
 
@@ -532,7 +853,6 @@ Get a column value.
 
 > Deprecated: use Row::as(int column) for replacement.
 
-
 # struct `array_item` {#structdb_1_1postgres_1_1array__item}
 
 
@@ -597,7 +917,6 @@ Constructor of a null value.
 
 
 
-
 # struct `date_t` {#structdb_1_1postgres_1_1date__t}
 
 
@@ -628,7 +947,6 @@ Number of seconds sine Unix epoch time.
 ### `public inline  operator int32_t() const` {#structdb_1_1postgres_1_1date__t_1a794f59a7d479feac29d4e9f60dde8738}
 
 Cast to `int32_t`.
-
 
 
 
@@ -667,7 +985,6 @@ Number of months.
 
 
 
-
 # struct `Settings` {#structdb_1_1postgres_1_1_settings}
 
 
@@ -679,14 +996,13 @@ Those settings are internal setting of the libpqmxx library. Other standard Post
 
  Members                        | Descriptions                                
 --------------------------------|---------------------------------------------
-`public bool emptyStringAsNull` | If true, empty strings passed as parameters to exectute() are considered as null values.
+`public bool emptyStringAsNull` | If true (the default), empty strings passed as parameter to execute() are considered as null values.
 
 ## Members
 
 ### `public bool emptyStringAsNull` {#structdb_1_1postgres_1_1_settings_1a5c20471464317fd999d1d39d9560bfed}
 
-If true, empty strings passed as parameters to exectute() are considered as null values.
-
+If true (the default), empty strings passed as parameter to execute() are considered as null values.
 
 
 
@@ -715,7 +1031,6 @@ Number of microseconds since 00:00:00.
 ### `public inline  operator int64_t() const` {#structdb_1_1postgres_1_1time__t_1a90e8f8db0e1cb44d3e00bca188c539c9}
 
 Cast to int64_t.
-
 
 
 
@@ -752,7 +1067,6 @@ Cast to int64_t.
 
 
 
-
 # struct `timestamptz_t` {#structdb_1_1postgres_1_1timestamptz__t}
 
 
@@ -786,7 +1100,6 @@ Cast to int64_t.
 
 
 
-
 # struct `timetz_t` {#structdb_1_1postgres_1_1timetz__t}
 
 
@@ -812,7 +1125,6 @@ Number of microseconds since 00:00:00.
 ### `public int32_t offset` {#structdb_1_1postgres_1_1timetz__t_1aa34f0a81487d034137ad0170aacfe5a4}
 
 Offset from GMT in seconds.
-
 
 
 

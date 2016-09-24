@@ -131,17 +131,19 @@ TEST(async, each) {
 
   ::boost::asio::io_service ioService;
 
-  int32_t actual = 0;
+  int64_t actual = 0;
 
   auto cnx = std::make_shared<db::postgres::boost::Connection>(ioService);
   cnx->connect("postgresql://ci-test@localhost").done([&cnx, &actual]() {
-    cnx->execute("SELECT generate_series(1, 10000)").each([&actual](const Row &row) -> bool {
+    cnx->execute("SELECT generate_series(1, 100000)").each([&actual](const Row &row) -> bool {
       actual += row.as<int32_t>(0);
       return true;
+    }).done([](int64_t count) {
+      EXPECT_EQ(100000, count);
     });
   });
 
   ioService.run();
-  EXPECT_EQ(50005000, actual);
+  EXPECT_EQ(5000050000, actual);
 }
 

@@ -29,340 +29,349 @@
 #include <cstddef>
 
 namespace db {
-  namespace postgres {
+namespace postgres {
 
+  /**
+   * Settings of a PostgreSQL connection.
+   *
+   * Those settings are internal setting of the libpqmxx library. Other
+   * standard PostgreSQL seetings should be set when calling connect().
+   **/
+  struct Settings {
     /**
-     * Settings of a PostgreSQL connection.
-     *
-     * Those settings are internal setting of the libpqmxx library. Other
-     * standard PostgreSQL seetings should be set when calling connect().
+     * If true (the default), empty strings passed as parameter to execute() are
+     * considered as null values.
      **/
-    struct Settings {
+    bool emptyStringAsNull = true;
+  };
+
+  /**
+   * A connection to a PostgreSQL database.
+   **/
+  class Connection : public std::enable_shared_from_this<Connection> {
+
+    friend class Result;
+    friend class ResultHandle;
+
+    public:
+
       /**
-       * If true (the default), empty strings passed as parameter to execute() are
-       * considered as null values.
+       * Constructor.
+       *
+       * Copy and move constructor have been explicitly deleted to prevent the
+       * copy of the connection object.
        **/
-      bool emptyStringAsNull = true;
-    };
+      Connection(Settings settings = Settings());
 
-    /**
-     * A connection to a PostgreSQL database.
-     **/
-    class Connection {
+      /**
+       * Destructor.
+       *
+       * The destuctor will implicitly close the connection to the server and
+       * associated results if necessary.
+       **/
+      virtual ~Connection();
 
-      friend class Result;
-      friend class ResultHandle;
+      /**
+       * Asynchronous mode.
+       *
+       * @return true if the connection is in non-blocking mode.
+       **/
+      bool async() const noexcept {
+        return async_;
+      }
 
-      public:
-      
-        /**
-         * Constructor.
-         *
-         * Copy and move constructor have been explicitly deleted to prevent the
-         * copy of the connection object.
-         **/
-        Connection(Settings settings = Settings());
+      /**
+       * Open a connection to the database.
+       *
+       * @param connInfo A postgresql connection string.
+       *                 Both Keyword/Value and URI are accepted.
+       *                 The passed `connInfo` can be empty or null to use all
+       *                 default parameters
+       *                 (see [Environment Variables](https://www.postgresql.org/docs/9.5/static/libpq-envars.html)).
+       *
+       * ```
+       * postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
+       * ```
+       *
+       * @see https://www.postgresql.org/docs/9.5/static/libpq-connect.html#LIBPQ-CONNSTRING
+       * @return The connection itself.
+       **/
+      Connection &connect(const char *connInfo = nullptr);
 
-        /**
-         * Destructor.
-         *
-         * The destuctor will implicitly close the connection to the server and
-         * associated results if necessary.
-         **/
-        virtual ~Connection();
-      
-        /**
-         * Open a connection to the database.
-         * 
-         * @param connInfo A postgresql connection string.
-         *                 Both Keyword/Value and URI are accepted.
-         *                 The passed `connInfo` can be empty or null to use all
-         *                 default parameters
-         *                 (see [Environment Variables](https://www.postgresql.org/docs/9.5/static/libpq-envars.html)).
-         *
-         * ```
-         * postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
-         * ```
-         *
-         * @see https://www.postgresql.org/docs/9.5/static/libpq-connect.html#LIBPQ-CONNSTRING
-         * @return The connection itself.
-         **/
-        Connection &connect(const char *connInfo = nullptr);
-      
-        /**
-         * Close the database connection.
-         *
-         * This method is automatically called by the destructor.
-         **/
-        virtual Connection &close();
+      /**
+       * Close the database connection.
+       *
+       * This method is automatically called by the destructor.
+       **/
+      virtual Connection &close();
 
-        /**
-         * Cancel queries in progress.
-         *
-         * Calling this method will request the cancellation of the current query
-         * in progress. There is no guaranty the query will be cancelled or when
-         * it will be cancelled. So usually once you've called this method you
-         * can't use anymore the connection since the previous query might still
-         * be in progress.
-         *
-         * @return The connection ifself.
-         **/
-        Connection &cancel();
+      /**
+       * Cancel queries in progress.
+       *
+       * Calling this method will request the cancellation of the current query
+       * in progress. There is no guaranty the query will be cancelled or when
+       * it will be cancelled. So usually once you've called this method you
+       * can't use anymore the connection since the previous query might still
+       * be in progress.
+       *
+       * @return The connection ifself.
+       **/
+      Connection &cancel();
 
-        /**
-         * Execute one or more SQL commands.
-         *
-         * @param sql  One or more SQL commands to be executed.
-         * @param args Zero or more parameters of the SQL command.
-         *        If parameters are used, they are referred to in the `sql`
-         *        command as `$1`, `$2`, etc... The PostgreSQL datatype of a
-         *        parameter is deducted from the C++ type of the parameter
-         *        according to the following table:
+      /**
+       * Execute one or more SQL commands.
+       *
+       * @param sql  One or more SQL commands to be executed.
+       * @param args Zero or more parameters of the SQL command.
+       *        If parameters are used, they are referred to in the `sql`
+       *        command as `$1`, `$2`, etc... The PostgreSQL datatype of a
+       *        parameter is deducted from the C++ type of the parameter
+       *        according to the following table:
 
-           SQL Type                    | C++ Param
-           ----------------------------|-----------------------------
-           boolean                     | bool
-           bytea                       | std::vector\<uint_8\>
-           "char"                      | char
-           bigint                      | int64_t
-           smallint                    | int16_t
-           integer                     | int32_t
-           real                        | float
-           double precision            | double
-           character varying           | const char *, std::string
-           date                        | db::postgres::date_t
-           time without time zone      | db::postgres::time_t
-           timestamp without time zone | db::postgres::timestamp_t
-           timestamp with time zone    | db::postgres::timestamptz_t
-           interval                    | db::postgres::interval_t
-           time with time zone         | db::postgres::timetz_t
+         SQL Type                    | C++ Param
+         ----------------------------|-----------------------------
+         boolean                     | bool
+         bytea                       | std::vector\<uint_8\>
+         "char"                      | char
+         bigint                      | int64_t
+         smallint                    | int16_t
+         integer                     | int32_t
+         real                        | float
+         double precision            | double
+         character varying           | const char *, std::string
+         date                        | db::postgres::date_t
+         time without time zone      | db::postgres::time_t
+         timestamp without time zone | db::postgres::timestamp_t
+         timestamp with time zone    | db::postgres::timestamptz_t
+         interval                    | db::postgres::interval_t
+         time with time zone         | db::postgres::timetz_t
 
-         *
-         * ```
+       *
+       * ```
 
-          // Execute a query
-          auto results = cnx.execute("SELECT MAX(emp_no) FROM employees");
+        // Execute a query
+        auto results = cnx.execute("SELECT MAX(emp_no) FROM employees");
 
-          // Execute a query with parameters.
-          cnx.execute("UPDATE titles SET to_date=$1::date WHERE emp_no=$2", "1988-02-10", 10020);
+        // Execute a query with parameters.
+        cnx.execute("UPDATE titles SET to_date=$1::date WHERE emp_no=$2", "1988-02-10", 10020);
 
-          // Execute multiple statements in one call.
-          cnx.execute(R"SQL(
+        // Execute multiple statements in one call.
+        cnx.execute(R"SQL(
 
-            CREATE TYPE GENDER AS ENUM ('M', 'F');
+          CREATE TYPE GENDER AS ENUM ('M', 'F');
 
-            CREATE TABLE employees (
-              emp_no      INTEGER         NOT NULL,
-              birth_date  DATE            NOT NULL,
-              first_name  VARCHAR(14)     NOT NULL,
-              last_name   VARCHAR(16)     NOT NULL,
-              gender      GENDER          NOT NULL,
-              hire_date   DATE            NOT NULL,
-              PRIMARY KEY (emp_no)
-            );
+          CREATE TABLE employees (
+            emp_no      INTEGER         NOT NULL,
+            birth_date  DATE            NOT NULL,
+            first_name  VARCHAR(14)     NOT NULL,
+            last_name   VARCHAR(16)     NOT NULL,
+            gender      GENDER          NOT NULL,
+            hire_date   DATE            NOT NULL,
+            PRIMARY KEY (emp_no)
+          );
 
-          )SQL");
+        )SQL");
 
-         * ```
-         * When the parameter data type might be ambigious for the server, you
-         * can use the PostgreSQL casting syntax. In the example below both
-         * parameters are send as `character varying` but the server will
-         * perform the cast to `date` and `integer`.
-         * ```
-           cnx.execute("UPDATE titles SET to_date=$1::date WHERE emp_no::integer=$2", "1988-02-10", "10020");
-         * ```
-         *
-         * The `null` value can be send as a parameter using the `nullptr` keyword.
-         * ```
-         * cnx.execute("INSERT INTO titles VALUES ($1, $2, $3::date, $4)",
-         *             10020, "Technique Leader", "1988-02-10", nullptr);
-         * ```
-         *
-         * @attention Parameters are only supported for a single SQL command. If
-         *            execute() is called with more than one sql command and any
-         *            of those commands are using parameters, execute() will fail.
-         *
-         * @return The results of the SQL commands.
-         *
-         * You can iterate over the returned result using the Result::iterator.
-         * When a query in a the `sql` command is a SELECT all the rows of the
-         * result must be fetched using the iterator before the connection can
-         * be reused for another command. For other commands such as an UPDATE
-         * or a CREATE TABLE, using the iterator is not required and the
-         * connection can be reused for the next command right away.
-         *
-         **/
-        template<typename... Args>
-        Result &execute(const char *sql, Args... args) {
-          Params params(settings_, sizeof...(args));
-          std::make_tuple((params.bind(std::forward<Args>(args)), 0)...);
-          execute(sql, params);
-          return *lastResult_;
-        }
+       * ```
+       * When the parameter data type might be ambigious for the server, you
+       * can use the PostgreSQL casting syntax. In the example below both
+       * parameters are send as `character varying` but the server will
+       * perform the cast to `date` and `integer`.
+       * ```
+         cnx.execute("UPDATE titles SET to_date=$1::date WHERE emp_no::integer=$2", "1988-02-10", "10020");
+       * ```
+       *
+       * The `null` value can be send as a parameter using the `nullptr` keyword.
+       * ```
+       * cnx.execute("INSERT INTO titles VALUES ($1, $2, $3::date, $4)",
+       *             10020, "Technique Leader", "1988-02-10", nullptr);
+       * ```
+       *
+       * @attention Parameters are only supported for a single SQL command. If
+       *            execute() is called with more than one sql command and any
+       *            of those commands are using parameters, execute() will fail.
+       *
+       * @return The results of the SQL commands.
+       *
+       * You can iterate over the returned result using the Result::iterator.
+       * When a query in a the `sql` command is a SELECT all the rows of the
+       * result must be fetched using the iterator before the connection can
+       * be reused for another command. For other commands such as an UPDATE
+       * or a CREATE TABLE, using the iterator is not required and the
+       * connection can be reused for the next command right away.
+       *
+       **/
+      template<typename... Args>
+      Result &execute(const char *sql, Args... args) {
+        Params params(settings_, sizeof...(args));
+        std::make_tuple((params.bind(std::forward<Args>(args)), 0)...);
+        execute(sql, params);
+        return *lastResult_;
+      }
 
-        /**
-         * Start a transaction.
-         *
-         * begin(), commit() and rollback() are helper methods to deal with
-         * transactions.
-         * The main benefit of using those methods rather than executing the SQL
-         * commands is on nested transactions. If a code start a transaction and
-         * call another code also starting a transaction, thoses methods will
-         * create only one transaction started at the first all to begin() and
-         * commited at the last call to commit().
-         *
-         * @return The connection itself.
-         **/
-        Connection &begin();
+      /**
+       * Start a transaction.
+       *
+       * begin(), commit() and rollback() are helper methods to deal with
+       * transactions.
+       * The main benefit of using those methods rather than executing the SQL
+       * commands is on nested transactions. If a code start a transaction and
+       * call another code also starting a transaction, thoses methods will
+       * create only one transaction started at the first all to begin() and
+       * commited at the last call to commit().
+       *
+       * @return The connection itself.
+       **/
+      Connection &begin();
 
-        /**
-         * Commit a transaction.
-         *
-         * @return The connection itself.
-         **/
-        Connection &commit();
+      /**
+       * Commit a transaction.
+       *
+       * @return The connection itself.
+       **/
+      Connection &commit();
 
-        /**
-         * Rollback a transaction.
-         *
-         * @return The connection itself.
-         **/
-        Connection &rollback();
+      /**
+       * Rollback a transaction.
+       *
+       * @return The connection itself.
+       **/
+      Connection &rollback();
 
-        Connection &always(std::function<void ()> callback);
+      Connection &always(std::function<void ()> callback);
 
-        Connection &done(std::function<void ()> callback);
+      Connection &done(std::function<void ()> callback);
 
-        /**
-         * Registration of the default error handler for asynchronous connections.
-         **/
-        Connection &error(std::function<void (std::exception_ptr reason)> callback);
+      /**
+       * Registration of the default error handler for asynchronous connections.
+       **/
+      Connection &error(std::function<void (std::exception_ptr reason)> callback);
 
-        Connection &notice(std::function<void (const char *message)> callback) noexcept;
+      Connection &notice(std::function<void (const char *message)> callback) noexcept;
 
-      protected:
+    protected:
 
-        PGconn                 *pgconn_;      /**< The native connection pointer. **/
-        std::shared_ptr<Result> lastResult_;  /**< Result of the last execution. **/
-        bool                    async_;       /**< `true` when running on asynchronous mode. **/
-        std::exception_ptr lastException_;    /**< capture of the last exception for async mode. **/
+      PGconn                 *pgconn_;      /**< The native connection pointer. **/
+      std::shared_ptr<Result> lastResult_;  /**< Result of the last execution. **/
+      bool                    async_;       /**< `true` when running on asynchronous mode. **/
+      std::exception_ptr lastException_;    /**< capture of the last exception for async mode. **/
 
-        /**
-         * Callbacks for asynchonous operations in non bloking mode.
-         **/
-        std::function<void ()>                    done_;
-        std::function<void (std::exception_ptr)>  error_;
-        std::function<void (const char *message)> notice_;
+      /**
+       * Callbacks for asynchonous operations in non bloking mode.
+       **/
+      std::function<void ()>                    done_;
+      std::function<void (std::exception_ptr)>  error_;
+      std::function<void (const char *message)> notice_;
 
-        /**
-         * Internal callbacks for asynchrous operations.
-         **/
-        std::function<void ()> inputReady_;
+      /**
+       * Internal callbacks for asynchrous operations.
+       **/
+      std::function<void ()> inputReady_;
 
-        template <class E>
-        void throwException(std::string what) {
-          if (async_) {
-            lastException_ = std::make_exception_ptr(E(what));
-            if (error_) {
-              error_(lastException_);
-            }
-          }
-          else {
-            throw E(what);
+      template <class E>
+      void throwException(std::string what) {
+        if (async_) {
+          lastException_ = std::make_exception_ptr(E(what));
+          if (error_) {
+            error_(lastException_);
           }
         }
-
-        /**
-         * Process available data retreived from the server.
-         *
-         * This method must be called by the owner of the event loop when
-         * some data are available in the connection.
-         **/
-        void consumeInput(std::function <void ()> callback);
-
-        /**
-         * Flush the data pending to be send throught the connection.
-         *
-         * This method must be called by the event loop owner when the
-         * connection is ready to accept to write data to the server.
-         *
-         * @return true if not all data have been flushed. In this case the
-         *         event loop owner must call again `flush()` when the server
-         *         is ready to access more data.
-         **/
-        void flush(std::function <void ()> callback);
-
-        /**
-         * Check the connection progress status.
-         **/
-        void connectPoll();
-
-        virtual void asyncWait(std::function<void (bool)> readCallback,
-                               std::function<void (bool)> writeCallback) {}
-
-        /**
-         * Get the native socket identifier.
-         *
-         * See [PQsocket](https://www.postgresql.org/docs/current/static/libpq-status.html).
-         * @return The file descriptor number of the connection socket to the server.
-         **/
-        int socket() const noexcept;
-
-        /**
-         * Last error messages sent by the server.
-         *
-         * @return The error message most recently generated by an operation on
-         *         the connection.
-         **/
-        std::string lastError() const noexcept;
-
-        /**
-         * Cast operator to the native connection pointer.
-         **/
-        operator PGconn *() {
-          return pgconn_;
+        else {
+          throw E(what);
         }
+      }
 
-      private:
+      /**
+       * Process available data retreived from the server.
+       *
+       * This method must be called by the owner of the event loop when
+       * some data are available in the connection.
+       **/
+      void consumeInput(std::function <void ()> callback);
 
-        /**
-         * Connection settings.
-         **/
-        Settings settings_;
+      /**
+       * Flush the data pending to be send throught the connection.
+       *
+       * This method must be called by the event loop owner when the
+       * connection is ready to accept to write data to the server.
+       *
+       * @return true if not all data have been flushed. In this case the
+       *         event loop owner must call again `flush()` when the server
+       *         is ready to access more data.
+       **/
+      void flush(std::function <void ()> callback);
 
-        /**
-         * Current transaction level.
-         *
-         * * 0 → no transaction in progress.
-         * * 1 → one transaction in progress.
-         * * 2 → one transaction in progress + 1 nested transaction.
-         * * n → one transaction in progress + (n-1) nested transactions.
-         *
-         **/
-        int transaction_;
+      /**
+       * Check the connection progress status.
+       **/
+      void connectPoll();
 
-        /**
-         * Private implementation of the exectute public method.
-         **/
-        void execute(const char *sql, const Params &params);
+      virtual void asyncWait(std::function<void (bool)> readCallback,
+                             std::function<void (bool)> writeCallback) {}
 
-        Connection(const Connection&) = delete;
-        Connection(const Connection&&) = delete;
-        Connection& operator = (const Connection&) = delete;
-        Connection& operator = (const Connection&&) = delete;
-    };
-    
-    /**
-     * Check if a sql command contains one or more statements.
-     *
-     * This method does not perform a strict parsing of the SQL. If the `sql`
-     * parameter is syntactically incorrect, the return value of this method
-     * is undetermined.
-     *
-     * @param sql The SQL commands to parse.
-     * @return true if more than one statement have been found.
-     **/
-    bool isSingleStatement(const char *sql) noexcept;
+      /**
+       * Get the native socket identifier.
+       *
+       * See [PQsocket](https://www.postgresql.org/docs/current/static/libpq-status.html).
+       * @return The file descriptor number of the connection socket to the server.
+       **/
+      int socket() const noexcept;
 
-  } // namespace postgres  
+      /**
+       * Last error messages sent by the server.
+       *
+       * @return The error message most recently generated by an operation on
+       *         the connection.
+       **/
+      std::string lastError() const noexcept;
+
+      /**
+       * Cast operator to the native connection pointer.
+       **/
+      operator PGconn *() {
+        return pgconn_;
+      }
+
+    private:
+
+      /**
+       * Connection settings.
+       **/
+      Settings settings_;
+
+      /**
+       * Current transaction level.
+       *
+       * * 0 → no transaction in progress.
+       * * 1 → one transaction in progress.
+       * * 2 → one transaction in progress + 1 nested transaction.
+       * * n → one transaction in progress + (n-1) nested transactions.
+       *
+       **/
+      int transaction_;
+
+      /**
+       * Private implementation of the exectute public method.
+       **/
+      void execute(const char *sql, const Params &params);
+
+      Connection(const Connection&) = delete;
+      Connection(const Connection&&) = delete;
+      Connection& operator = (const Connection&) = delete;
+      Connection& operator = (const Connection&&) = delete;
+  };
+
+  /**
+   * Check if a sql command contains one or more statements.
+   *
+   * This method does not perform a strict parsing of the SQL. If the `sql`
+   * parameter is syntactically incorrect, the return value of this method
+   * is undetermined.
+   *
+   * @param sql The SQL commands to parse.
+   * @return true if more than one statement have been found.
+   **/
+  bool isSingleStatement(const char *sql) noexcept;
+
+} // namespace postgres
 }   // namespace db
