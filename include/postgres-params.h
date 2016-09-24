@@ -45,6 +45,7 @@ namespace db {
       const struct Settings &settings_;
 
       Params(const Settings &settings, int size);
+      ~Params();
 
       char *bind(Oid type, size_t length);
 

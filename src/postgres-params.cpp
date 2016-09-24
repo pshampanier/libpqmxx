@@ -40,6 +40,12 @@ namespace db {
       formats_.reserve(size);
     }
 
+    Params::~Params() {
+      for (char *value: buffers_) {
+        delete [] value;
+      }
+    }
+
     template <typename T>
     char *write(T value, char *buf);
 
