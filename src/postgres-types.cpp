@@ -23,25 +23,79 @@
 
 #include <cstring>
 
+
+// -------------------------------------------------------------------------
+// Byte-order swapping for 16 bit integers
+// -------------------------------------------------------------------------
+#define byteorder_swapsc(x)  ((uint16_t)(                        \
+                             (((uint16_t)(x) >> 8) & 0x00FF)   | \
+                             (((uint16_t)(x) << 8) & 0xFF00)))
+
+// -------------------------------------------------------------------------
+// Byte-order swapping for 32 bit integers
+// -------------------------------------------------------------------------
+#define byteorder_swaplc(x)  ((uint32_t)(                             \
+                             (((uint32_t)(x) >> 24) & 0x000000FF)   | \
+                             (((uint32_t)(x) >> 8)  & 0x0000FF00)   | \
+                             (((uint32_t)(x) << 8)  & 0x00FF0000)   | \
+                             (((uint32_t)(x) << 24) & 0xFF000000)))
+
+// -------------------------------------------------------------------------
+// Byte-order swapping for 64 bit integers
+// -------------------------------------------------------------------------
+#define byteorder_swapllc(x) ((uint64_t)(                                   \
+                             (((uint64_t)(x) >> 56) & 0x00000000000000FF) | \
+                             (((uint64_t)(x) >> 40) & 0x000000000000FF00) | \
+                             (((uint64_t)(x) >> 24) & 0x0000000000FF0000) | \
+                             (((uint64_t)(x) >> 8)  & 0x00000000FF000000) | \
+                             (((uint64_t)(x) << 8)  & 0x000000FF00000000) | \
+                             (((uint64_t)(x) << 24) & 0x0000FF0000000000) | \
+                             (((uint64_t)(x) << 40) & 0x00FF000000000000) | \
+                             (((uint64_t)(x) << 56) & 0xFF00000000000000)))
 #ifdef __linux__
-  #include <arpa/inet.h>
   #include <endian.h>
   #if __BYTE_ORDER == __LITTLE_ENDIAN
-    #define htonll(x) __bswap_constant_64(x)
+    #define IS_LITTLE_ENDIAN true
   #else
-    #define htonll(x) x
+    #define IS_LITTLE_ENDIAN false
   #endif
 #elif defined (__APPLE__)
-  #include <arpa/inet.h>
-  #include <libkern/OSByteOrder.h>
-  #define be16toh(x) OSSwapBigToHostInt16(x)
-  #define be32toh(x) OSSwapBigToHostInt32(x)
-  #define be64toh(x) OSSwapBigToHostInt64(x)
-#elif defined (_WINDOWS)
-  #include <winsock2.h>
-  #define be16toh(x) ntohs(x)
-  #define be32toh(x) ntohl(x)
-  #define be64toh(x) ntohll(x)
+  #ifdef _LITTLE_ENDIAN__
+    #define IS_LITTLE_ENDIAN true
+  #else
+    #define IS_LITTLE_ENDIAN false
+  #endif
+#elif defined (WIN32)
+  #ifdef __MINGW32__
+    #include <sys/param.h>
+    #if BYTE_ORDER == LITTLE_ENDIAN
+      #define IS_LITTLE_ENDIAN true
+    #else
+      #define IS_LITTLE_ENDIAN false
+    #endif
+  #else //MSVC
+    #if REG_DWORD == REG_DWORD_LITTLE_ENDIAN
+      #define IS_LITTLE_ENDIAN true
+    #else
+      #define IS_LITTLE_ENDIAN false
+    #endif
+  #endif
+#endif
+#ifndef IS_LITTLE_ENDIAN
+ #error Cant deternine endianness of host system
+#endif
+
+// -------------------------------------------------------------------------
+// PostgreSQL stores Integers in network byte order (most significant byte first)
+// (https://www.postgresql.org/docs/9.3/static/protocol-overview.html)
+// So little-endian systems should swap bytes when transferring them through network
+// -------------------------------------------------------------------------
+#if IS_LITTLE_ENDIAN
+    inline int16_t network_cast(int16_t v){return byteorder_swapsc(v);}
+    inline int32_t network_cast(int32_t v){return byteorder_swaplc(v);}
+    inline int64_t network_cast(int64_t v){return byteorder_swapllc(v);}
+#else
+    inline T network_cast(T v){return v;}
 #endif
 
 namespace db {
@@ -49,11 +103,11 @@ namespace db {
 
     int32_t length(timetz_t) {
       return 12;
-    };
+    }
 
     int32_t length(const std::string &s) {
       return int32_t(s.length());
-    };
+    }
 
     // -------------------------------------------------------------------------
     // Return the start of a buffer and then move it forward by `size`
@@ -63,6 +117,7 @@ namespace db {
       *buf += size;
       return start;
     }
+
 
     // -------------------------------------------------------------------------
     // bool
@@ -85,12 +140,12 @@ namespace db {
 
     template <>
     int16_t read<int16_t>(char **buf, size_t size) {
-      return be16toh(*reinterpret_cast<int16_t*>(move(buf, size)));
+      return network_cast(*reinterpret_cast<int16_t*>(move(buf, size)));
     }
 
     template <>
     char *write(int16_t value, char *buf) {
-      *reinterpret_cast<int16_t *>(buf) = htons(value);
+      *reinterpret_cast<int16_t *>(buf) = network_cast(value);
       return buf + sizeof(int16_t);
     }
 
@@ -100,12 +155,12 @@ namespace db {
 
     template <>
     int32_t read<int32_t>(char **buf, size_t size) {
-      return be32toh(*reinterpret_cast<int32_t*>(move(buf, size)));
+      return network_cast(*reinterpret_cast<int32_t*>(move(buf, size)));
     }
 
     template <>
     char *write(int32_t value, char *buf) {
-      *reinterpret_cast<int32_t *>(buf) = htonl(value);
+      *reinterpret_cast<int32_t *>(buf) = network_cast(value);
       return buf + sizeof(int32_t);
     }
 
@@ -115,12 +170,12 @@ namespace db {
 
     template <>
     int64_t read<int64_t>(char **buf, size_t size) {
-      return be64toh(*reinterpret_cast<int64_t*>(move(buf, size)));
+      return network_cast(*reinterpret_cast<int64_t*>(move(buf, size)));
     }
 
     template <>
     char *write(int64_t value, char *buf) {
-      *reinterpret_cast<int64_t *>(buf) = htonll(value);
+      *reinterpret_cast<int64_t *>(buf) = network_cast(value);
       return buf + sizeof(int64_t);
     }
 

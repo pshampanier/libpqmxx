@@ -24,7 +24,7 @@
 #include <iostream>
 #include <stdlib.h>
 
-#if _WINDOWS
+#ifdef WIN32
   #pragma warning(disable : 4996)
   #define setenv(name, value, overwrite) _putenv_s(name, value);
 #endif
