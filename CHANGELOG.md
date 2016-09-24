@@ -1,3 +1,7 @@
+# 1.1.1
+
+1. Fixed compilation with MINGW (#6, thank you @e-fominov).
+
 # Release 1.1
 
 1. Adding support of arrays.
