@@ -88,6 +88,7 @@ install:
   # verify installed versions
   - which cmake
   - cmake --version
+  - ls -l ${BOOST_INSTALL_DIR}
 
 before_script:
   - psql -c 'create user "ci-test";' -U postgres
@@ -97,4 +98,4 @@ script:
   - mkdir build
   - cd build
   - cmake -DCMAKE_CXX_COMPILER=$COMPILER -DCMAKE_BUILD_TYPE=Release -DGTEST_ROOT=${GTEST_INSTALL_DIR} -DBOOST_INCLUDEDIR=${BOOST_INSTALL_DIR} -DBOOST_LIBRARYDIR=${BOOST_INSTALL_DIR}/stage/lib/ .. && make
-  - ./postgres-test
+  - ./postgres-test --gtest_filter=-*async*
