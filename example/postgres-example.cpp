@@ -25,6 +25,7 @@
 #include <iostream>
 
 using namespace db::postgres;
+using namespace db::postgres::literals;
 
 int main() {
 
@@ -46,7 +47,7 @@ int main() {
         PRIMARY KEY (emp_no)
       );
 
-    )SQL");
+    )SQL"_x);
 
     std::cout << "Table created." << std::endl;
 
@@ -80,7 +81,7 @@ int main() {
 
     std::cout << "The three oldest employees are: " << std::endl;
 
-    auto &oldest = cnx.execute(R"SQL(
+    auto oldest = cnx.execute(R"SQL(
 
       SELECT first_name, last_name, DATE_PART('year', now()) - DATE_PART('year', birth_date)
         FROM employees
@@ -94,7 +95,7 @@ int main() {
         << ", " << row.as<double>(2) << " years old." << std::endl;
     }
 
-    auto &employee = cnx.execute(R"SQL(
+    auto employee = cnx.execute(R"SQL(
 
       SELECT first_name, last_name, DATE_PART('year', birth_date)
         FROM employees WHERE birth_date = $1::date
@@ -116,11 +117,11 @@ int main() {
 
     return 0;
   }
-  catch (ConnectionException e) {
-    std::cerr << "Oops... Cannot connect...";
-  }
-  catch (ExecutionException e) {
-    std::cerr << "Oops... " << e.what();
+  catch (error e) {
+    if (e.code() == error_code::connection_failure) {
+      std::cerr << "Oops... Cannot connect... ";
+    }
+    std::cerr << e.what() << std::endl;
   }
 
   return -1;

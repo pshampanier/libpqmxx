@@ -24,6 +24,7 @@
 #include "postgres-types.h"
 
 #include <functional>
+#include <memory>
 
 namespace db {
   namespace postgres {
@@ -161,13 +162,20 @@ namespace db {
 
     private:
       Result &result_;  /**< The result set by the constructor **/
-
+      
+      /**
+       * Current row to read in the server result.
+       * 
+       * @return Always 0 in single row mode, otherwise a value x ≥ 0.
+       **/
+      int offset() const noexcept;
+      
       /**
        * Constructor.
        **/
       Row(Result &result);
 
-      Row(const Row&) = delete;
+      Row(const Row&) = default;
       Row& operator = (const Row&) = delete;
       Row(const Row&&) = delete;
       Row& operator = (const Row&&) = delete;
@@ -203,41 +211,17 @@ namespace db {
        * @return The number of rows affected by the SQL statement.
        **/
       uint64_t count() const noexcept;
-      
-      Result &discard();
-
-      /**
-       * Attach an event handler for the first row (asynchronous api).
-       *
-       * If the result contains at least once row, the handler will be called.
-       *
-       * ```
-       * cnx->execute("SELECT from_date FROM titles WHERE emp_no=$1", 10020)
-       *   .once([](const Row &row) {
-       *   ...
-       * });
-       * ```
-       *
-       * @param once A function to execute at the time the event is triggered.
-       * @param error A function to execute if an error occurs. An alternative
-       *        is to register that function using error().
-       * @return The result itself to eventually chain another event handler.
-       **/
-      Result &once(std::function<void (const Row &row)> once,
-                   std::function<void (std::exception_ptr reason)> error = nullptr);
 
       /**
        * Attach an event handler for the each row in the result (asynchronous api).
        *
-       * The event handler will be called for each row in the result until it
-       * return false.
+       * The event handler will be called for each row in the result.
        *
        * ```
        * cnx->execute(""SELECT emp_no, first_name || ' ' || last_name FROM employees")
        *   .each([](const Row &employee) {
        *     std::cout << "Employee #: " << employee.as<int32_t>(0)
        *               << "Name: " << employee.as<std::string>(1) << std::endl;
-       *     return true;
        *   });
        * ```
        *
@@ -246,8 +230,8 @@ namespace db {
        *        is to register that function using error().
        * @return The result itself to eventually chain another event handler.
        **/
-      Result &each(std::function<bool (const Row &row)> each,
-                   std::function<void (std::exception_ptr reason)> error = nullptr);
+      Result &each(std::function<void (Row &row)> each,
+                   std::function<void (std::exception_ptr &reason)> error = nullptr);
 
       /**
        * Attach an event handler on the command execution completion (asynchronous api).
@@ -270,7 +254,7 @@ namespace db {
        * @param done  A function to execute at the time the event is triggered.
        * @return The result itself to eventually chain another event handler.
        **/
-      Result &done(std::function<void (uint64_t count)> done);
+      Result &done(std::function<void (Result &result)> callback);
 
       /**
        * Attach an event handler on the command execution throws an error (asynchronous api).
@@ -289,7 +273,7 @@ namespace db {
        *     return true;
        * }).done([](int64_t count) {
        *   ...
-       * }).error([](std::exception_ptr reason) {
+       * }).error([](std::exception_ptr &reason) {
        *   try {
        *     std::rethrow_exception(e);
        *   }
@@ -302,14 +286,14 @@ namespace db {
        * @param error  A function to execute at the time the event is triggered.
        * @return The result itself to eventually chain another event handler.
        **/
-      Result &error(std::function<void (std::exception_ptr reason)> error);
+      Result &error(std::function<void (std::exception_ptr &reason)> error);
 
       /**
        * Support of the range-based for loops.
        *
        *
        * ```
-       *  auto &result = cnx.exectute("SELECT ...");
+       *  auto result = cnx.exectute("SELECT ...");
        *  for (auto &row: result) {
        *    ...
        *  }
@@ -355,6 +339,13 @@ namespace db {
        * Reserved. Do not use.
        **/
       Result(Connection &conn);
+      
+      /**
+       * Copy constructor.
+       **/
+      Result(const Result &);
+      
+      ~Result() = default;
 
     private:
 
@@ -376,9 +367,7 @@ namespace db {
        * Get the next result from the server.
        **/
       void next();
-
-      Result(const Result&) = delete;
-      Result(const Result&&) = delete;
+      
       Result& operator = (const Result&) = delete;
       Result& operator = (const Result&&) = delete;
     };

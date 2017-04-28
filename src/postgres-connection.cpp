@@ -32,220 +32,10 @@
 
 namespace db {
   namespace postgres {
-
-    enum sql_scanner_state {
-      start,
-      statement,
-      dollar_quoted_string_start_tag,   /* inside a start tag                 */
-      dollar_quoted_string,             /* $tag$Dianne's horse$tag$           */
-      dollar_quoted_string_end_tag,     /* inside a end tag                   */
-      quoted_identifier,                /* UPDATE "my_table" SET "a" = 5;     */
-      string,
-      comment,                          /* -- sql comment */
-      block_comment                     /* C-style block comments */
-    };
-
-    enum sql_scanner_token {
-      none,
-      digit,
-      dollar,
-      apostrophe,     /* single quote */
-      quotation_mark, /* douple quotes */
-      dash,
-      semicolon,
-      asterisk,
-      slash,
-      space,
-      character,
-      end_of_line,
-      end_of_string
-    };
-
-    inline sql_scanner_token scan(sql_scanner_token previous, const char *s, int32_t *length) {
-      sql_scanner_token token;
-      char c;
-      *length = 0;
-      while (true) {
-        (*length)++;
-        c = *s++;
-        switch (c) {
-          case '$': return dollar;
-          case '\'': return apostrophe;
-          case '"': return quotation_mark;
-          case '-': return dash;
-          case ';': return semicolon;
-          case '*': return asterisk;
-          case '/': return slash;
-          case '\0': return end_of_string;
-          case '0':
-          case '1':
-          case '2':
-          case '3':
-          case '4':
-          case '5':
-          case '6':
-          case '7':
-          case '8':
-          case '9':
-            token = digit;
-            break;
-          case ' ':
-          case '\t':
-            token = space;
-            break;
-          case '\r':
-          case '\n':
-            token = end_of_line;
-            break;
-          default:
-            token = character;
-            break;
-        }
-        if (token != previous) {
-          break;
-        }
-      }
-      return token;
-    }
-
-    // -------------------------------------------------------------------------
-    // Check if the sql contains one or more statement.
-    // -------------------------------------------------------------------------
-    bool isSingleStatement(const char *sql) noexcept {
-      int32_t length = 0;
-      const char *tag = nullptr;      // start of the tag
-      std::vector<std::string> tags;  // tags used by dollar quoted strings
-      std::vector<sql_scanner_state> states;
-      states.push_back(start);
-      sql_scanner_state state;
-      sql_scanner_token token, previous = none;
-      do {
-        token = scan(previous, sql, &length);
-        state = states.back();
-        switch (state) {
-          case start:
-          case statement:
-            switch (token) {
-              case dash: previous == dash ? states.push_back(comment) : ((void)0); break;
-              case asterisk: previous == slash ? states.push_back(block_comment) : ((void)0); break;
-              case apostrophe: states.push_back(string); break;
-              case quotation_mark: states.push_back(quoted_identifier); break;
-              case semicolon: state == statement ? states.push_back(start) : ((void)0); break;
-              case dollar:
-                states.push_back(dollar_quoted_string_start_tag);
-                tag = sql + length;
-                break;
-              case slash:
-              case space:
-              case end_of_line:
-              case end_of_string:
-                break;
-              default:
-                if (state == start) {
-                  if (states.size() > 1) {
-                    return false;
-                  }
-                  states.pop_back();
-                  states.push_back(statement);
-                }
-                break;
-            }
-            break;
-
-          case dollar_quoted_string_start_tag:
-            switch (token) {
-              case dollar:
-                tags.push_back(std::string(tag, sql-tag));
-                states.pop_back();
-                states.push_back(dollar_quoted_string);
-                break;
-              default: break;
-            }
-            break;
-
-          case dollar_quoted_string:
-            switch (token) {
-              case dollar:
-                states.pop_back();
-                states.push_back(dollar_quoted_string_end_tag);
-                tag = sql + length;
-                break;
-              default: break;
-            }
-            break;
-
-          case dollar_quoted_string_end_tag:
-            switch (token) {
-              case dollar:
-                if (sql - tag == tags.back().length()
-                    && std::strncmp(tags.back().c_str(), tag, sql - tag) == 0) {
-                  // end of tag found
-                  tags.pop_back();
-                  states.pop_back();
-                  if (tags.size() > 0) {
-                    // nested quoted strings.
-                    states.push_back(dollar_quoted_string);
-                  }
-                }
-                else {
-                  // nested quoted strings.
-                  // this was not a end tag but the start of a new tag
-                  states.pop_back();
-                  states.push_back(dollar_quoted_string);
-                  states.push_back(dollar_quoted_string);
-                  tags.push_back(std::string(tag, sql-tag));
-                }
-                break;
-              case digit:
-                if (previous == dollar) {
-                  // parameter inside a quoted string (ex: $1).
-                  states.pop_back();
-                }
-                break;
-              default: break;
-            }
-            break;
-
-          case quoted_identifier:
-            switch (token) {
-              case quotation_mark: previous != quotation_mark ? states.pop_back() : (void)(0);
-              default: break;
-            }
-            break;
-
-          case string:
-            switch (token) {
-              case apostrophe: previous != apostrophe ? states.pop_back() : (void)(0);
-              default: break;
-            }
-            break;
-
-          case comment:
-            switch (token) {
-              case end_of_line: states.pop_back();
-              default: break;
-            }
-            break;
-
-          case block_comment:
-            switch (token) {
-              case asterisk: previous == slash ? states.push_back(block_comment) : ((void)0); break; // nested comment
-              case slash: previous == asterisk ? states.pop_back() : (void)(0);
-              default: break;
-            }
-            break;
-
-          default:
-            break;
-        }
-
-        previous = token;
-        sql += length;
-
-      } while (token != end_of_string);
-
-      return true;
-    }
+    
+    void consumeInput(ResultHandle *rh);
+    void attach(ResultHandle *rh, PGresult *pgr);
+    void setLastError(ResultHandle *rh, std::exception_ptr eptr);
 
     typedef std::function<void (const char *)> notice_handler;
 
@@ -264,12 +54,9 @@ namespace db {
     // -------------------------------------------------------------------------
     Connection::Connection(Settings settings) {
       pgconn_ = nullptr;
-      transaction_ = 0;
       async_ = false;
-      done_ = nullptr;
-      error_ = nullptr;
-      notice_ = nullptr;
-      inputReady_ = nullptr;
+      singleRowMode_ = false;
+      handler_ = nullptr;
       settings_ = settings;
     }
 
@@ -292,12 +79,15 @@ namespace db {
     // -------------------------------------------------------------------------
     // Open a connection to the database.
     // -------------------------------------------------------------------------
-    Connection &Connection::connect(const char *connInfo) {
+    Connection &Connection::connect(const char *connInfo, handler_t handler) {
       connInfo = connInfo == nullptr ? "" : connInfo;
       if (async_) {
+        assert(handler);
+        handler_ = handler;
         pgconn_ = PQconnectStart(connInfo);
         if (pgconn_) {
           PQsetnonblocking(pgconn_, 1);
+          asyncAction(action::connect, nullptr);
           connectPoll();
         }
       }
@@ -306,11 +96,8 @@ namespace db {
         if( PQstatus(pgconn_) != CONNECTION_OK ) {
           PQfinish(pgconn_);
           pgconn_ = nullptr;
+          throw error(error_code::connection_failure, lastPostgresError());
         }
-      }
-
-      if (pgconn_ == nullptr) {
-        throwException<ConnectionException>(lastError());
       }
 
       return *this;
@@ -322,6 +109,7 @@ namespace db {
     Connection &Connection::close() {
       assert(pgconn_);
       PQfinish(pgconn_);
+      asyncAction(action::close, nullptr);
       pgconn_ = nullptr;
       return *this;
     }
@@ -329,74 +117,90 @@ namespace db {
     // -------------------------------------------------------------------------
     // Last error message on the connection.
     // -------------------------------------------------------------------------
-    std::string Connection::lastError() const noexcept {
+    std::string Connection::lastPostgresError() const noexcept {
       return std::string(PQerrorMessage(pgconn_));
     }
 
     // -------------------------------------------------------------------------
     // Execute an SQL statement.
     // -------------------------------------------------------------------------
-    void Connection::execute(const char *sql, const Params &params) {
-
-      if (lastResult_) {
-        lastResult_->discard();
+    Result Connection::execute(const char *sql, const Params &params) {
+      
+      Result result(*this);
+      if (async_) {
+        lastResult_ = result.handle_;
       }
+      
+      try {
+        int success = PQsendQueryParams(pgconn_, sql, int(params.values_.size()),
+                                        params.types_.data(),
+                                        params.values_.data(),
+                                        params.lengths_.data(),
+                                        params.formats_.data(),
+                                        1 /* binary results */);
+        
+        if (singleRowMode_) {
+          singleRowMode_ = false;
+          if (success) {
+            PQsetSingleRowMode(pgconn_);
+          }
+        }
 
-      int success;
-      if (isSingleStatement(sql)) {
-        success = PQsendQueryParams(pgconn_, sql, int(params.values_.size()),
-                                    params.types_.data(),
-                                    params.values_.data(),
-                                    params.lengths_.data(),
-                                    params.formats_.data(),
-                                    1 /* binary results */);
-      }
-      else {
-        assert(!params.values_.size()); // parameters are allowed only for single commands
-        success = PQsendQuery(pgconn_, sql);
-      }
+        if (success) {
+          if (async_) {
+            flush();
+          }
+          else {
+            result.first();
+          }
+        }
 
-      if (success) {
-        // Switch to the single row mode to avoid loading the all result in memory.
-        success = PQsetSingleRowMode(pgconn_);
-        assert(success);
-
-        lastResult_ = std::make_shared<Result>(*this);
-        lastResult_->first();
+        if (!success) {
+          throw error(error_code::unknown, lastPostgresError());
+        }
       }
-
-      if (!success) {
-        throwException<ExecutionException>(lastError());
+      catch (...) {
+        setLastError(result.handle_.get(), std::current_exception());
       }
+      
+      return result;
     }
-
+    
     // -------------------------------------------------------------------------
-    // Start a transaction.
+    // Execute a batch of SQL commands.
     // -------------------------------------------------------------------------
-    Connection &Connection::begin() {
-      execute("BEGIN;");
-      transaction_++;
-      return *this;
-    }
-
-    // -------------------------------------------------------------------------
-    // Commit a transaction.
-    // -------------------------------------------------------------------------
-    Connection &Connection::commit() {
-      assert(transaction_ > 0);
-      if (--transaction_ == 0) {
-        execute("COMMIT;");
+    Result Connection::execute(const BatchStatement &sql) {
+      
+      Result result(*this);
+      
+      try {
+        if (async_) {
+          int success = PQsendQuery(pgconn_, sql);
+          if (success) {
+            lastResult_ = result.handle_;
+            flush();
+          }
+          else {
+            throw error(error_code::unknown, lastPostgresError());
+          }
+        }
+        else {
+          attach(result.handle_.get(), PQexec(pgconn_, sql));
+        }
       }
-      return *this;
+      catch (...) {
+        setLastError(result.handle_.get(), std::current_exception());
+      }
+      
+      return result;
+      
     }
-
+    
     // -------------------------------------------------------------------------
-    // Rollback a transaction.
+    // Execute the next statement in single row mode.
     // -------------------------------------------------------------------------
-    Connection &Connection::rollback() {
-      assert(transaction_ > 0);
-      execute("ROLLBACK;");
-      transaction_ = 0;
+    Connection &Connection::setSingleRowMode() noexcept {
+      singleRowMode_ = true;
       return *this;
     }
     
@@ -406,64 +210,73 @@ namespace db {
     Connection &Connection::cancel() {
       char errbuf[256];
       PGcancel *pgcancel = PQgetCancel(pgconn_);
-
-      int success = PQcancel(pgcancel, errbuf, sizeof(errbuf));
-      if (!success) {
-        throwException<ExecutionException>(errbuf);
+      if (pgcancel == nullptr) {
+        throw std::runtime_error("Cancel operation on an invalid connection.");
       }
-
-      PQfreeCancel(pgcancel);
+      else {
+        int success = PQcancel(pgcancel, errbuf, sizeof(errbuf));
+        if (!success) {
+          throw std::runtime_error(errbuf);
+        }
+        PQfreeCancel(pgcancel);
+      }
       return *this;
     }
 
     // -------------------------------------------------------------------------
     // Process available data retreived from the server.
     // -------------------------------------------------------------------------
-    void Connection::consumeInput(std::function <void ()> callback) {
-      if (PQconsumeInput(pgconn_)) {
-        if (PQisBusy(pgconn_)) {
-          asyncWait([this, callback](bool aborted) {
-            if (!aborted) {
-              consumeInput(callback);
+    void Connection::consumeInput() {
+      
+      if (pgconn_) {
+        auto lastResult = lastResult_.lock();
+        asyncAction(action::read, [this, lastResult](std::exception_ptr eptr) {
+          if (eptr && lastResult) {
+            setLastError(lastResult.get(), eptr);
+          }
+          else if (pgconn_) {
+            if (lastResult) {
+              ::db::postgres::consumeInput(lastResult.get());
             }
-          }, nullptr);
-        }
-        else {
-          callback();
-        }
+            consumeInput();
+          }
+        });
       }
-      else {
-        throwException<ExecutionException>(lastError());
-      }
+      
     }
 
     // -------------------------------------------------------------------------
     // Flush the data pending to be send throught the connection.
     // -------------------------------------------------------------------------
-    void Connection::flush(std::function <void ()> callback) {
+    void Connection::flush() {
 
-      asyncWait(nullptr, [this, callback](bool aborted) {
-        if (!aborted) {
-          int res = PQflush(pgconn_);
-          if (res == 1) {
-            asyncWait([this, callback](bool aborted) {
-              if (!aborted) {
-                consumeInput(callback);
+      int res = PQflush(pgconn_);
+      switch (res) {
+        case 0:
+          // Send queue flushed successfully. Now checking if some data are
+          // ready to be consumed.
+          consumeInput();
+          break;
+          
+        case 1:
+          // More data to send
+          asyncAction(action::write, [this](std::exception_ptr eptr) {
+            if (eptr) {
+              auto lastResult = lastResult_.lock();
+              if (lastResult) {
+                setLastError(lastResult.get(), eptr);
               }
-            }, [this, callback](bool aborted) {
-              if (!aborted) {
-                flush(callback);
-              }
-            });
-          }
-          else if (res == -1) {
-            throwException<ExecutionException>(lastError());
-          }
-          else {
-            callback();
-          }
-        }
-      });
+            }
+            else if (pgconn_) {
+              this->flush();
+            }
+          });
+          break;
+          
+        case -1:
+          throw error(error_code::unknown, lastPostgresError());
+          break;
+      }
 
     }
 
@@ -472,38 +285,47 @@ namespace db {
     // -------------------------------------------------------------------------
     void Connection::connectPoll() {
       PostgresPollingStatusType status = PQconnectPoll(pgconn_);
-      switch (status) {
-        case PGRES_POLLING_FAILED: {
-          throwException<db::postgres::ConnectionException>(lastError());
-          break;
+      try {
+        switch (status) {
+          case PGRES_POLLING_FAILED:
+            throw error(error_code::connection_failure, lastPostgresError());
+            break;
+
+          case PGRES_POLLING_READING:
+            asyncAction(action::read, [this](std::exception_ptr eptr) {
+              if (eptr) {
+                completed(eptr);
+              }
+              else {
+                connectPoll();
+              }
+            });
+            break;
+
+          case PGRES_POLLING_WRITING: {
+            asyncAction(action::write, [this](std::exception_ptr eptr) {
+              if (eptr) {
+                completed(eptr);
+              }
+              else {
+                connectPoll();
+              }
+            });
+            break;
+          }
+
+          case PGRES_POLLING_OK:
+            completed();
+            consumeInput();
+            break;
+
+          default:
+            assert(false);
+            break;
         }
-
-        case PGRES_POLLING_READING: {
-          asyncWait([this](bool aborted) {
-            if (!aborted) {
-              connectPoll();
-            }
-          }, nullptr);
-          break;
-        }
-
-        case PGRES_POLLING_WRITING: {
-          asyncWait(nullptr, [this](bool aborted) {
-            if (!aborted) {
-              connectPoll();
-            }
-          });
-          break;
-        }
-
-        case PGRES_POLLING_OK:
-          assert(done_ != nullptr);
-          done_();
-          break;
-
-        default:
-          assert(false);
-          break;
+      }
+      catch(...) {
+        completed(std::current_exception());
       }
     }
 
@@ -513,24 +335,18 @@ namespace db {
     int Connection::socket() const noexcept {
      return PQsocket(pgconn_);
     }
-
-    Connection &Connection::done(std::function<void ()> cb) {
-      done_ = cb;
-      return *this;
+    
+    void Connection::completed(std::exception_ptr eptr) {
+      assert(handler_);
+      handler_t h;
+      h.swap(handler_);
+      h(eptr);
     }
 
     // -------------------------------------------------------------------------
-    // Error handler registration.
+    // Trigger an event to the layer in charge of asynchonous I/O.
     // -------------------------------------------------------------------------
-    Connection &Connection::error(std::function<void (std::exception_ptr)> cb) {
-      error_ = cb;
-      if (lastException_) {
-        // An exception happened before the registration of the handler, we can
-        // call the handler now.
-        error_(lastException_);
-      }
-      return *this;
-    }
+    void Connection::asyncAction(action, handler_t) {}
 
   } // namespace postgres
 }   // namespace db

@@ -71,7 +71,7 @@ TEST(result_sync, serial_types) {
 
   cnx.execute("CREATE TABLE tmp(id16 smallserial, id32 serial, id64 bigserial, val integer)");
   cnx.execute("INSERT INTO tmp(val) SELECT 0");
-  Result &result = cnx.execute("SELECT id16, id32, id64 FROM tmp");
+  Result result = cnx.execute("SELECT id16, id32, id64 FROM tmp");
   EXPECT_EQ(result.as<int16_t>(0), 1);
   EXPECT_EQ(result.as<int32_t>(1), 1);
   EXPECT_EQ(result.as<int64_t>(2), 1);
@@ -267,7 +267,7 @@ TEST(result_sync, column_name) {
   Connection cnx;
   cnx.connect();
 
-  auto &result = cnx.execute("SELECT 0 AS c1, 1, 2 AS \"Günter\", 3 AS \"メインページ\"");
+  auto result = cnx.execute("SELECT 0 AS c1, 1, 2 AS \"Günter\", 3 AS \"メインページ\"");
   EXPECT_STREQ("c1", result.columnName(0));
   EXPECT_STREQ("?column?", result.columnName(1));
   EXPECT_STREQ(u8"Günter", result.columnName(2));

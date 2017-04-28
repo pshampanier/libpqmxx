@@ -29,94 +29,94 @@
 #pragma GCC diagnostic pop
 
 namespace db {
-  namespace postgres {
-    namespace boost {
+namespace postgres {
+namespace async_boost {
+  
+  using namespace ::db::postgres;
 
-      /**
-       * An asynchronous implementation of a postgresql connection based on boost.
-       **/
-      class Connection : public db::postgres::Connection {
-      public:
+  /**
+   * An asynchronous implementation of a postgresql connection based on boost.
+   **/
+  class Connection : public postgres::Connection {
+  public:
 
-        Connection(::boost::asio::io_service& ioService)
-        : socket_(ioService) {
-          async_ = true;
-        }
-
-        // ---------------------------------------------------------------------
-        // Close the connection to the database server.
-        // ---------------------------------------------------------------------
-        virtual Connection &close() override {
-          if (readCallback_ || writeCallback_) {
-            // Cancel the pending io.
-            this->socket_.cancel();
-          }
-
-          return Connection::close();
-        }
-
-        // ---------------------------------------------------------------------
-        // Wait for the next io event.
-        // ---------------------------------------------------------------------
-        virtual void asyncWait(std::function<void (bool)> readCallback,
-                               std::function<void (bool)> writeCallback) override {
-
-          if (socket_.native() == -1) {
-            socket_.assign(::boost::asio::ip::tcp::v4(), socket());
-          }
-
-          if (readCallback) {
-            assert(readCallback_ == nullptr);
-            readCallback_ = readCallback;
-            socket_.async_read_some(::boost::asio::null_buffers(),
-              [this, readCallback, writeCallback](::boost::system::error_code ec, size_t) {
-                if (!ec && writeCallback) {
-                  // There was also a write operation pending, we need to cancel it.
-                  ec = this->socket_.cancel(ec);
-                }
-                bool aborted = (ec == ::boost::asio::error::operation_aborted);
-                if (!ec || aborted) {
-                  readCallback_ = nullptr;
-                  readCallback(aborted);
-                }
-                else {
-                  // throw an exception
-                  this->throwException<std::runtime_error>(ec.message());
-                }
+    Connection(::boost::asio::io_service& ioService)
+    : socket_(ioService) {
+      async_ = true;
+    }
+    
+    virtual ~Connection() override {
+      if (socket_.is_open()) {
+        socket_.cancel();
+      }
+    }
+    
+    // ---------------------------------------------------------------------
+    // Trigger an action to the layer in charge of asynchonous I/O.
+    // ---------------------------------------------------------------------
+    virtual void asyncAction(action action, handler_t callback) override {
+      
+      switch (action) {
+          
+        //
+        // Connection to the server establised.
+        //
+        case postgres::action::connect:
+          socket_.assign(::boost::asio::ip::tcp::v4(), socket());
+          break;
+          
+        //
+        // Connection to the server closed.
+        //
+        case postgres::action::close:
+          socket_.cancel();
+          break;
+          
+        //
+        // Connection reset to the server initiated.
+        //
+        case postgres::action::reset:
+          
+          break;
+          
+        //
+        // Connection read pending.
+        //
+        case postgres::action::read:
+          socket_.async_read_some(::boost::asio::null_buffers(),
+            [this, callback](::boost::system::error_code ec, size_t) {
+              std::exception_ptr eptr;
+              if (ec && ec != ::boost::asio::error::operation_aborted) {
+                eptr = make_exception_ptr(std::runtime_error(ec.message()));
               }
-            );
-          }
-
-          if (writeCallback) {
-            assert(writeCallback_ == nullptr);
-            writeCallback_ = writeCallback;
-            socket_.async_write_some(::boost::asio::null_buffers(),
-              [this, readCallback, writeCallback](::boost::system::error_code ec, size_t) {
-                if (!ec && readCallback) {
-                  // There was also a read operation pending, we need to cancel it.
-                  ec = this->socket_.cancel(ec);
-                }
-                bool aborted = (ec == ::boost::asio::error::operation_aborted);
-                if (!ec || aborted) {
-                  writeCallback_ = nullptr;
-                  writeCallback(aborted);
-                }
-                else {
-                  // throw an exception
-                  this->throwException<std::runtime_error>(ec.message());
-                }
+              callback(eptr);
+            }
+          );
+          break;
+          
+        //
+        // Connection write pending.
+        //
+        case postgres::action::write:
+          socket_.async_write_some(::boost::asio::null_buffers(),
+            [this, callback](::boost::system::error_code ec, size_t) {
+              std::exception_ptr eptr;
+              if (ec && ec != ::boost::asio::error::operation_aborted) {
+                eptr = make_exception_ptr(std::runtime_error(ec.message()));
               }
-            );
-          }
+              callback(eptr);
+            }
+          );
+          break;
+          
+      }
+      
+    }
+    
+  private:
+    ::boost::asio::ip::tcp::socket socket_;
+  };
 
-        }
-
-      private:
-        ::boost::asio::ip::tcp::socket socket_;
-        std::function<void (bool)>     readCallback_ = nullptr;
-        std::function<void (bool)>     writeCallback_ = nullptr;
-      };
-
-    } // namespace boost
-  }   // namespace postgres
-}     // namespace db
+} // namespace postgres
+} // namespace db
+} // namespace async_boost

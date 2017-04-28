@@ -38,6 +38,7 @@
   #define be32toh(x) OSSwapBigToHostInt32(x)
   #define be64toh(x) OSSwapBigToHostInt64(x)
 #elif defined (_WINDOWS)
+  #define INCL_EXTRA_HTON_FUNCTIONS 1
   #include <winsock2.h>
   #define be16toh(x) ntohs(x)
   #define be32toh(x) ntohl(x)

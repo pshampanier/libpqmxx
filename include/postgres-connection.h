@@ -23,6 +23,7 @@
 
 #include "postgres-params.h"
 #include "postgres-result.h"
+#include "postgres-statements.h"
 
 #include <functional>
 #include <memory>
@@ -44,7 +45,19 @@ namespace postgres {
      **/
     bool emptyStringAsNull = true;
   };
-
+  
+  enum class action {
+    
+    connect,  /**< Connection to the server has establised. **/
+    close,    /**< Connection to the server closed. **/
+    reset,    /**< Connection reset to the server initiated. **/
+    read,     /**< Connection read pending. **/
+    write     /**< Connection write pending. **/
+    
+  };
+  
+  typedef std::function<void (std::exception_ptr &reason)> handler_t;
+  
   /**
    * A connection to a PostgreSQL database.
    **/
@@ -96,14 +109,14 @@ namespace postgres {
        * @see https://www.postgresql.org/docs/9.5/static/libpq-connect.html#LIBPQ-CONNSTRING
        * @return The connection itself.
        **/
-      Connection &connect(const char *connInfo = nullptr);
-
+      Connection &connect(const char *connInfo = nullptr, handler_t handler = nullptr);
+    
       /**
        * Close the database connection.
        *
        * This method is automatically called by the destructor.
        **/
-      virtual Connection &close();
+      Connection &close();
 
       /**
        * Cancel queries in progress.
@@ -117,7 +130,7 @@ namespace postgres {
        * @return The connection ifself.
        **/
       Connection &cancel();
-
+    
       /**
        * Execute one or more SQL commands.
        *
@@ -147,51 +160,37 @@ namespace postgres {
          time with time zone         | db::postgres::timetz_t
 
        *
-       * ```
+       * \code
 
-        // Execute a query
-        auto results = cnx.execute("SELECT MAX(emp_no) FROM employees");
+          // Execute a query
+          auto results = cnx.execute("SELECT MAX(emp_no) FROM employees");
 
-        // Execute a query with parameters.
-        cnx.execute("UPDATE titles SET to_date=$1::date WHERE emp_no=$2", "1988-02-10", 10020);
+          // Execute a query with parameters.
+          cnx.execute("UPDATE titles SET to_date=$1::date WHERE emp_no=$2", "1988-02-10", 10020);
 
-        // Execute multiple statements in one call.
-        cnx.execute(R"SQL(
-
-          CREATE TYPE GENDER AS ENUM ('M', 'F');
-
-          CREATE TABLE employees (
-            emp_no      INTEGER         NOT NULL,
-            birth_date  DATE            NOT NULL,
-            first_name  VARCHAR(14)     NOT NULL,
-            last_name   VARCHAR(16)     NOT NULL,
-            gender      GENDER          NOT NULL,
-            hire_date   DATE            NOT NULL,
-            PRIMARY KEY (emp_no)
-          );
-
-        )SQL");
-
-       * ```
+       * \code
+       *
        * When the parameter data type might be ambigious for the server, you
        * can use the PostgreSQL casting syntax. In the example below both
        * parameters are send as `character varying` but the server will
        * perform the cast to `date` and `integer`.
-       * ```
-         cnx.execute("UPDATE titles SET to_date=$1::date WHERE emp_no::integer=$2", "1988-02-10", "10020");
-       * ```
+       *
+       * \code
+       *
+          cnx.execute("UPDATE titles SET to_date=$1::date WHERE emp_no::integer=$2", "1988-02-10", "10020");
+       *
+       * \code
        *
        * The `null` value can be send as a parameter using the `nullptr` keyword.
-       * ```
-       * cnx.execute("INSERT INTO titles VALUES ($1, $2, $3::date, $4)",
-       *             10020, "Technique Leader", "1988-02-10", nullptr);
-       * ```
        *
-       * @attention Parameters are only supported for a single SQL command. If
-       *            execute() is called with more than one sql command and any
-       *            of those commands are using parameters, execute() will fail.
+       * \code
        *
-       * @return The results of the SQL commands.
+            cnx.execute("INSERT INTO titles VALUES ($1, $2, $3::date, $4)",
+                        10020, "Technique Leader", "1988-02-10", nullptr);
+       *
+       * \code
+       *
+       * @return The results of the SQL command.
        *
        * You can iterate over the returned result using the Result::iterator.
        * When a query in a the `sql` command is a SELECT all the rows of the
@@ -199,115 +198,106 @@ namespace postgres {
        * be reused for another command. For other commands such as an UPDATE
        * or a CREATE TABLE, using the iterator is not required and the
        * connection can be reused for the next command right away.
-       *
+       * 
        **/
       template<typename... Args>
-      Result &execute(const char *sql, Args... args) {
+      Result execute(const char *sql, Args... args) {
         Params params(settings_, sizeof...(args));
         std::make_tuple((params.bind(std::forward<Args>(args)), 0)...);
-        execute(sql, params);
-        return *lastResult_;
+        return execute(sql, params);
       }
-
+    
       /**
-       * Start a transaction.
+       * Execute a batch of SQL commands.
        *
-       * begin(), commit() and rollback() are helper methods to deal with
-       * transactions.
-       * The main benefit of using those methods rather than executing the SQL
-       * commands is on nested transactions. If a code start a transaction and
-       * call another code also starting a transaction, thoses methods will
-       * create only one transaction started at the first all to begin() and
-       * commited at the last call to commit().
+       * \code
+       
+         cnx.execute(R"SQL(
+         
+           CREATE TYPE GENDER AS ENUM ('M', 'F');
+         
+           CREATE TABLE employees (
+             emp_no      INTEGER         NOT NULL,
+             birth_date  DATE            NOT NULL,
+             first_name  VARCHAR(14)     NOT NULL,
+             last_name   VARCHAR(16)     NOT NULL,
+             gender      GENDER          NOT NULL,
+             hire_date   DATE            NOT NULL,
+             PRIMARY KEY (emp_no)
+           );
+         
+         )SQL"_x);
+       
+       * \code
+       * 
+       * To produce a BatchStatement from a string literal, use the user defined 
+       * string literal `_x`.
+       * 
+       * The batch of sql operations is applied atomically.
+       * 
+       * @return The result of the execution.
+       * 
+       *  - In synchonous mode, only the result of the last command is returned.
+       *  - In asynchonous mode, done() is called for each sql statement in the
+       *    batch. If any of the statements returns rows, they can be reached 
+       *    using the each() method on the returned Result.
+       **/
+      Result execute(const BatchStatement &sql);
+    
+      /**
+       * Execute the next statement in single row mode.
+       * 
+       * By default when calling execute(), the entire result is fetched in 
+       * memory and returned by the caller. While this is the most efficient
+       * way for most of the queries, this can be unsutable for large results.
+       * When the single row mode is enable, the Result returned by exectute()
+       * contains only the first row, next rows will be fetched one at a time 
+       * while iterating on the result.
+       * 
+       * This method must be called right before execute() and will apply only 
+       * on the next execute().
+       * 
+       * In single row mode, the all rows must have been fetched before calling
+       * execute() for a next query.
        *
        * @return The connection itself.
        **/
-      Connection &begin();
-
-      /**
-       * Commit a transaction.
-       *
-       * @return The connection itself.
-       **/
-      Connection &commit();
-
-      /**
-       * Rollback a transaction.
-       *
-       * @return The connection itself.
-       **/
-      Connection &rollback();
-
-      Connection &always(std::function<void ()> callback);
-
-      Connection &done(std::function<void ()> callback);
-
-      /**
-       * Registration of the default error handler for asynchronous connections.
-       **/
-      Connection &error(std::function<void (std::exception_ptr reason)> callback);
+      Connection &setSingleRowMode() noexcept;
 
       Connection &notice(std::function<void (const char *message)> callback) noexcept;
 
     protected:
-
-      PGconn                 *pgconn_;      /**< The native connection pointer. **/
-      std::shared_ptr<Result> lastResult_;  /**< Result of the last execution. **/
-      bool                    async_;       /**< `true` when running on asynchronous mode. **/
-      std::exception_ptr lastException_;    /**< capture of the last exception for async mode. **/
-
-      /**
-       * Callbacks for asynchonous operations in non bloking mode.
-       **/
-      std::function<void ()>                    done_;
-      std::function<void (std::exception_ptr)>  error_;
-      std::function<void (const char *message)> notice_;
+    
+      PGconn                      *pgconn_;       /**< The native connection pointer. **/
+      std::weak_ptr<ResultHandle> lastResult_;    /**< Result of the last execution. **/
+      bool                        async_;         /**< `true` when running on asynchronous mode. **/
+      bool                        singleRowMode_; /**< `true` when SetSingleRowMode() has been called. **/
 
       /**
-       * Internal callbacks for asynchrous operations.
+       * Handler for asynchonous operations in non blocking mode.
        **/
-      std::function<void ()> inputReady_;
-
-      template <class E>
-      void throwException(std::string what) {
-        if (async_) {
-          lastException_ = std::make_exception_ptr(E(what));
-          if (error_) {
-            error_(lastException_);
-          }
-        }
-        else {
-          throw E(what);
-        }
-      }
-
+      handler_t handler_;
+    
       /**
        * Process available data retreived from the server.
        *
        * This method must be called by the owner of the event loop when
        * some data are available in the connection.
        **/
-      void consumeInput(std::function <void ()> callback);
+      void consumeInput();
 
       /**
        * Flush the data pending to be send throught the connection.
        *
        * This method must be called by the event loop owner when the
        * connection is ready to accept to write data to the server.
-       *
-       * @return true if not all data have been flushed. In this case the
-       *         event loop owner must call again `flush()` when the server
-       *         is ready to access more data.
        **/
-      void flush(std::function <void ()> callback);
+      void flush();
 
       /**
        * Check the connection progress status.
        **/
       void connectPoll();
-
-      virtual void asyncWait(std::function<void (bool)> readCallback,
-                             std::function<void (bool)> writeCallback) {}
 
       /**
        * Get the native socket identifier.
@@ -323,7 +313,7 @@ namespace postgres {
        * @return The error message most recently generated by an operation on
        *         the connection.
        **/
-      std::string lastError() const noexcept;
+      std::string lastPostgresError() const noexcept;
 
       /**
        * Cast operator to the native connection pointer.
@@ -331,6 +321,11 @@ namespace postgres {
       operator PGconn *() {
         return pgconn_;
       }
+    
+      /**
+       * Trigger an action for the layer in charge of asynchonous I/O.
+       **/
+      virtual void asyncAction(action action, handler_t callback);
 
     private:
 
@@ -340,20 +335,11 @@ namespace postgres {
       Settings settings_;
 
       /**
-       * Current transaction level.
-       *
-       * * 0 → no transaction in progress.
-       * * 1 → one transaction in progress.
-       * * 2 → one transaction in progress + 1 nested transaction.
-       * * n → one transaction in progress + (n-1) nested transactions.
-       *
+       * Private implementation of the execute public method.
        **/
-      int transaction_;
-
-      /**
-       * Private implementation of the exectute public method.
-       **/
-      void execute(const char *sql, const Params &params);
+      Result execute(const char *sql, const Params &params);
+    
+      void completed(std::exception_ptr eptr = nullptr);
 
       Connection(const Connection&) = delete;
       Connection(const Connection&&) = delete;
@@ -361,17 +347,5 @@ namespace postgres {
       Connection& operator = (const Connection&&) = delete;
   };
 
-  /**
-   * Check if a sql command contains one or more statements.
-   *
-   * This method does not perform a strict parsing of the SQL. If the `sql`
-   * parameter is syntactically incorrect, the return value of this method
-   * is undetermined.
-   *
-   * @param sql The SQL commands to parse.
-   * @return true if more than one statement have been found.
-   **/
-  bool isSingleStatement(const char *sql) noexcept;
-
 } // namespace postgres
-}   // namespace db
+} // namespace db

@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 3.4.1)
 project (postgres-test)
 
+option(GCOV "enable code coverage with gcov" OFF)
+
 # C++ standard 11
 set (CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
@@ -13,7 +15,23 @@ if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /source-charset:utf-8 /execution-charset:utf-8")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:msvcrt.lib")
 elseif (CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -g")
+  if (${GCOV})
+    find_program(GCOV_PATH gcov)
+    if(NOT GCOV_PATH)
+      message(FATAL_ERROR "gcov not found! Aborting...")
+    endif()
+    message(STATUS "Code coverage enabled")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 --coverage -fprofile-arcs -ftest-coverage" CACHE STRING "Flags used by the C++ compiler during coverage builds." FORCE)
+    # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgcov --coverage -fprofile-arcs -ftest-coverage")
+    
+    message(STATUS "Adding target 'coverage'.")
+    add_custom_target(coverage
+      COMMAND lcov --remove lcov.info 'test/test-*' 'gtest/*' 'boost/*' '/usr/*' 'example/*' -o lcov-min.info
+      COMMAND genhtml lcov-min.info --quiet --num-spaces 2 --output-directory coverage
+    )
+  
+  endif()
 endif()
 
 # Configure Boost
@@ -22,7 +40,7 @@ set(Boost_NO_SYSTEM_PATHS        ON)
 set(Boost_USE_STATIC_LIBS        ON) # only find static libs
 set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME     OFF)
-find_package(Boost 1.61.0 EXACT REQUIRED COMPONENTS system date_time regex)
+find_package(Boost REQUIRED COMPONENTS system date_time regex)
 
 # Add boost to the include path.
 include_directories(${Boost_INCLUDE_DIRS})

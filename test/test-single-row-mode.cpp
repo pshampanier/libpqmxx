@@ -25,34 +25,19 @@
 
 using namespace db::postgres;
 
-TEST(transaction, sync_commit) {
-
+TEST(single_row_mode, rownum) {
+  
   Connection cnx;
-  cnx.connect().notice(nullptr);
+  cnx.connect();
+  cnx.setSingleRowMode();
 
-  cnx.execute("DROP TABLE IF EXISTS tmpTrans");
-  cnx.execute("CREATE TABLE tmpTrans(a VARCHAR(10))");
-  cnx.begin();
-  cnx.execute("INSERT INTO tmpTrans (a) VALUES ('hello')");
-  cnx.commit();
-  EXPECT_STREQ(cnx.execute("SELECT a FROM tmpTrans WHERE a='hello'").as<std::string>(0).c_str(), "hello");
-  cnx.execute("DROP TABLE tmpTrans");
+  int32_t actual = 0;
 
-}
+  auto result = cnx.execute("SELECT generate_series(1, 3)");
+  for (auto &row: result) {
+    actual += row.num();
+  }
 
-TEST(transaction, sync_rollback) {
-
-  Connection cnx;
-  cnx.connect().notice(nullptr);
-
-  cnx.execute("DROP TABLE IF EXISTS tmpTrans");
-  cnx.execute("CREATE TABLE tmpTrans(a VARCHAR(10))");
-  cnx.begin();
-  cnx.execute("INSERT INTO tmpTrans (a) VALUES ('hello')");
-  cnx.rollback();
-
-  auto &result = cnx.execute("SELECT a FROM tmpTrans");
-  EXPECT_FALSE(result.begin() != result.end());
-  cnx.execute("DROP TABLE tmpTrans");
-
+  EXPECT_EQ(actual, 6);
+  
 }

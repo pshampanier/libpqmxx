@@ -24,6 +24,8 @@
 #include "postgres-exceptions.h"
 
 using namespace db::postgres;
+using namespace db::postgres::literals;
+
 
 TEST(result_sync, statements) {
 
@@ -37,7 +39,7 @@ TEST(result_sync, statements) {
     DROP TABLE IF EXISTS employees;
     DROP TYPE IF EXISTS GENDER;
 
-  )SQL");
+  )SQL"_x);
 
   cnx.execute(R"SQL(
 
@@ -62,7 +64,7 @@ TEST(result_sync, statements) {
         PRIMARY KEY (emp_no,title, from_date)
     );
 
-  )SQL");
+  )SQL"_x);
 
   EXPECT_EQ(20, cnx.execute(R"SQL(
 
@@ -124,7 +126,7 @@ TEST(result_sync, statements) {
 
   )SQL").count());
 
-  auto &genders = cnx.execute(R"SQL(
+  auto genders = cnx.execute(R"SQL(
 
     SELECT e.emp_no, gender
       FROM employees e JOIN titles t on (e.emp_no=t.emp_no)
@@ -149,7 +151,7 @@ TEST(result_sync, statements) {
   EXPECT_EQ(2, males);
   EXPECT_EQ(1, females);
 
-  EXPECT_THROW(cnx.execute("INSERT INTO titles VALUES (10021,'Technique Leader','1988-02-10','2002-07-15')"), ExecutionException);
+  EXPECT_THROW(cnx.execute("INSERT INTO titles VALUES (10021,'Technique Leader','1988-02-10','2002-07-15')"), error);
 
   cnx.execute("UPDATE titles SET to_date=$1::date WHERE emp_no=$2", "1988-02-10", 10020);
   cnx.execute("INSERT INTO titles VALUES ($1, $2, $3::date, $4)",
@@ -166,7 +168,7 @@ TEST(result_sync, statements) {
     DROP TABLE IF EXISTS employees;
     DROP TYPE IF EXISTS GENDER;
 
-  )SQL");
+  )SQL"_x);
 
 }
 
@@ -175,7 +177,7 @@ TEST(misc, cancel) {
   Connection cnx;
   cnx.connect();
 
-  auto &result = cnx.execute("SELECT generate_series(1, 10000)");
+  auto result = cnx.execute("SELECT generate_series(1, 10000)");
   int rownum = 0;
 
   for (auto &row: result) {
@@ -185,129 +187,5 @@ TEST(misc, cancel) {
       break;
     }
   }
-
-}
-
-TEST(misc, is_single_statement) {
-
-  //
-  // Dollar-Quoted String Constants
-  //
-
-  EXPECT_TRUE(isSingleStatement("SELECT $$Dianne's ;horse$$;"));
-  EXPECT_FALSE(isSingleStatement("SELECT $$1;'\n$$; SELECT $$Dianne's ;horse$$;"));
-  EXPECT_TRUE(isSingleStatement("SELECT $ab$Dianne's ;horse$ab$;"));
-  EXPECT_FALSE(isSingleStatement("SELECT $ab$1;'\n$ab$; SELECT $cd$Dianne's ;horse$cd$;"));
-
-  EXPECT_TRUE(isSingleStatement(R"SQL(
-
-    CREATE FUNCTION fn() RETURNS INTEGER AS $function$
-    BEGIN
-        RETURN ($1 ~ $q$[\t\r\n\v\\]$q$);
-    END;
-    $function$ language plpgsql;
-
-  )SQL"));
-
-  EXPECT_FALSE(isSingleStatement(R"SQL(
-
-    CREATE FUNCTION fn() RETURNS INTEGER AS $function$
-    BEGIN
-        RETURN ($1 ~ $q$[\t\r\n\v\\]$q$);
-    END;
-    $function$ language plpgsql;
-
-    SELECT fn();
-
-  )SQL"));
-
-  EXPECT_FALSE(isSingleStatement(R"SQL(
-
-    DROP TYPE IF EXISTS GENDER;
-    CREATE TYPE GENDER AS ENUM ('M', 'F');
-
-  )SQL"));
-
-  EXPECT_FALSE(isSingleStatement(R"SQL(
-
-    CREATE TABLE employees (
-      emp_no      INTEGER         NOT NULL,
-      birth_date  DATE            NOT NULL,
-      first_name  VARCHAR(14)     NOT NULL,
-      last_name   VARCHAR(16)     NOT NULL,
-      gender      GENDER          NOT NULL,
-      hire_date   DATE            NOT NULL,
-      PRIMARY KEY (emp_no)
-    );
-
-    CREATE TABLE titles (
-        emp_no      INT             NOT NULL,
-        title       VARCHAR(50)     NOT NULL,
-        from_date   DATE            NOT NULL,
-        to_date     DATE,
-        FOREIGN KEY (emp_no) REFERENCES employees (emp_no) ON DELETE CASCADE,
-        PRIMARY KEY (emp_no,title, from_date)
-    );
-
-  )SQL"));
-
-  //
-  // Comments
-  //
-
-  EXPECT_TRUE(isSingleStatement(R"SQL(
-
-    --
-    -- This is a comment;
-    --
-    SELECT 1;
-    -- $$hello$$;'ok'"OK"
-
-  )SQL"));
-
-  EXPECT_FALSE(isSingleStatement(R"SQL(
-
-    -- This is a comment;
-    SELECT 1;
-    -- This is a comment;
-    SELECT 2;
-
-  )SQL"));
-
-  //
-  // C-style block comments
-  //
-
-  EXPECT_TRUE(isSingleStatement(R"SQL(
-
-    /* comment */
-    SELECT 1;
-
-  )SQL"));
-
-  EXPECT_TRUE(isSingleStatement(R"SQL(
-
-    SELECT /* comment */ 1;
-
-  )SQL"));
-
-  EXPECT_TRUE(isSingleStatement(R"SQL(
-
-    /* multiline comment
-     * with nesting: /* nested block comment */
-     */
-    SELECT 1;
-
-  )SQL"));
-
-  EXPECT_FALSE(isSingleStatement(R"SQL(
-
-   /* multiline comment
-    * with nesting: /* nested block comment */
-    */
-   SELECT /* comment */ 1;
-   SELECT /* comment */ 2;
-
-  )SQL"));
 
 }

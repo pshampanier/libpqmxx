@@ -44,8 +44,8 @@ namespace db {
     char *write(T value, char *buf);
 
     char *Params::bind(Oid type, size_t length) {
-      char *buf = new char[length];
-      buffers_.push_back(buf);
+      buffers_.push_back(std::unique_ptr<char[]>(new char[length]));
+      auto buf = buffers_.back().get();
       bind(type, buf, length);
       return buf;
     }

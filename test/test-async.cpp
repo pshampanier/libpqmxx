@@ -25,56 +25,69 @@
 #include "postgres-boost.h"
 
 using namespace db::postgres;
+namespace async = db::postgres::async_boost;
 
 TEST(async, connect) {
 
   ::boost::asio::io_service ioService;
 
   {
-    auto cnx = std::make_shared<db::postgres::boost::Connection>(ioService);
-    cnx->connect("postgresql://ci-test@localhost").done([]() {
-      SUCCEED();
-    }).error([](std::exception_ptr reason) {
-      FAIL();
+    auto cnx = std::make_shared<async::Connection>(ioService);
+    cnx->connect(nullptr, [cnx](std::exception_ptr &eptr) {
+      EXPECT_TRUE(eptr == nullptr);
+      cnx->close();
     });
     ioService.run();
   }
 
   {
     ioService.reset();
-    auto cnx = std::make_shared<db::postgres::boost::Connection>(ioService);
-    cnx->connect("postgresql://invalid-db@localhost").done([]() {
-      FAIL();
-    }).error([](std::exception_ptr reason) {
-      EXPECT_THROW(std::rethrow_exception(reason), db::postgres::ConnectionException);
+    auto cnx = std::make_shared<async::Connection>(ioService);
+    cnx->connect("postgresql://invalid-db@localhost", [](std::exception_ptr &eptr) {
+      try {
+        std::rethrow_exception(eptr);
+      }
+      catch (error e) {
+        EXPECT_EQ(error_code::connection_failure, e.code());
+      }
+      catch (...) {
+        FAIL();
+      }
     });
     ioService.run();
   }
 
   {
     ioService.reset();
-    auto cnx = std::make_shared<db::postgres::boost::Connection>(ioService);
-    cnx->connect("postgresql://ci-test@invalid_host").done([]() {
-      FAIL();
-    }).error([](std::exception_ptr reason) {
-      EXPECT_THROW(std::rethrow_exception(reason), ConnectionException);
+    auto cnx = std::make_shared<async::Connection>(ioService);
+    cnx->connect("postgresql://ci-test@invalid_host", [](std::exception_ptr &eptr) {
+      try {
+        std::rethrow_exception(eptr);
+      }
+      catch (error e) {
+        EXPECT_EQ(error_code::connection_failure, e.code());
+      }
+      catch (...) {
+        FAIL();
+      }
     });
     ioService.run();
   }
 
 }
 
-TEST(async, once) {
+TEST(async, singleton) {
 
   ::boost::asio::io_service ioService;
 
   {
     int32_t actual = 0;
 
-    auto cnx = std::make_shared<db::postgres::boost::Connection>(ioService);
-    cnx->connect("postgresql://ci-test@localhost").done([&cnx, &actual]() {
-      cnx->execute("SELECT $1", 42).once([&actual](const Row &row) {
-        actual = row.as<int32_t>(0);
+    auto cnx = std::make_shared<async::Connection>(ioService);
+    cnx->connect(nullptr, [cnx, &actual](std::exception_ptr &) {
+      cnx->execute("SELECT $1", 42).done([cnx, &actual](Result &result) {
+        actual = result.as<int32_t>(0);
+        cnx->close();
       });
     });
 
@@ -88,16 +101,17 @@ TEST(async, once) {
     std::string what;
     ioService.reset();
 
-    auto cnx = std::make_shared<db::postgres::boost::Connection>(ioService);
-    cnx->connect("postgresql://ci-test@localhost").done([&cnx, &what]() {
-      cnx->execute("SELECT $1", 42).once([](const Row &row) {
+    auto cnx = std::make_shared<async::Connection>(ioService);
+    cnx->connect(nullptr, [cnx, &what](std::exception_ptr &) {
+      cnx->execute("SELECT $1", 42).done([](Result &) {
         throw std::runtime_error("test");
-      }).error([&what](std::exception_ptr e) {
+      }).error([cnx, &what](std::exception_ptr &e) {
         try {
           std::rethrow_exception(e);
         }
         catch (const std::runtime_error &e) {
           what = e.what();
+          cnx->close();
         }
       });
     });
@@ -109,41 +123,43 @@ TEST(async, once) {
   { //
     // Error of the execute call
     //
-    bool error = false;
+    bool done = false, error = false;
     ioService.reset();
 
-    auto cnx = std::make_shared<db::postgres::boost::Connection>(ioService);
-    cnx->connect("postgresql://ci-test@localhost").done([&cnx, &error]() {
-      cnx->execute("SELECT $1 FROM does_not_exists", 42).done([](int64_t) {
-      }).error([&error](std::exception_ptr e) {
-        EXPECT_THROW(std::rethrow_exception(e), ExecutionException);
+    auto cnx = std::make_shared<async::Connection>(ioService);
+    cnx->connect(nullptr, [cnx, &done, &error](std::exception_ptr &) {
+      cnx->execute("SELECT $1 FROM does_not_exists", 42).done([&done](Result &) {
+        done = true;
+      }).error([cnx, &error](std::exception_ptr &e) {
+        EXPECT_THROW(std::rethrow_exception(e), db::postgres::error);
         error = true;
+        cnx->close();
       });
     });
 
     ioService.run();
+    EXPECT_FALSE(done);
     EXPECT_TRUE(error);
   }
 
 }
 
-TEST(async, each) {
+TEST(async, iterator) {
 
   ::boost::asio::io_service ioService;
-
-  int64_t actual = 0;
-
-  auto cnx = std::make_shared<db::postgres::boost::Connection>(ioService);
-  cnx->connect("postgresql://ci-test@localhost").done([&cnx, &actual]() {
-    cnx->execute("SELECT generate_series(1, 100000)").each([&actual](const Row &row) -> bool {
-      actual += row.as<int32_t>(0);
-      return true;
-    }).done([](int64_t count) {
-      EXPECT_EQ(100000, count);
+  int64_t sum = 0, count = 0;
+  auto cnx = std::make_shared<async::Connection>(ioService);
+  cnx->connect(nullptr, [cnx, &sum, &count](std::exception_ptr &) {
+    cnx->execute("SELECT generate_series(1, 100000)").done([cnx, &sum, &count](Result &result) {
+      for (auto &row: result) {
+        sum += row.as<int32_t>(0);
+      }
+      count = result.count();
+      cnx->close();
     });
   });
 
   ioService.run();
-  EXPECT_EQ(5000050000, actual);
+  EXPECT_EQ(5000050000, sum);
+  EXPECT_EQ(100000, count);
 }
-

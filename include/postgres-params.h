@@ -25,9 +25,12 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace db {
   namespace postgres {
+    
+    typedef std::unique_ptr<char[]> buffer;
 
     /**
      * A private class to bind SQL command parameters.
@@ -41,7 +44,7 @@ namespace db {
       std::vector<char *>   values_;
       std::vector<int>      lengths_;
       std::vector<int>      formats_;
-      std::vector<char *>   buffers_;
+      std::vector<buffer>   buffers_;
       const struct Settings &settings_;
 
       Params(const Settings &settings, int size);

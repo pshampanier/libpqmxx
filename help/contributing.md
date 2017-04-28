@@ -16,6 +16,13 @@ createuser ci-test
 createdb ci-test --owner=ci-test --encoding=UTF8 
 ```
 
+And modify the `pg_hba.conf` to trust this user on this database:
+
+```
+# TYPE  DATABASE		USER			ADDRESS		METHOD
+host 	ci-test 		ci-test 		all			trust
+``` 
+
 ### Dependancies
 
 * MacOS: `brew install postgresql`.

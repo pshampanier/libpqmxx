@@ -6,15 +6,14 @@
 
     ```c++
     cnx.notice([](const char *message) {
-        std::cout << message << std::endl;    
+      std::cout << message << std::endl;    
     });
     ```
     
     By default, notices are displayed on stderr, to disable notices register nullptr as the notice handler:
     
     ```c++
-    cnx.notice(nullptr);
-    
+    cnx.notice(nullptr);    
     ```
 
 # Release 1.1

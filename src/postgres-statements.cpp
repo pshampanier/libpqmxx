@@ -19,17 +19,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  **/
-#include "gtest/gtest.h"
-#include "postgres-connection.h"
-#include "postgres-exceptions.h"
-#include "postgres-boost.h"
+#include "postgres-statements.h"
 
-using namespace db::postgres;
+namespace db {
+namespace postgres {
 
-TEST(connect, sync) {
+  // ---------------------------------------------------------------------------
+  // Constructor
+  // ---------------------------------------------------------------------------
+  BatchStatement::BatchStatement(std::string sql)
+  : sql_(std::move(sql)) {
+  }
+  
+  // ---------------------------------------------------------------------------
+  // Access to the sql string
+  // ---------------------------------------------------------------------------
+  BatchStatement::operator const char *() const {
+    return sql_.c_str();
+  }
+  
+  namespace literals {
 
-  Connection cnx;
-  EXPECT_NO_THROW(cnx.connect().close());
-  EXPECT_THROW(cnx.connect("postgresql://invalid_user@localhost"), db::postgres::error);
-
-}
+    // ---------------------------------------------------------------------------
+    // String literal to BatchStatement using the suffix _x
+    // ---------------------------------------------------------------------------
+    BatchStatement operator "" _x(const char *sql, size_t length) {
+      return BatchStatement(std::string(sql, length));
+    }
+    
+  }
+  
+} // namespace postgres
+} // namespace db
