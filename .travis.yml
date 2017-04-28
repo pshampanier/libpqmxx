@@ -14,11 +14,9 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - boost-latest
           packages:
             - g++-4.9
             - postgresql-server-dev-all
-            - libboost1.55-all-dev
       env: COMPILER=g++-4.9
     - compiler: gcc
       addons:
@@ -26,11 +24,9 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - boost-latest
           packages:
             - g++-5
             - postgresql-server-dev-all
-            - libboost1.55-all-dev
       env: COMPILER=g++-5
     - compiler: clang
       addons:
@@ -59,6 +55,16 @@ before_install:
   - sudo apt-get update -qq
 
 install:
+  # install boost
+  - BOOST_VERSION=1.63.0
+  - BOOST_SOURCE_DIR=`echo boost_${BOOST_VERSION} | sed 's/\./_/g'`
+  - BOOST_INSTALL_DIR=${HOME}/${BOOST_SOURCE_DIR}
+  - wget https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/${BOOST_SOURCE_DIR}.tar.gz
+  - tar -zxf ${BOOST_SOURCE_DIR}.tar.gz
+  - cd ${BOOST_SOURCE_DIR}
+  - ./bootstrap.sh --with-libraries=system,date_time,regex
+  - ./b2 --build-type=complete --layout=tagged
+  - cd ..
   # install cmake
   - CMAKE_VERSION="3.7.2"
   - CMAKE_INSTALL_DIR=${HOME}/cmake-${CMAKE_VERSION}
@@ -90,5 +96,5 @@ before_script:
 script:
   - mkdir build
   - cd build
-  - cmake -DCMAKE_CXX_COMPILER=$COMPILER -DCMAKE_BUILD_TYPE=Release -DGTEST_ROOT=${GTEST_INSTALL_DIR} .. && make
+  - cmake -DCMAKE_CXX_COMPILER=$COMPILER -DCMAKE_BUILD_TYPE=Release -DGTEST_ROOT=${GTEST_INSTALL_DIR} -DBOOST_INCLUDEDIR=${BOOST_INSTALL_DIR} -DBOOST_LIBRARYDIR=${BOOST_INSTALL_DIR}/stage/lib/ .. && make
   - ./postgres-test
