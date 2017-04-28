@@ -3,7 +3,7 @@
 
 > A simple PostgreSQL client library written in Modern C++.
 
-[![License][license-mit-img]][license-mit] [![Build Status](https://travis-ci.org/pferdinand/libpqmxx.svg?branch=master)](https://travis-ci.org/pferdinand/libpqmxx)
+[![License][license-mit-img]][license-mit] [![Build Status](https://travis-ci.org/pferdinand/libpqmxx.svg?branch=master)](https://travis-ci.org/pferdinand/libpqmxx) [![Build status](https://ci.appveyor.com/api/projects/status/yrkslr4v5nh7ryip?svg=true)](https://ci.appveyor.com/project/pferdinand/libpqmxx)
 
 libpq**m**xx is an unofficial C++ 11 client API for PostgreSQL.
 
