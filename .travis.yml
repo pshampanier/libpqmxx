@@ -62,8 +62,9 @@ install:
   - wget https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/${BOOST_SOURCE_DIR}.tar.gz
   - tar -zxf ${BOOST_SOURCE_DIR}.tar.gz
   - cd ${BOOST_SOURCE_DIR}
-  - ./bootstrap.sh --with-libraries=system,date_time,regex
+  - ./bootstrap.sh --with-libraries=system
   - ./b2 --build-type=complete --layout=tagged
+  - BOOST_INSTALL_DIR=`pwd`
   - cd ..
   # install cmake
   - CMAKE_VERSION="3.7.2"
