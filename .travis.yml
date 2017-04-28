@@ -18,7 +18,7 @@ matrix:
           packages:
             - g++-4.9
             - postgresql-server-dev-all
-            - libboost-chrono1.60-dev
+            - libboost1.55-all-dev
       env: COMPILER=g++-4.9
     - compiler: gcc
       addons:
@@ -26,9 +26,11 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
+            - boost-latest
           packages:
             - g++-5
             - postgresql-server-dev-all
+            - libboost1.55-all-dev
       env: COMPILER=g++-5
     - compiler: clang
       addons:
@@ -58,10 +60,10 @@ before_install:
 
 install:
   # install cmake
-  - CMAKE_VERSION="3.5.2"
+  - CMAKE_VERSION="3.7.2"
   - CMAKE_INSTALL_DIR=${HOME}/cmake-${CMAKE_VERSION}
   - mkdir ${CMAKE_INSTALL_DIR}/
-  - wget --no-check-certificate "http://cmake.org/files/v3.5/cmake-${CMAKE_VERSION}-Linux-x86_64.sh"
+  - wget --no-check-certificate "http://cmake.org/files/v3.7/cmake-${CMAKE_VERSION}-Linux-x86_64.sh"
   - chmod +x cmake-${CMAKE_VERSION}-Linux-x86_64.sh
   - ./cmake-${CMAKE_VERSION}-Linux-x86_64.sh --prefix=${CMAKE_INSTALL_DIR} --skip-license
   - export PATH=${CMAKE_INSTALL_DIR}/bin:$PATH
