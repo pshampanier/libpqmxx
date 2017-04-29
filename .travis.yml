@@ -53,9 +53,11 @@ matrix:
 
 before_install:
   - sudo apt-get update -qq
-  - pip install --user cpp-coveralls
 
 install:
+  # install lcov
+  - sudo apt-get install -y lcov
+  - gem install coveralls-lcov
   # install boost
   - BOOST_VERSION=1.63.0
   - BOOST_SOURCE_DIR=`echo boost_${BOOST_VERSION} | sed 's/\./_/g'`
@@ -103,4 +105,6 @@ script:
   - ./postgres-test
 
 after_success:
-  - coveralls --exclude lib --exclude tests --gcov-options '\-lp'
+  - lcov --compat-libtool --capture --directory . --output-file coverage-all.info
+  - lcov --remove coverage-all.info 'test/test-*' 'gtest/*' 'boost/*' '/usr/*' 'example/*' -o coverage.info
+  - coveralls-lcov coverage.info
