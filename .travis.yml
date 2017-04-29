@@ -110,6 +110,6 @@ after_success:
       wget --no-check-certificate http://downloads.sourceforge.net/ltp/lcov-${LCOV_VERSION}.tar.gz;
       tar -zxf lcov-${LCOV_VERSION}.tar.gz;
       lcov-${LCOV_VERSION}/bin/lcov --gcov-tool "${GCOV}" --capture --directory . --output-file coverage-all.info;
-      lcov-${LCOV_VERSION}/bin/lcov --gcov-tool "${GCOV}" --remove coverage-all.info 'test/test-*' 'gtest/*' 'boost/*' '/usr/*' 'example/*' -o coverage.info;
-      coveralls-lcov --verbose coverage.info;
+      lcov-${LCOV_VERSION}/bin/lcov --gcov-tool "${GCOV}" --remove coverage-all.info '*/test/test-*' '*/gtest/*' '*/boost/*' '/usr/*' '*/example/*' -o coverage.info;
+      coveralls-lcov coverage.info;
     fi;
