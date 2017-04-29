@@ -27,6 +27,7 @@ elseif (CMAKE_COMPILER_IS_GNUCXX)
     
     message(STATUS "Adding target 'coverage'.")
     add_custom_target(coverage
+      COMMAND lcov --capture --directory . --output-file lcov.info
       COMMAND lcov --remove lcov.info 'test/test-*' 'gtest/*' 'boost/*' '/usr/*' 'example/*' -o lcov-min.info
       COMMAND genhtml lcov-min.info --quiet --num-spaces 2 --output-directory coverage
     )

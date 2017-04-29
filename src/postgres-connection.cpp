@@ -86,17 +86,42 @@ namespace db {
         handler_ = handler;
         pgconn_ = PQconnectStart(connInfo);
         if (pgconn_) {
-          PQsetnonblocking(pgconn_, 1);
-          asyncAction(action::connect, nullptr);
-          connectPoll();
+          auto status = PQstatus(pgconn_);
+          if (status == CONNECTION_BAD) {
+            auto eptr = std::make_exception_ptr(error(error_code::connection_failure, lastPostgresError()));
+            connectCompleted(eptr);
+          }
+          else {
+            PQsetnonblocking(pgconn_, 1);
+            asyncAction(action::connect, [this](std::exception_ptr &eptr) {
+              if (!eptr) {
+                // The postgresql documentation very explicit about the fact we
+                // should wait for the socket to be write ready:
+                //
+                // «If you have yet to call PQconnectPoll, i.e., just after the
+                //  call to PQconnectStart, behave as if it last returned
+                //  PGRES_POLLING_WRITING.»
+                //
+                // Using boost, when the connection is refused the write event
+                // never comes. Instead boost gives an error on the read.
+                asyncAction(action::read_write, [this](std::exception_ptr eptr) {
+                  connectPoll();
+                });
+              }
+              else {
+                connectCompleted(eptr);
+              }
+            });
+          }
         }
       }
       else {
         pgconn_ = PQconnectdb(connInfo);
         if( PQstatus(pgconn_) != CONNECTION_OK ) {
+          std::string lastError = lastPostgresError();
           PQfinish(pgconn_);
           pgconn_ = nullptr;
-          throw error(error_code::connection_failure, lastPostgresError());
+          throw error(error_code::connection_failure, lastError);
         }
       }
 
@@ -106,11 +131,14 @@ namespace db {
     // -------------------------------------------------------------------------
     // Close the database connection.
     // -------------------------------------------------------------------------
-    Connection &Connection::close() {
-      assert(pgconn_);
-      PQfinish(pgconn_);
-      asyncAction(action::close, nullptr);
-      pgconn_ = nullptr;
+    Connection &Connection::close() noexcept {
+      if (pgconn_) {
+        asyncAction(action::close, [this](std::exception_ptr &) {
+          // Any error during the close is ignored.
+          PQfinish(pgconn_);
+          pgconn_ = nullptr;
+        });
+      }
       return *this;
     }
 
@@ -294,7 +322,7 @@ namespace db {
           case PGRES_POLLING_READING:
             asyncAction(action::read, [this](std::exception_ptr eptr) {
               if (eptr) {
-                completed(eptr);
+                connectCompleted(eptr);
               }
               else {
                 connectPoll();
@@ -303,9 +331,9 @@ namespace db {
             break;
 
           case PGRES_POLLING_WRITING: {
-            asyncAction(action::write, [this](std::exception_ptr eptr) {
+            asyncAction(action::read_write, [this](std::exception_ptr eptr) {
               if (eptr) {
-                completed(eptr);
+                connectCompleted(eptr);
               }
               else {
                 connectPoll();
@@ -315,7 +343,7 @@ namespace db {
           }
 
           case PGRES_POLLING_OK:
-            completed();
+            connectCompleted();
             consumeInput();
             break;
 
@@ -325,7 +353,7 @@ namespace db {
         }
       }
       catch(...) {
-        completed(std::current_exception());
+        connectCompleted(std::current_exception());
       }
     }
 
@@ -336,17 +364,33 @@ namespace db {
      return PQsocket(pgconn_);
     }
     
-    void Connection::completed(std::exception_ptr eptr) {
+    // -------------------------------------------------------------------------
+    // Asynchronous connection completed
+    // -------------------------------------------------------------------------
+    void Connection::connectCompleted(std::exception_ptr eptr) noexcept {
       assert(handler_);
+      if (eptr && pgconn_) {
+        PQfinish(pgconn_);
+        pgconn_ = nullptr;
+      }
       handler_t h;
       h.swap(handler_);
-      h(eptr);
+      try {
+        h(eptr);
+      }
+      catch (...) {
+        // The handler is not supposed to throw any exception.
+        assert(true);
+      }
     }
 
     // -------------------------------------------------------------------------
     // Trigger an event to the layer in charge of asynchonous I/O.
     // -------------------------------------------------------------------------
-    void Connection::asyncAction(action, handler_t) {}
+    void Connection::asyncAction(action, handler_t callback) noexcept {
+      std::exception_ptr action_ok;
+      callback(action_ok);
+    }
 
   } // namespace postgres
 }   // namespace db

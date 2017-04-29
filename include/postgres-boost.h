@@ -25,6 +25,7 @@
 #pragma warning( disable : 4068)  // Visual Studio: ignore #pragma GCC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
+#include <boost/exception/diagnostic_information.hpp>
 #include "boost/asio.hpp"
 #pragma GCC diagnostic pop
 
@@ -33,6 +34,8 @@ namespace postgres {
 namespace async_boost {
   
   using namespace ::db::postgres;
+
+  static std::exception_ptr action_ok;
 
   /**
    * An asynchronous implementation of a postgresql connection based on boost.
@@ -46,69 +49,92 @@ namespace async_boost {
     }
     
     virtual ~Connection() override {
-      if (socket_.is_open()) {
-        socket_.cancel();
-      }
+      close();
     }
     
     // ---------------------------------------------------------------------
     // Trigger an action to the layer in charge of asynchonous I/O.
     // ---------------------------------------------------------------------
-    virtual void asyncAction(action action, handler_t callback) override {
-      
-      switch (action) {
-          
-        //
-        // Connection to the server establised.
-        //
-        case postgres::action::connect:
-          socket_.assign(::boost::asio::ip::tcp::v4(), socket());
-          break;
-          
-        //
-        // Connection to the server closed.
-        //
-        case postgres::action::close:
-          socket_.cancel();
-          break;
-          
-        //
-        // Connection reset to the server initiated.
-        //
-        case postgres::action::reset:
-          
-          break;
-          
-        //
-        // Connection read pending.
-        //
-        case postgres::action::read:
-          socket_.async_read_some(::boost::asio::null_buffers(),
-            [this, callback](::boost::system::error_code ec, size_t) {
-              std::exception_ptr eptr;
-              if (ec && ec != ::boost::asio::error::operation_aborted) {
-                eptr = make_exception_ptr(std::runtime_error(ec.message()));
-              }
+    virtual void asyncAction(action action, handler_t callback) noexcept override {
+
+      try {
+
+        auto ignore = std::make_shared<bool>(false);
+        auto boostHandler = [this, action, ignore, callback](::boost::system::error_code ec, size_t) {
+          if (!*ignore && ec != ::boost::asio::error::operation_aborted) {
+            if (action == postgres::action::read_write) {
+              // Cancel the other operation.
+              socket_.cancel();
+              *ignore = true;
+            }
+            if (ec) {
+              auto eptr = make_exception_ptr(std::runtime_error(ec.message()));
               callback(eptr);
             }
-          );
-          break;
-          
-        //
-        // Connection write pending.
-        //
-        case postgres::action::write:
-          socket_.async_write_some(::boost::asio::null_buffers(),
-            [this, callback](::boost::system::error_code ec, size_t) {
-              std::exception_ptr eptr;
-              if (ec && ec != ::boost::asio::error::operation_aborted) {
-                eptr = make_exception_ptr(std::runtime_error(ec.message()));
-              }
-              callback(eptr);
+            else {
+              callback(action_ok);
             }
-          );
-          break;
-          
+          }
+        };
+
+        switch (action) {
+
+          //
+          // Connection to the server establised.
+          //
+          case postgres::action::connect:
+            socket_.assign(::boost::asio::ip::tcp::v4(), socket());
+            callback(action_ok);
+            break;
+
+          //
+          // Connection to the server closed.
+          //
+          case postgres::action::close:
+            socket_.cancel();
+            callback(action_ok);
+            break;
+
+          //
+          // Connection reset to the server initiated.
+          //
+          case postgres::action::reset:
+
+            break;
+
+          //
+          // Connection read pending.
+          //
+          case postgres::action::read:
+            socket_.async_read_some(::boost::asio::null_buffers(), boostHandler);
+            break;
+
+          //
+          // Connection write pending.
+          //
+          case postgres::action::write:
+            socket_.async_write_some(::boost::asio::null_buffers(), boostHandler);
+            break;
+
+          //
+          // Connection read or write pending.
+          //
+          case postgres::action::read_write: {
+            socket_.async_read_some(::boost::asio::null_buffers(), boostHandler);
+            socket_.async_write_some(::boost::asio::null_buffers(), boostHandler);
+          }
+
+        }
+      }
+      catch (boost::exception &e) {
+        // Because boost exception don't include the diagnostic information,
+        // we are creating a new exception for the code boost aware.
+        auto eptr = std::make_exception_ptr(std::runtime_error(boost::diagnostic_information(e)));
+        callback(eptr);
+      }
+      catch (...) {
+        auto eptr = std::current_exception();
+        callback(eptr);
       }
       
     }

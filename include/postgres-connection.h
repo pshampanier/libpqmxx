@@ -52,11 +52,15 @@ namespace postgres {
     close,    /**< Connection to the server closed. **/
     reset,    /**< Connection reset to the server initiated. **/
     read,     /**< Connection read pending. **/
-    write     /**< Connection write pending. **/
+    write,     /**< Connection write pending. **/
+    read_write
     
   };
   
-  typedef std::function<void (std::exception_ptr &reason)> handler_t;
+  /**
+   * Handler for asynchronous operations.
+   **/
+  typedef std::function<void (std::exception_ptr &reason) noexcept> handler_t;
   
   /**
    * A connection to a PostgreSQL database.
@@ -102,6 +106,21 @@ namespace postgres {
        *                 default parameters
        *                 (see [Environment Variables](https://www.postgresql.org/docs/9.5/static/libpq-envars.html)).
        *
+       * @param handler  Used by asynchronous connection only. This handler will
+       *                 be called when the connnection has been successfully
+       *                 completed or failed. The success of failure of the
+       *                 connection can be checked by using the parameter `eptr`
+       *                 provided to the handler. When the connection is a success
+       *                 `eptr` is nullptr otherwise it describes the reason of
+       *                 the connection failure.
+       *
+       *                 The handler should not throw any exception.
+       *
+       *                 The handler may never be called. In non blocking mode,
+       *                 the `connect_timeout` parameter provided in `connInfo`
+       *                 is ignored and this is the responsability of the
+       *                 application to handle the timeout.
+       *
        * ```
        * postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
        * ```
@@ -116,7 +135,7 @@ namespace postgres {
        *
        * This method is automatically called by the destructor.
        **/
-      Connection &close();
+      Connection &close() noexcept;
 
       /**
        * Cancel queries in progress.
@@ -324,8 +343,11 @@ namespace postgres {
     
       /**
        * Trigger an action for the layer in charge of asynchonous I/O.
+       *
+       * The implementation must not throw any exception but rather use the
+       * callback to report an error.
        **/
-      virtual void asyncAction(action action, handler_t callback);
+      virtual void asyncAction(action action, handler_t callback) noexcept;
 
     private:
 
@@ -339,7 +361,13 @@ namespace postgres {
        **/
       Result execute(const char *sql, const Params &params);
     
-      void completed(std::exception_ptr eptr = nullptr);
+      /**
+       * Asynchronous connection completed.
+       *
+       * @eptr nullptr if the connection was successful, otherwise the reason
+       *       of the connection failure.
+       **/
+      void connectCompleted(std::exception_ptr eptr = nullptr) noexcept;
 
       Connection(const Connection&) = delete;
       Connection(const Connection&&) = delete;

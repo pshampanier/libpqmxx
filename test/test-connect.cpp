@@ -26,10 +26,33 @@
 
 using namespace db::postgres;
 
-TEST(connect, sync) {
+TEST(sync, connect) {
 
   Connection cnx;
+
+  // OK
   EXPECT_NO_THROW(cnx.connect().close());
-  EXPECT_THROW(cnx.connect("postgresql://invalid_user@localhost"), db::postgres::error);
+
+  // DNS RESOLUTION ERROR
+  try {
+    cnx.connect("postgresql://foo@63e39014-1897-4143-af19-1f44148acc7f");
+  }
+  catch (error err) {
+    EXPECT_EQ(error_code::connection_failure, err.code());
+  }
+  catch (...) {
+    FAIL();
+  }
+
+  // CONNECTION REFUSED
+  try {
+    cnx.connect("postgresql://foo@127.0.0.1:1");
+  }
+  catch (error err) {
+    EXPECT_EQ(error_code::connection_failure, err.code());
+  }
+  catch (...) {
+    FAIL();
+  }
 
 }

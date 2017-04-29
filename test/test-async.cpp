@@ -30,49 +30,50 @@ namespace async = db::postgres::async_boost;
 TEST(async, connect) {
 
   ::boost::asio::io_service ioService;
+  auto cnx = std::make_shared<async::Connection>(ioService);
+  cnx->connect(nullptr, [cnx](std::exception_ptr &eptr) {
+    EXPECT_TRUE(eptr == nullptr);
+    cnx->close();
+  });
+  ioService.run();
 
-  {
-    auto cnx = std::make_shared<async::Connection>(ioService);
-    cnx->connect(nullptr, [cnx](std::exception_ptr &eptr) {
-      EXPECT_TRUE(eptr == nullptr);
-      cnx->close();
-    });
-    ioService.run();
-  }
+}
 
-  {
-    ioService.reset();
-    auto cnx = std::make_shared<async::Connection>(ioService);
-    cnx->connect("postgresql://invalid-db@localhost", [](std::exception_ptr &eptr) {
-      try {
-        std::rethrow_exception(eptr);
-      }
-      catch (error e) {
-        EXPECT_EQ(error_code::connection_failure, e.code());
-      }
-      catch (...) {
-        FAIL();
-      }
-    });
-    ioService.run();
-  }
+TEST(async, connect_invalid_host) {
 
-  {
-    ioService.reset();
-    auto cnx = std::make_shared<async::Connection>(ioService);
-    cnx->connect("postgresql://ci-test@invalid_host", [](std::exception_ptr &eptr) {
-      try {
-        std::rethrow_exception(eptr);
-      }
-      catch (error e) {
-        EXPECT_EQ(error_code::connection_failure, e.code());
-      }
-      catch (...) {
-        FAIL();
-      }
-    });
-    ioService.run();
-  }
+  ::boost::asio::io_service ioService;
+  auto cnx = std::make_shared<async::Connection>(ioService);
+  cnx->connect("postgresql://foo@63e39014-1897-4143-af19-1f44148acc7f", [](std::exception_ptr &eptr) {
+    try {
+      std::rethrow_exception(eptr);
+    }
+    catch (error e) {
+      EXPECT_EQ(error_code::connection_failure, e.code());
+    }
+    catch (...) {
+      FAIL();
+    }
+  });
+  ioService.run();
+
+}
+
+TEST(async, connect_refused) {
+
+  ::boost::asio::io_service ioService;
+  auto cnx = std::make_shared<async::Connection>(ioService);
+  cnx->connect("postgresql://ci-test@127.0.0.1:1", [](std::exception_ptr &eptr) {
+    try {
+      std::rethrow_exception(eptr);
+    }
+    catch (error e) {
+      EXPECT_EQ(error_code::connection_failure, e.code());
+    }
+    catch (...) {
+      FAIL();
+    }
+  });
+  ioService.run();
 
 }
 
