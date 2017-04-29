@@ -105,6 +105,6 @@ script:
   - ./postgres-test
 
 after_success:
-  - lcov --compat-libtool --capture --directory . --output-file coverage-all.info
+  - lcov --capture --directory . --output-file coverage-all.info
   - lcov --remove coverage-all.info 'test/test-*' 'gtest/*' 'boost/*' '/usr/*' 'example/*' -o coverage.info
-  - coveralls-lcov coverage.info
+  - coveralls-lcov --verbose coverage.info
