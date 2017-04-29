@@ -101,7 +101,7 @@ before_script:
 script:
   - mkdir build
   - cd build
-  - cmake -DCMAKE_CXX_COMPILER=$COMPILER -DGTEST_ROOT=${GTEST_INSTALL_DIR} -DBOOST_INCLUDEDIR=${BOOST_INSTALL_DIR} -DBOOST_LIBRARYDIR=${BOOST_INSTALL_DIR}/stage/lib/ .. && make
+  - cmake -DGCOV=ON -DCMAKE_CXX_COMPILER=$COMPILER -DGTEST_ROOT=${GTEST_INSTALL_DIR} -DBOOST_INCLUDEDIR=${BOOST_INSTALL_DIR} -DBOOST_LIBRARYDIR=${BOOST_INSTALL_DIR}/stage/lib/ .. && make
   - ./postgres-test
 
 after_success:
