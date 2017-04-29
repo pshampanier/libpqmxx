@@ -17,7 +17,7 @@ matrix:
           packages:
             - g++-4.9
             - postgresql-server-dev-all
-      env: COMPILER=g++-4.9
+      env: COMPILER=g++-4.9 GCOV=gcov-4.9
     - compiler: gcc
       addons:
         postgresql: "9.4"
@@ -27,7 +27,7 @@ matrix:
           packages:
             - g++-5
             - postgresql-server-dev-all
-      env: COMPILER=g++-5
+      env: COMPILER=g++-5 GCOV=gcov-5
     - compiler: clang
       addons:
         postgresql: "9.4"
