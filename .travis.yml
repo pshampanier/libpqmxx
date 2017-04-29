@@ -55,9 +55,6 @@ before_install:
   - sudo apt-get update -qq
 
 install:
-  # install lcov
-  - sudo apt-get install -y lcov
-  - gem install coveralls-lcov
   # install boost
   - BOOST_VERSION=1.63.0
   - BOOST_SOURCE_DIR=`echo boost_${BOOST_VERSION} | sed 's/\./_/g'`
@@ -105,8 +102,10 @@ script:
   - ./postgres-test
 
 after_success:
+  - gcov --version
   - lcov --version
   # installing lcov
+  - gem install coveralls-lcov
   - LCOV_VERSION=1.13
   - wget --no-check-certificate http://downloads.sourceforge.net/ltp/lcov-${LCOV_VERSION}.tar.gz
   - tar -zxf lcov-${LCOV_VERSION}.tar.gz
