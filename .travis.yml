@@ -17,7 +17,7 @@ matrix:
           packages:
             - g++-4.9
             - postgresql-server-dev-all
-      env: COMPILER=g++-4.9 GCOV=gcov-4.9
+      env: COMPILER=g++-4.9
     - compiler: gcc
       addons:
         postgresql: "9.4"
@@ -102,16 +102,14 @@ script:
   - ./postgres-test
 
 after_success:
-  - gcov --version
-  - lcov --version
-  # installing lcov
-  - gem install coveralls-lcov
-  - LCOV_VERSION=1.13
-  - wget --no-check-certificate http://downloads.sourceforge.net/ltp/lcov-${LCOV_VERSION}.tar.gz
-  - tar -zxf lcov-${LCOV_VERSION}.tar.gz
-  - lcov-${LCOV_VERSION}/bin/lcov
-  # running lcov
-  - lcov-${LCOV_VERSION}/bin/lcov --capture --directory . --output-file coverage-all.info
-  - lcov-${LCOV_VERSION}/bin/lcov --remove coverage-all.info 'test/test-*' 'gtest/*' 'boost/*' '/usr/*' 'example/*' -o coverage.info
-  # upload to coverall
-  - coveralls-lcov --verbose coverage.info
+  - if [ "$GCOV" != "" ]; then
+      gcov --version;
+      lcov --version;
+      gem install coveralls-lcov;
+      LCOV_VERSION=1.13;
+      wget --no-check-certificate http://downloads.sourceforge.net/ltp/lcov-${LCOV_VERSION}.tar.gz;
+      tar -zxf lcov-${LCOV_VERSION}.tar.gz;
+      lcov-${LCOV_VERSION}/bin/lcov --gcov-tool "${GCOV}" --capture --directory . --output-file coverage-all.info;
+      lcov-${LCOV_VERSION}/bin/lcov --gcov-tool "${GCOV}" --remove coverage-all.info 'test/test-*' 'gtest/*' 'boost/*' '/usr/*' 'example/*' -o coverage.info;
+      coveralls-lcov --verbose coverage.info;
+    fi;
