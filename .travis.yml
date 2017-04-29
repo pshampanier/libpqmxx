@@ -105,6 +105,14 @@ script:
   - ./postgres-test
 
 after_success:
-  - lcov --capture --directory . --output-file coverage-all.info
-  - lcov --remove coverage-all.info 'test/test-*' 'gtest/*' 'boost/*' '/usr/*' 'example/*' -o coverage.info
+  - lcov --version
+  # installing lcov
+  - LCOV_VERSION=1.13
+  - wget --no-check-certificate http://downloads.sourceforge.net/ltp/lcov-${LCOV_VERSION}.tar.gz
+  - tar -zxf lcov-${LCOV_VERSION}.tar.gz
+  - lcov-${LCOV_VERSION}/bin/lcov
+  # running lcov
+  - lcov-${LCOV_VERSION}/bin/lcov --capture --directory . --output-file coverage-all.info
+  - lcov-${LCOV_VERSION}/bin/lcov --remove coverage-all.info 'test/test-*' 'gtest/*' 'boost/*' '/usr/*' 'example/*' -o coverage.info
+  # upload to coverall
   - coveralls-lcov --verbose coverage.info
