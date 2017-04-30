@@ -54,5 +54,12 @@ int main(int argc, char** argv) {
   // This allows the user to override the flag on the command line.
   ::testing::InitGoogleTest(&argc, argv);
 
-  return RUN_ALL_TESTS();
+  int rc = RUN_ALL_TESTS();
+
+  // Prevents false positive valgrand's warning
+  fclose(stdin);
+  fclose(stdout);
+  fclose(stderr);
+
+  return rc;
 }

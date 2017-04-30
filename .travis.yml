@@ -17,6 +17,7 @@ matrix:
           packages:
             - g++-4.9
             - postgresql-server-dev-all
+            - valgrind
       env: COMPILER=g++-4.9
     - compiler: gcc
       addons:
@@ -27,6 +28,7 @@ matrix:
           packages:
             - g++-5
             - postgresql-server-dev-all
+            - valgrind
       env: COMPILER=g++-5 GCOV=gcov-5
     - compiler: clang
       addons:
@@ -38,6 +40,7 @@ matrix:
           packages:
             - clang-3.6
             - postgresql-server-dev-all
+            - valgrind
       env: COMPILER=clang++-3.6
     - compiler: clang
       addons:
@@ -49,6 +52,7 @@ matrix:
           packages:
             - clang-3.7
             - postgresql-server-dev-all
+            - valgrind
       env: COMPILER=clang++-3.7
 
 before_install:
@@ -100,6 +104,7 @@ script:
   - cd build
   - cmake -DGCOV=ON -DCMAKE_CXX_COMPILER=$COMPILER -DGTEST_ROOT=${GTEST_INSTALL_DIR} -DBOOST_INCLUDEDIR=${BOOST_INSTALL_DIR} -DBOOST_LIBRARYDIR=${BOOST_INSTALL_DIR}/stage/lib/ .. && make
   - ./postgres-test
+  - valgrind --leak-check=full --track-fds=yes ./postgres-test
 
 after_success:
   - if [ "$GCOV" != "" ]; then
