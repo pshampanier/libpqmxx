@@ -380,6 +380,10 @@ namespace libpqmxx {
       PQfinish(pgconn_);
       pgconn_ = nullptr;
     }
+    else if (!eptr) {
+      int success = !PQsetClientEncoding(pgconn_, "utf8");
+      assert(success);
+    }
     handler_t h;
     h.swap(handler_);
     try {
