@@ -24,7 +24,7 @@
 #include "postgres-boost.h"
 #include <gtest/gtest.h>
 
-using namespace db::postgres;
+using namespace libpqmxx;
 
 TEST(sync, connect) {
 

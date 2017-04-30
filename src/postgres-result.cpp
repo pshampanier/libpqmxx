@@ -29,9 +29,8 @@
 #include <iostream>
 #include <map>
 
-namespace db {
-namespace postgres {
-    
+namespace libpqmxx {
+
   static auto error_code_map = std::map<const char *, error_code, std::function<bool (const char *a, const char *b)>> {
     [](const char *a, const char *b) {
       return std::strcmp(a, b) < 0;
@@ -390,7 +389,7 @@ namespace postgres {
           return std::make_exception_ptr(connection_error(lastError, code));
 
         default:
-          return std::make_exception_ptr(db::postgres::error(lastError, code));
+          return std::make_exception_ptr(libpqmxx::error(lastError, code));
       }
 
     }
@@ -457,7 +456,7 @@ namespace postgres {
             
           case PGRES_EMPTY_QUERY:
             releaseConnection();
-            throw db::postgres::error("Empty query.", error_code::syntax_error);
+            throw libpqmxx::error("Empty query.", error_code::syntax_error);
             break;
 
           default:
@@ -611,12 +610,12 @@ namespace postgres {
         case FLOAT8OID: _expected = "double"; break;
         case BPCHAROID: _expected = "std::string"; break;
         case VARCHAROID: _expected = "std::string"; break;
-        case DATEOID: _expected = "db::postgres::date_t"; break;
-        case TIMEOID: _expected = "db::postgres::time_t"; break;
-        case TIMESTAMPOID: _expected = "db::postgres::timestamp_t"; break;
-        case TIMESTAMPTZOID: _expected = "db::postgres::timestamptz_t"; break;
-        case INTERVALOID: _expected = "db::postgres::interval_t"; break;
-        case TIMETZOID: _expected = "db::postgres::timetz_t"; break;
+        case DATEOID: _expected = "libpqmxx::date_t"; break;
+        case TIMEOID: _expected = "libpqmxx::time_t"; break;
+        case TIMESTAMPOID: _expected = "libpqmxx::timestamp_t"; break;
+        case TIMESTAMPTZOID: _expected = "libpqmxx::timestamptz_t"; break;
+        case INTERVALOID: _expected = "libpqmxx::interval_t"; break;
+        case TIMETZOID: _expected = "libpqmxx::timetz_t"; break;
         default:
           assert(false); // unsupported type. try std::string
       }
@@ -1046,5 +1045,4 @@ namespace postgres {
     return *this;
   }
 
-} // namespace postgres
-}   // namespace db
+} // namespace libpqmxx

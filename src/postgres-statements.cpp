@@ -21,8 +21,7 @@
  **/
 #include "postgres-statements.h"
 
-namespace db {
-namespace postgres {
+namespace libpqmxx {
 
   // ---------------------------------------------------------------------------
   // Constructor
@@ -49,5 +48,4 @@ namespace postgres {
     
   }
   
-} // namespace postgres
-} // namespace db
+} // namespace libpqmxx

@@ -29,18 +29,15 @@
 #include "boost/asio.hpp"
 #pragma GCC diagnostic pop
 
-namespace db {
-namespace postgres {
+namespace libpqmxx {
 namespace async_boost {
-  
-  using namespace ::db::postgres;
 
   static std::exception_ptr action_ok;
 
   /**
    * An asynchronous implementation of a postgresql connection based on boost.
    **/
-  class Connection : public postgres::Connection {
+  class Connection : public libpqmxx::Connection {
   public:
 
     // -------------------------------------------------------------------------
@@ -68,7 +65,7 @@ namespace async_boost {
         auto ignore = std::make_shared<bool>(false);
         auto boostHandler = [this, action, ignore, callback](::boost::system::error_code ec, size_t) {
           if (!*ignore && ec != ::boost::asio::error::operation_aborted) {
-            if (action == postgres::action::read_write) {
+            if (action == libpqmxx::action::read_write) {
               // Cancel the other operation to prevent a second call to the handler.
               socket_.cancel();
 
@@ -93,7 +90,7 @@ namespace async_boost {
           //
           // Connection to the server establised.
           //
-          case postgres::action::connect:
+          case libpqmxx::action::connect:
             socket_.assign(::boost::asio::ip::tcp::v4(), socket());
             callback(action_ok);
             break;
@@ -101,7 +98,7 @@ namespace async_boost {
           //
           // Connection to the server closed.
           //
-          case postgres::action::close:
+          case libpqmxx::action::close:
             socket_.cancel();
             callback(action_ok);
             break;
@@ -109,28 +106,28 @@ namespace async_boost {
           //
           // Connection reset to the server initiated.
           //
-          case postgres::action::reset:
+          case libpqmxx::action::reset:
 
             break;
 
           //
           // Connection read pending.
           //
-          case postgres::action::read:
+          case libpqmxx::action::read:
             socket_.async_read_some(::boost::asio::null_buffers(), boostHandler);
             break;
 
           //
           // Connection write pending.
           //
-          case postgres::action::write:
+          case libpqmxx::action::write:
             socket_.async_write_some(::boost::asio::null_buffers(), boostHandler);
             break;
 
           //
           // Connection read or write pending.
           //
-          case postgres::action::read_write: {
+          case libpqmxx::action::read_write: {
             socket_.async_read_some(::boost::asio::null_buffers(), boostHandler);
             socket_.async_write_some(::boost::asio::null_buffers(), boostHandler);
           }
@@ -154,6 +151,5 @@ namespace async_boost {
     ::boost::asio::ip::tcp::socket socket_;
   };
 
-} // namespace postgres
-} // namespace db
+} // namespace libpqmxx
 } // namespace async_boost

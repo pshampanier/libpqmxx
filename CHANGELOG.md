@@ -15,6 +15,8 @@
     ```c++
     cnx.notice(nullptr);    
     ```
+    
+3. Namespace changed to `libpqmxx` from `db::posgress` to leave for former one free to be used by developpers for their applications.
 
 # Release 1.1
 

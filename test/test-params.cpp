@@ -23,7 +23,7 @@
 #include "postgres-exceptions.h"
 #include <gtest/gtest.h>
 
-using namespace db::postgres;
+using namespace libpqmxx;
 
 TEST(params_sync, datatypes) {
 
@@ -65,7 +65,7 @@ TEST(params_sync, date_time) {
   EXPECT_EQ(860123, timetz.time);
   EXPECT_EQ(25200, timetz.offset);
 
-  EXPECT_EQ(39602000101, cnx.execute("SELECT $1", db::postgres::time_t{39602000101}).as<db::postgres::time_t>(0));
+  EXPECT_EQ(39602000101, cnx.execute("SELECT $1", libpqmxx::time_t{39602000101}).as<libpqmxx::time_t>(0));
 
   auto interval = cnx.execute("SELECT $1", interval_t {7384000000, 7, 4}).as<interval_t>(0);
 
@@ -149,8 +149,8 @@ TEST(param_sync, array_types) {
   }
 
   {
-    array_time_t expected({db::postgres::time_t({3600000000}), nullptr, db::postgres::time_t({0})});
-    auto actual = cnx.execute("SELECT $1", expected).asArray<db::postgres::time_t>(0);
+    array_time_t expected({libpqmxx::time_t({3600000000}), nullptr, libpqmxx::time_t({0})});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<libpqmxx::time_t>(0);
     EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
   }
 

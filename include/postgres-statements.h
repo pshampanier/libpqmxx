@@ -23,8 +23,7 @@
 
 #include <string>
 
-namespace db {
-namespace postgres {
+namespace libpqmxx {
 
   /**
    * Batch of sql operations which are applied atomically.
@@ -48,5 +47,4 @@ namespace postgres {
     
   }
 
-} // namespace postgres
-} // namespace db
+} // namespace libpqmxx

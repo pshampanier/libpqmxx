@@ -37,7 +37,7 @@
   }                                                                            \
 }
 
-using namespace db::postgres;
+using namespace libpqmxx;
 
 TEST(result_sync, integer_types) {
 
@@ -116,7 +116,7 @@ TEST(result_sync, date_time_types) {
   EXPECT_EQ(1000001, timetz.time);
   EXPECT_EQ(7*3600, timetz.offset);
 
-  EXPECT_EQ(39602000101, cnx.execute("SELECT TIME '11:00:02.000101'").as<db::postgres::time_t>(0));
+  EXPECT_EQ(39602000101, cnx.execute("SELECT TIME '11:00:02.000101'").as<libpqmxx::time_t>(0));
 
   auto interval = cnx.execute("SELECT INTERVAL '3 months 7 days 2:03:04'").as<interval_t>(0);
   EXPECT_EQ(7384000000, interval.time);
@@ -230,11 +230,11 @@ TEST(result_sync, null_values) {
   EXPECT_EQ(0, cnx.execute("SELECT NULL::date").as<date_t>(0));
   EXPECT_EQ(0, cnx.execute("SELECT NULL::timestamptz").as<timestamptz_t>(0));
   EXPECT_EQ(0, cnx.execute("SELECT NULL::timestamp").as<timestamp_t>(0));
-  EXPECT_EQ(0, cnx.execute("SELECT NULL::time").as<db::postgres::time_t>(0));
-  auto timetz = cnx.execute("SELECT NULL::timetz").as<db::postgres::timetz_t>(0);
+  EXPECT_EQ(0, cnx.execute("SELECT NULL::time").as<libpqmxx::time_t>(0));
+  auto timetz = cnx.execute("SELECT NULL::timetz").as<libpqmxx::timetz_t>(0);
   EXPECT_EQ(0, timetz.time);
   EXPECT_EQ(0, timetz.offset);
-  auto interval = cnx.execute("SELECT NULL::interval").as<db::postgres::interval_t>(0);
+  auto interval = cnx.execute("SELECT NULL::interval").as<libpqmxx::interval_t>(0);
   EXPECT_EQ(0, interval.time);
   EXPECT_EQ(0, interval.days);
   EXPECT_EQ(0, interval.months);

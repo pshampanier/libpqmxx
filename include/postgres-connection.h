@@ -29,8 +29,7 @@
 #include <memory>
 #include <cstddef>
 
-namespace db {
-namespace postgres {
+namespace libpqmxx {
 
   /**
    * Settings of a PostgreSQL connection.
@@ -171,12 +170,12 @@ namespace postgres {
          real                        | float
          double precision            | double
          character varying           | const char *, std::string
-         date                        | db::postgres::date_t
-         time without time zone      | db::postgres::time_t
-         timestamp without time zone | db::postgres::timestamp_t
-         timestamp with time zone    | db::postgres::timestamptz_t
-         interval                    | db::postgres::interval_t
-         time with time zone         | db::postgres::timetz_t
+         date                        | libpqmxx::date_t
+         time without time zone      | libpqmxx::time_t
+         timestamp without time zone | libpqmxx::timestamp_t
+         timestamp with time zone    | libpqmxx::timestamptz_t
+         interval                    | libpqmxx::interval_t
+         time with time zone         | libpqmxx::timetz_t
 
        *
        * \code
@@ -375,5 +374,4 @@ namespace postgres {
       Connection& operator = (const Connection&&) = delete;
   };
 
-} // namespace postgres
-} // namespace db
+} // namespace libpqmxx

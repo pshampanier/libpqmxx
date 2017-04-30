@@ -23,8 +23,8 @@
 #include "postgres-exceptions.h"
 #include <gtest/gtest.h>
 
-using namespace db::postgres;
-using namespace db::postgres::literals;
+using namespace libpqmxx;
+using namespace libpqmxx::literals;
 
 
 TEST(statement, serie) {
@@ -191,7 +191,7 @@ TEST(statement, empty) {
 
   Connection cnx;
   cnx.connect();
-  EXPECT_THROW(cnx.execute(""), db::postgres::error);
+  EXPECT_THROW(cnx.execute(""), libpqmxx::error);
 
 }
 

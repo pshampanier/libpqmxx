@@ -23,7 +23,7 @@
 #include "postgres-exceptions.h"
 #include <gtest/gtest.h>
 
-using namespace db::postgres;
+using namespace libpqmxx;
 
 TEST(single_row_mode, rownum) {
   

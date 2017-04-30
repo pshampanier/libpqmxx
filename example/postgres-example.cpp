@@ -24,8 +24,8 @@
 
 #include <iostream>
 
-using namespace db::postgres;
-using namespace db::postgres::literals;
+using namespace libpqmxx;
+using namespace libpqmxx::literals;
 
 int main() {
 

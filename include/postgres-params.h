@@ -27,52 +27,50 @@
 #include <vector>
 #include <memory>
 
-namespace db {
-  namespace postgres {
-    
-    typedef std::unique_ptr<char[]> buffer;
+namespace libpqmxx {
+
+  typedef std::unique_ptr<char[]> buffer;
+
+  /**
+   * A private class to bind SQL command parameters.
+   **/
+  class Params {
+
+    friend class Connection;
+
+  private:
+    std::vector<Oid>      types_;
+    std::vector<char *>   values_;
+    std::vector<int>      lengths_;
+    std::vector<int>      formats_;
+    std::vector<buffer>   buffers_;
+    const struct Settings &settings_;
+
+    Params(const Settings &settings, int size);
+
+    char *bind(Oid type, size_t length);
+
+    void bind() const {}
+    void bind(std::nullptr_t);
+    void bind(const std::string &s);
+    void bind(const std::vector<uint8_t> &bytes);
+
+    template<typename T>
+    void bind(T v);
+
+    void bind(Oid type, char *value, size_t length);
+
+    template <typename T>
+    T *bind(Oid type, size_t length);
 
     /**
-     * A private class to bind SQL command parameters.
+     * Arrays
      **/
-    class Params {
+    template<typename T>
+    void bind(const std::vector<array_item<T>> &array);
 
-      friend class Connection;
+    template<typename T>
+    void bind(Oid type, Oid elemType, const std::vector<array_item<T>> &array);
+  };
 
-    private:
-      std::vector<Oid>      types_;
-      std::vector<char *>   values_;
-      std::vector<int>      lengths_;
-      std::vector<int>      formats_;
-      std::vector<buffer>   buffers_;
-      const struct Settings &settings_;
-
-      Params(const Settings &settings, int size);
-
-      char *bind(Oid type, size_t length);
-
-      void bind() const {}
-      void bind(std::nullptr_t);
-      void bind(const std::string &s);
-      void bind(const std::vector<uint8_t> &bytes);
-
-      template<typename T>
-      void bind(T v);
-
-      void bind(Oid type, char *value, size_t length);
-
-      template <typename T>
-      T *bind(Oid type, size_t length);
-
-      /**
-       * Arrays
-       **/
-      template<typename T>
-      void bind(const std::vector<array_item<T>> &array);
-
-      template<typename T>
-      void bind(Oid type, Oid elemType, const std::vector<array_item<T>> &array);
-    };
-
-  } // namespace postgres
-}   // namespace db
+} // libpqmxx

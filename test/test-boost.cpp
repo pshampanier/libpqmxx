@@ -24,8 +24,8 @@
 #include "postgres-boost.h"
 #include <gtest/gtest.h>
 
-using namespace db::postgres;
-namespace async = db::postgres::async_boost;
+using namespace libpqmxx;
+namespace async = libpqmxx::async_boost;
 
 TEST(async, connect) {
 
@@ -132,7 +132,7 @@ TEST(async, singleton) {
       cnx->execute("SELECT $1 FROM does_not_exists", 42).done([&done](Result &) {
         done = true;
       }).error([cnx, &error](std::exception_ptr &e) {
-        EXPECT_THROW(std::rethrow_exception(e), db::postgres::error);
+        EXPECT_THROW(std::rethrow_exception(e), libpqmxx::error);
         error = true;
         cnx->close();
       });
