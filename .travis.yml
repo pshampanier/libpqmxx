@@ -103,8 +103,8 @@ script:
   - mkdir build
   - cd build
   - cmake -DGCOV=ON -DCMAKE_CXX_COMPILER=$COMPILER -DGTEST_ROOT=${GTEST_INSTALL_DIR} -DBOOST_INCLUDEDIR=${BOOST_INSTALL_DIR} -DBOOST_LIBRARYDIR=${BOOST_INSTALL_DIR}/stage/lib/ .. && make
-  - ./postgres-test
-  - valgrind --leak-check=full --track-fds=yes ./postgres-test
+  - ./postgres-test --gtest_filter=-misc.notice
+  - valgrind --leak-check=full --track-fds=yes ./postgres-test --gtest_filter=-misc.notice
 
 after_success:
   - if [ "$GCOV" != "" ]; then
