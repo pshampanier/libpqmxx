@@ -50,12 +50,24 @@ TEST(misc, notice) {
   Connection cnx;
   cnx.connect().notice([&notice](const char *message) {
     notice = message;
-  }).execute("DROP TABLE IF EXISTS __no_way_it_exists_00001"_x);
-  EXPECT_TRUE(notice.find("__no_way_it_exists_00001") != std::string::npos);
+  }).execute(u8R"SQL(
+    DO language plpgsql $$
+    BEGIN
+      RAISE NOTICE 'Hej världen!';
+    END
+    $$;
+  )SQL"_x);
+  EXPECT_EQ(0, notice.find(u8"NOTICE:  Hej världen!"));
 
   // Disabling the notice, the previous handler should no longer be called and
   // the notice string should stay untouched.
-  cnx.notice(nullptr).execute("DROP TABLE IF EXISTS __no_way_it_exists_00002"_x);
-  EXPECT_TRUE(notice.find("__no_way_it_exists_00001") != std::string::npos);
+  cnx.notice(nullptr).execute(R"SQL(
+    DO language plpgsql $$
+    BEGIN
+      RAISE NOTICE 'hello world!';
+    END
+    $$;
+  )SQL"_x);
+  EXPECT_EQ(0, notice.find(u8"NOTICE:  Hej världen!"));
 
 }
