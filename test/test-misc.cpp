@@ -58,26 +58,26 @@ TEST(misc, notice) {
   std::string notice;
   Connection cnx;
   cnx.connect().notice([&notice](const char *message) {
-    std::cout << "notice: " << message << std::endl;
+    std::cout << "warning: " << message << std::endl;
     notice = message;
   }).execute(u8R"SQL(
     DO language plpgsql $$
     BEGIN
-      RAISE NOTICE 'Hej världen!';
+      RAISE WARNING 'Hej världen!';
     END
     $$;
   )SQL"_x);
-  EXPECT_EQ(0, notice.find(u8"NOTICE:  Hej världen!"));
+  EXPECT_EQ(0, notice.find(u8"WARNING:  Hej världen!"));
 
   // Disabling the notice, the previous handler should no longer be called and
   // the notice string should stay untouched.
   cnx.notice(nullptr).execute(R"SQL(
     DO language plpgsql $$
     BEGIN
-      RAISE NOTICE 'hello world!';
+      RAISE WARNING 'hello world!';
     END
     $$;
   )SQL"_x);
-  EXPECT_EQ(0, notice.find(u8"NOTICE:  Hej världen!"));
+  EXPECT_EQ(0, notice.find(u8"WARNING:  Hej världen!"));
 
 }
