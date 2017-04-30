@@ -44,6 +44,15 @@ TEST(misc, cancel) {
 
 }
 
+TEST(misc, client_encoding) {
+
+  Settings settings;
+  settings.encoding = "__invalid__";
+  Connection cnx(settings);
+  EXPECT_THROW(cnx.connect(), connection_error);
+
+}
+
 TEST(misc, notice) {
 
   std::string notice;

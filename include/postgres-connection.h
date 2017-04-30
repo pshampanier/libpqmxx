@@ -43,6 +43,11 @@ namespace libpqmxx {
      * considered as null values.
      **/
     bool emptyStringAsNull = true;
+
+    /**
+     * Client encoding.
+     **/
+    std::string encoding = "utf8";
   };
   
   enum class action {

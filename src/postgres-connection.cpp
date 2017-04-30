@@ -116,7 +116,11 @@ namespace libpqmxx {
     }
     else {
       pgconn_ = PQconnectdb(connInfo);
-      if( PQstatus(pgconn_) != CONNECTION_OK ) {
+      int success = PQstatus(pgconn_) == CONNECTION_OK;
+      if (success) {
+        success = !PQsetClientEncoding(pgconn_, settings_.encoding.c_str());
+      }
+      if (!success) {
         std::string lastError = lastPostgresError();
         PQfinish(pgconn_);
         pgconn_ = nullptr;
@@ -376,13 +380,15 @@ namespace libpqmxx {
   // -------------------------------------------------------------------------
   void Connection::connectCompleted(std::exception_ptr eptr) noexcept {
     assert(handler_);
+    if (!eptr) {
+      int success = !PQsetClientEncoding(pgconn_, settings_.encoding.c_str());
+      if (!success) {
+        eptr = std::make_exception_ptr(connection_error(lastPostgresError()));
+      }
+    }
     if (eptr && pgconn_) {
       PQfinish(pgconn_);
       pgconn_ = nullptr;
-    }
-    else if (!eptr) {
-      int success = !PQsetClientEncoding(pgconn_, "utf8");
-      assert(success);
     }
     handler_t h;
     h.swap(handler_);

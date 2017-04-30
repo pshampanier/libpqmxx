@@ -182,3 +182,26 @@ TEST(async, empty_result) {
 
 }
 
+TEST(async, client_encoding) {
+
+  ::boost::asio::io_service ioService;
+  Settings settings;
+  settings.encoding = "__invalid__";
+  int64_t count = 1;
+  auto cnx = std::make_shared<async::Connection>(ioService, settings);
+  cnx->connect(nullptr, [cnx](std::exception_ptr &eptr) {
+    try {
+      std::rethrow_exception(eptr);
+    }
+    catch (connection_error &e) {
+      EXPECT_EQ(error_code::connection_failure, e.code());
+    }
+    catch (...) {
+      FAIL();
+    }
+  });
+
+  ioService.run();
+
+}
+

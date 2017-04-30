@@ -43,8 +43,9 @@ namespace async_boost {
     // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
-    Connection(::boost::asio::io_service& ioService)
-      : socket_(ioService) {
+    Connection(::boost::asio::io_service& ioService, Settings settings = Settings())
+      : libpqmxx::Connection(settings),
+        socket_(ioService) {
       async_ = true;
     }
     
