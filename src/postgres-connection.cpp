@@ -27,6 +27,9 @@
 #include <string>
 #include <cstring>
 
+// ## debug
+#include <iostream>
+
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Secur32.lib")
 
@@ -41,6 +44,7 @@ namespace libpqmxx {
   // Notice processor (dispatch the notice to the registered handler).
   // -------------------------------------------------------------------------
   static void noticeProcessor(void *arg, const char *message) {
+    std::cout << "noticeProcessor: " << message << std::endl;
     notice_handler_t *notice = reinterpret_cast<notice_handler_t *>(arg);
     if (notice) {
       (*notice)(message);
