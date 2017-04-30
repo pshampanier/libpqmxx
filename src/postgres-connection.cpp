@@ -37,13 +37,11 @@ namespace libpqmxx {
   void setLastError(ResultHandle *rh, std::exception_ptr eptr);
   void releaseConnection(ResultHandle *rh);
 
-  typedef std::function<void (const char *)> notice_handler;
-
   // -------------------------------------------------------------------------
   // Notice processor (dispatch the notice to the registered handler).
   // -------------------------------------------------------------------------
   static void noticeProcessor(void *arg, const char *message) {
-    notice_handler *notice = (notice_handler *)arg;
+    notice_handler_t *notice = reinterpret_cast<notice_handler_t *>(arg);
     if (notice) {
       (*notice)(message);
     }
@@ -70,9 +68,10 @@ namespace libpqmxx {
   // -------------------------------------------------------------------------
   // Set the notice handler
   // -------------------------------------------------------------------------
-  Connection &Connection::notice(std::function<void (const char *)> callback) noexcept {
-    notice_handler *notice = callback ? &callback : nullptr;
-    PQsetNoticeProcessor(pgconn_, noticeProcessor, notice);
+  Connection &Connection::notice(notice_handler_t &&handler) noexcept {
+    notice_handler_ = std::move(handler);
+    void *arg = notice_handler_ ? reinterpret_cast<void *>(&notice_handler_) : nullptr;
+    PQsetNoticeProcessor(pgconn_, noticeProcessor, arg);
     return *this;
   }
 
