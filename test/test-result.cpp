@@ -39,7 +39,7 @@
 
 using namespace libpqmxx;
 
-TEST(result_sync, integer_types) {
+TEST(result, integer_types) {
 
   Connection cnx;
   cnx.connect();
@@ -54,7 +54,7 @@ TEST(result_sync, integer_types) {
 
 }
 
-TEST(result_sync, floating_point_types) {
+TEST(result, floating_point_types) {
 
   Connection cnx;
   cnx.connect();
@@ -64,7 +64,7 @@ TEST(result_sync, floating_point_types) {
 
 }
 
-TEST(result_sync, serial_types) {
+TEST(result, serial_types) {
 
   Connection cnx;
   cnx.connect();
@@ -79,7 +79,7 @@ TEST(result_sync, serial_types) {
 
 }
 
-TEST(result_sync, char_types) {
+TEST(result, char_types) {
 
   Connection cnx;
   cnx.connect();
@@ -92,7 +92,7 @@ TEST(result_sync, char_types) {
 
 }
 
-TEST(result_sync, utf8) {
+TEST(result, utf8) {
 
   Connection cnx;
   cnx.connect();
@@ -102,7 +102,7 @@ TEST(result_sync, utf8) {
 
 }
 
-TEST(result_sync, date_time_types) {
+TEST(result, date_time_types) {
 
   Connection cnx;
   cnx.connect();
@@ -128,7 +128,7 @@ TEST(result_sync, date_time_types) {
 
 }
 
-TEST(result_sync, bytea_type) {
+TEST(result, bytea_type) {
 
   Connection cnx;
   cnx.connect();
@@ -144,7 +144,7 @@ TEST(result_sync, bytea_type) {
 
 }
 
-TEST(result_sync, arrays) {
+TEST(result, arrays) {
 
   Connection cnx;
   cnx.connect();
@@ -215,7 +215,7 @@ TEST(result_sync, arrays) {
 
 }
 
-TEST(result_sync, null_values) {
+TEST(result, null_values) {
 
   Connection cnx;
   cnx.connect();
@@ -241,7 +241,7 @@ TEST(result_sync, null_values) {
 
 }
 
-TEST(result_sync, arrays_null_values) {
+TEST(result, arrays_null_values) {
 
   Connection cnx;
   cnx.connect();
@@ -262,7 +262,7 @@ TEST(result_sync, arrays_null_values) {
   TEST_VECTOR_END;
 }
 
-TEST(result_sync, column_name) {
+TEST(result, column_name) {
 
   Connection cnx;
   cnx.connect();

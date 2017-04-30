@@ -26,14 +26,13 @@
 
 using namespace libpqmxx;
 
-TEST(sync, connect) {
-
+TEST(connect, ok) {
   Connection cnx;
-
-  // OK
   EXPECT_NO_THROW(cnx.connect().close());
+}
 
-  // DNS RESOLUTION ERROR
+TEST(connect, dns_resolution_error) {
+  Connection cnx;
   try {
     cnx.connect("postgresql://foo@63e39014-1897-4143-af19-1f44148acc7f");
   }
@@ -43,8 +42,10 @@ TEST(sync, connect) {
   catch (...) {
     FAIL();
   }
+}
 
-  // CONNECTION REFUSED
+TEST(connect, connection_refused) {
+  Connection cnx;
   try {
     cnx.connect("postgresql://foo@127.0.0.1:1");
   }
@@ -54,5 +55,4 @@ TEST(sync, connect) {
   catch (...) {
     FAIL();
   }
-
 }

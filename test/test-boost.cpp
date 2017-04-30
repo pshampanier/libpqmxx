@@ -27,7 +27,7 @@
 using namespace libpqmxx;
 namespace async = libpqmxx::async_boost;
 
-TEST(async, connect) {
+TEST(boost, connect) {
 
   ::boost::asio::io_service ioService;
   auto cnx = std::make_shared<async::Connection>(ioService);
@@ -39,7 +39,7 @@ TEST(async, connect) {
 
 }
 
-TEST(async, connect_invalid_host) {
+TEST(boost, connect_invalid_host) {
 
   ::boost::asio::io_service ioService;
   auto cnx = std::make_shared<async::Connection>(ioService);
@@ -58,7 +58,7 @@ TEST(async, connect_invalid_host) {
 
 }
 
-TEST(async, connect_refused) {
+TEST(boost, connect_refused) {
 
   ::boost::asio::io_service ioService;
   auto cnx = std::make_shared<async::Connection>(ioService);
@@ -77,7 +77,7 @@ TEST(async, connect_refused) {
 
 }
 
-TEST(async, singleton) {
+TEST(boost, singleton) {
 
   ::boost::asio::io_service ioService;
 
@@ -145,7 +145,7 @@ TEST(async, singleton) {
 
 }
 
-TEST(async, iterator) {
+TEST(boost, iterator) {
 
   ::boost::asio::io_service ioService;
   int64_t sum = 0, count = 0;
@@ -165,7 +165,7 @@ TEST(async, iterator) {
   EXPECT_EQ(100000, count);
 }
 
-TEST(async, empty_result) {
+TEST(boost, empty_result) {
 
   ::boost::asio::io_service ioService;
   int64_t count = 1;
@@ -182,12 +182,11 @@ TEST(async, empty_result) {
 
 }
 
-TEST(async, client_encoding) {
+TEST(boost, client_encoding) {
 
   ::boost::asio::io_service ioService;
   Settings settings;
   settings.encoding = "__invalid__";
-  int64_t count = 1;
   auto cnx = std::make_shared<async::Connection>(ioService, settings);
   cnx->connect(nullptr, [cnx](std::exception_ptr &eptr) {
     try {

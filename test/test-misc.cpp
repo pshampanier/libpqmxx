@@ -58,7 +58,6 @@ TEST(misc, notice) {
   std::string notice;
   Connection cnx;
   cnx.connect().notice([&notice](const char *message) {
-    std::cout << "warning: " << message << std::endl;
     notice = message;
   }).execute(u8R"SQL(
     DO language plpgsql $$

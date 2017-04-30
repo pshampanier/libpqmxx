@@ -25,7 +25,7 @@
 
 using namespace libpqmxx;
 
-TEST(params_sync, datatypes) {
+TEST(params, datatypes) {
 
   Connection cnx;
   cnx.connect();
@@ -43,7 +43,7 @@ TEST(params_sync, datatypes) {
 
 }
 
-TEST(params_sync, utf8) {
+TEST(params, utf8) {
 
   Connection cnx;
   cnx.connect();
@@ -53,7 +53,7 @@ TEST(params_sync, utf8) {
 
 }
 
-TEST(params_sync, date_time) {
+TEST(params, date_time) {
 
   Connection cnx;
   cnx.connect();
@@ -79,7 +79,7 @@ TEST(params_sync, date_time) {
 }
 
 
-TEST(param_sync, bytea_type) {
+TEST(params, bytea_type) {
 
   Connection cnx;
   cnx.connect();
@@ -95,7 +95,7 @@ TEST(param_sync, bytea_type) {
 
 }
 
-TEST(param_sync, array_types) {
+TEST(params, array_types) {
 
   Connection cnx;
   cnx.connect();
@@ -176,7 +176,7 @@ TEST(param_sync, array_types) {
 
 }
 
-TEST(param_sync, multi) {
+TEST(params, multi) {
 
   Connection cnx;
   cnx.connect();
