@@ -19,9 +19,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  **/
-#include "gtest/gtest.h"
 #include "postgres-connection.h"
 #include "postgres-exceptions.h"
+#include <gtest/gtest.h>
 
 #define ARRAY(...) __VA_ARGS__
 #define TEST_VECTOR(expr, _expected, expected_size, type)                       \
@@ -150,7 +150,7 @@ TEST(result_sync, arrays) {
   cnx.connect();
 
   TEST_VECTOR(cnx.execute("SELECT array[true,false,true]")
-              .asArray<bool>(0), ARRAY({bool(true), bool(false), bool(true)}), 3, int16_t);
+              .asArray<bool>(0), ARRAY({bool(true), bool(false), bool(true)}), 3, bool);
     EXPECT_EQ(expected, actual.value);
     EXPECT_FALSE(actual.isNull);
   TEST_VECTOR_END;

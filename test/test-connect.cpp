@@ -19,10 +19,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  **/
-#include "gtest/gtest.h"
 #include "postgres-connection.h"
 #include "postgres-exceptions.h"
 #include "postgres-boost.h"
+#include <gtest/gtest.h>
 
 using namespace db::postgres;
 
@@ -37,7 +37,7 @@ TEST(sync, connect) {
   try {
     cnx.connect("postgresql://foo@63e39014-1897-4143-af19-1f44148acc7f");
   }
-  catch (error err) {
+  catch (connection_error err) {
     EXPECT_EQ(error_code::connection_failure, err.code());
   }
   catch (...) {
@@ -48,7 +48,7 @@ TEST(sync, connect) {
   try {
     cnx.connect("postgresql://foo@127.0.0.1:1");
   }
-  catch (error err) {
+  catch (connection_error err) {
     EXPECT_EQ(error_code::connection_failure, err.code());
   }
   catch (...) {

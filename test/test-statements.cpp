@@ -19,15 +19,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  **/
-#include "gtest/gtest.h"
 #include "postgres-connection.h"
 #include "postgres-exceptions.h"
+#include <gtest/gtest.h>
 
 using namespace db::postgres;
 using namespace db::postgres::literals;
 
 
-TEST(result_sync, statements) {
+TEST(statement, serie) {
 
   Connection cnx;
   cnx.connect();
@@ -172,20 +172,40 @@ TEST(result_sync, statements) {
 
 }
 
-TEST(misc, cancel) {
+TEST(statement, invalid_sql) {
+
+  Connection cnx;
+  auto actual = error_code::unknown;
+  cnx.connect();
+  try {
+    cnx.execute("SELECT FROM");
+  } catch (error &e) {
+    actual = e.code();
+  }
+
+  EXPECT_EQ(error_code::syntax_error, actual);
+
+}
+
+TEST(statement, empty) {
 
   Connection cnx;
   cnx.connect();
-
-  auto result = cnx.execute("SELECT generate_series(1, 10000)");
-  int rownum = 0;
-
-  for (auto &row: result) {
-    rownum = row.num();
-    if (row.num() == 100) {
-      cnx.cancel();
-      break;
-    }
-  }
+  EXPECT_THROW(cnx.execute(""), db::postgres::error);
 
 }
+
+TEST(statement, batch_result) {
+
+  // Expecting the result being the one of the last statement.
+  Connection cnx;
+  cnx.connect();
+  EXPECT_EQ(10000, cnx.execute(R"SQL(
+
+    CREATE TEMPORARY TABLE employees (emp_no INTEGER);
+    INSERT INTO employees(emp_no) SELECT generate_series(1, 10000);
+
+  )SQL"_x).count());
+
+}
+

@@ -36,6 +36,7 @@ namespace db {
     void consumeInput(ResultHandle *rh);
     void attach(ResultHandle *rh, PGresult *pgr);
     void setLastError(ResultHandle *rh, std::exception_ptr eptr);
+    void releaseConnection(ResultHandle *rh);
 
     typedef std::function<void (const char *)> notice_handler;
 
@@ -88,7 +89,7 @@ namespace db {
         if (pgconn_) {
           auto status = PQstatus(pgconn_);
           if (status == CONNECTION_BAD) {
-            auto eptr = std::make_exception_ptr(error(error_code::connection_failure, lastPostgresError()));
+            auto eptr = std::make_exception_ptr(connection_error(lastPostgresError()));
             connectCompleted(eptr);
           }
           else {
@@ -98,9 +99,9 @@ namespace db {
                 // The postgresql documentation very explicit about the fact we
                 // should wait for the socket to be write ready:
                 //
-                // «If you have yet to call PQconnectPoll, i.e., just after the
+                // "If you have yet to call PQconnectPoll, i.e., just after the
                 //  call to PQconnectStart, behave as if it last returned
-                //  PGRES_POLLING_WRITING.»
+                //  PGRES_POLLING_WRITING.
                 //
                 // Using boost, when the connection is refused the write event
                 // never comes. Instead boost gives an error on the read.
@@ -121,7 +122,7 @@ namespace db {
           std::string lastError = lastPostgresError();
           PQfinish(pgconn_);
           pgconn_ = nullptr;
-          throw error(error_code::connection_failure, lastError);
+          throw connection_error(lastError);
         }
       }
 
@@ -155,7 +156,12 @@ namespace db {
     Result Connection::execute(const char *sql, const Params &params) {
       
       Result result(*this);
+
       if (async_) {
+        auto lastResult = lastResult_.lock();
+        if (lastResult) {
+          releaseConnection(lastResult.get());
+        }
         lastResult_ = result.handle_;
       }
       
@@ -184,7 +190,7 @@ namespace db {
         }
 
         if (!success) {
-          throw error(error_code::unknown, lastPostgresError());
+          throw error(lastPostgresError());
         }
       }
       catch (...) {
@@ -203,13 +209,20 @@ namespace db {
       
       try {
         if (async_) {
+
+          auto lastResult = lastResult_.lock();
+          if (lastResult) {
+            releaseConnection(lastResult.get());
+            lastResult_.reset();
+          }
+
           int success = PQsendQuery(pgconn_, sql);
           if (success) {
             lastResult_ = result.handle_;
             flush();
           }
           else {
-            throw error(error_code::unknown, lastPostgresError());
+            throw error(lastPostgresError());
           }
         }
         else {
@@ -239,12 +252,12 @@ namespace db {
       char errbuf[256];
       PGcancel *pgcancel = PQgetCancel(pgconn_);
       if (pgcancel == nullptr) {
-        throw std::runtime_error("Cancel operation on an invalid connection.");
+        throw error("Cancel operation on an invalid connection.");
       }
       else {
         int success = PQcancel(pgcancel, errbuf, sizeof(errbuf));
         if (!success) {
-          throw std::runtime_error(errbuf);
+          throw error(errbuf);
         }
         PQfreeCancel(pgcancel);
       }
@@ -302,7 +315,7 @@ namespace db {
           break;
           
         case -1:
-          throw error(error_code::unknown, lastPostgresError());
+          throw error(lastPostgresError());
           break;
       }
 
@@ -312,32 +325,28 @@ namespace db {
     // Check the connection progress status.
     // -------------------------------------------------------------------------
     void Connection::connectPoll() {
+
+      // Error handling entirely relies on PQconnectPoll() status. Exceptions
+      // provided by the asynchronous layer via asyncAction() are ignored on
+      // purpose to get a more accurate description of the error but also
+      // an exception consistant accros all possible implementations of the
+      // asynchrounous layer.
       PostgresPollingStatusType status = PQconnectPoll(pgconn_);
       try {
         switch (status) {
           case PGRES_POLLING_FAILED:
-            throw error(error_code::connection_failure, lastPostgresError());
+            throw connection_error(lastPostgresError());
             break;
 
           case PGRES_POLLING_READING:
-            asyncAction(action::read, [this](std::exception_ptr eptr) {
-              if (eptr) {
-                connectCompleted(eptr);
-              }
-              else {
-                connectPoll();
-              }
+            asyncAction(action::read, [this](std::exception_ptr) {
+              connectPoll();
             });
             break;
 
           case PGRES_POLLING_WRITING: {
-            asyncAction(action::read_write, [this](std::exception_ptr eptr) {
-              if (eptr) {
-                connectCompleted(eptr);
-              }
-              else {
-                connectPoll();
-              }
+            asyncAction(action::read_write, [this](std::exception_ptr) {
+              connectPoll();
             });
             break;
           }
@@ -348,8 +357,8 @@ namespace db {
             break;
 
           default:
-            assert(false);
-            break;
+            assert(false);  // LCOV_EXCL
+            break;          // LCOV_EXCL
         }
       }
       catch(...) {
@@ -380,7 +389,7 @@ namespace db {
       }
       catch (...) {
         // The handler is not supposed to throw any exception.
-        assert(true);
+        assert(true); // LCOV_EXCL_LINE
       }
     }
 

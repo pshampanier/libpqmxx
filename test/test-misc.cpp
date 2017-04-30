@@ -24,20 +24,38 @@
 #include <gtest/gtest.h>
 
 using namespace db::postgres;
+using namespace db::postgres::literals;
 
-TEST(single_row_mode, rownum) {
-  
+TEST(misc, cancel) {
+
   Connection cnx;
   cnx.connect();
-  cnx.setSingleRowMode();
 
-  int32_t actual = 0;
+  auto result = cnx.execute("SELECT generate_series(1, 10000)");
+  int rownum = 0;
 
-  auto result = cnx.execute("SELECT generate_series(1, 3)");
   for (auto &row: result) {
-    actual += row.num();
+    rownum = row.num();
+    if (row.num() == 100) {
+      cnx.cancel();
+      break;
+    }
   }
 
-  EXPECT_EQ(actual, 6);
-  
+}
+
+TEST(misc, notice) {
+
+  std::string notice;
+  Connection cnx;
+  cnx.connect().notice([&notice](const char *message) {
+    notice = message;
+  }).execute("DROP TABLE IF EXISTS __no_way_it_exists_00001"_x);
+  EXPECT_TRUE(notice.find("__no_way_it_exists_00001") != std::string::npos);
+
+  // Disabling the notice, the previous handler should no longer be called and
+  // the notice string should stay untouched.
+  cnx.notice(nullptr).execute("DROP TABLE IF EXISTS __no_way_it_exists_00002"_x);
+  EXPECT_TRUE(notice.find("__no_way_it_exists_00001") != std::string::npos);
+
 }

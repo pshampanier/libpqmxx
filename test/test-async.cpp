@@ -19,10 +19,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  **/
-#include "gtest/gtest.h"
 #include "postgres-connection.h"
 #include "postgres-exceptions.h"
 #include "postgres-boost.h"
+#include <gtest/gtest.h>
 
 using namespace db::postgres;
 namespace async = db::postgres::async_boost;
@@ -47,7 +47,7 @@ TEST(async, connect_invalid_host) {
     try {
       std::rethrow_exception(eptr);
     }
-    catch (error e) {
+    catch (connection_error &e) {
       EXPECT_EQ(error_code::connection_failure, e.code());
     }
     catch (...) {
@@ -66,7 +66,7 @@ TEST(async, connect_refused) {
     try {
       std::rethrow_exception(eptr);
     }
-    catch (error e) {
+    catch (connection_error &e) {
       EXPECT_EQ(error_code::connection_failure, e.code());
     }
     catch (...) {
@@ -164,3 +164,21 @@ TEST(async, iterator) {
   EXPECT_EQ(5000050000, sum);
   EXPECT_EQ(100000, count);
 }
+
+TEST(async, empty_result) {
+
+  ::boost::asio::io_service ioService;
+  int64_t count = 1;
+  auto cnx = std::make_shared<async::Connection>(ioService);
+  cnx->connect(nullptr, [cnx, &count](std::exception_ptr &) {
+    cnx->execute("SELECT 42 WHERE 1 = 2").done([cnx, &count](Result &result) {
+      count = result.count();
+      cnx->close();
+    });
+  });
+
+  ioService.run();
+  EXPECT_EQ(0, count);
+
+}
+

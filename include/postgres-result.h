@@ -343,7 +343,7 @@ namespace db {
       /**
        * Copy constructor.
        **/
-      Result(const Result &);
+      Result(const Result &other);
       
       ~Result() = default;
 

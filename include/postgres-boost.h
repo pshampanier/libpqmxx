@@ -43,18 +43,24 @@ namespace async_boost {
   class Connection : public postgres::Connection {
   public:
 
+    // -------------------------------------------------------------------------
+    // Constructor
+    // -------------------------------------------------------------------------
     Connection(::boost::asio::io_service& ioService)
-    : socket_(ioService) {
+      : socket_(ioService) {
       async_ = true;
     }
     
+    // -------------------------------------------------------------------------
+    // Destructor
+    // -------------------------------------------------------------------------
     virtual ~Connection() override {
       close();
     }
     
-    // ---------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Trigger an action to the layer in charge of asynchonous I/O.
-    // ---------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     virtual void asyncAction(action action, handler_t callback) noexcept override {
 
       try {
@@ -63,8 +69,13 @@ namespace async_boost {
         auto boostHandler = [this, action, ignore, callback](::boost::system::error_code ec, size_t) {
           if (!*ignore && ec != ::boost::asio::error::operation_aborted) {
             if (action == postgres::action::read_write) {
-              // Cancel the other operation.
+              // Cancel the other operation to prevent a second call to the handler.
               socket_.cancel();
+
+              // Under Windows, the cancel can be completely ignored and will
+              // result on calling twice the handler. This is why we are adding
+              // a shared reference to a boolean to the capture. This way we can
+              // guaranty to ignore the second unexpected call.
               *ignore = true;
             }
             if (ec) {

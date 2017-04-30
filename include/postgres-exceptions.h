@@ -279,7 +279,7 @@ namespace db {
       /**
        * Constructor.
        **/
-      error(error_code code, std::string what)
+      error(std::string what, error_code code = error_code::unknown)
         : std::runtime_error(what),
           code_(code) {
       }
@@ -290,5 +290,14 @@ namespace db {
       
     };
     
+    class connection_error : public error {
+
+    public:
+      connection_error(std::string what, error_code code = error_code::connection_failure)
+        : error(what, code) {
+      }
+
+    };
+
   } // namespace postgres
 }   // namespace db
