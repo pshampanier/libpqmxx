@@ -86,7 +86,9 @@ TEST(misc, notice) {
 
 TEST(misc, connection_closed) {
   
-  EXPECT_THROW(Connection().connect().execute("SELECT pg_terminate_backend(pg_backend_pid())"), connection_error);
+  Connection cnx;
+  EXPECT_THROW(cnx.connect().execute("SELECT pg_terminate_backend(pg_backend_pid())"), connection_error);
+  EXPECT_FALSE(cnx.isConnected());
   
 }
 

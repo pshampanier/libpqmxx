@@ -566,7 +566,11 @@ namespace libpqmxx {
         case PGRES_FATAL_ERROR:
         case PGRES_BAD_RESPONSE: {
           PGresult *pgres = PQgetResult(*conn);
-          assert(pgres == nullptr || !(*conn).isConnected());
+          if (pgres) {
+            // After a connection broken, this is expected to get an error here.
+            assert(!(*conn).isConnected());
+            PQclear(pgres);
+          }
           break;
         }
           
@@ -574,7 +578,10 @@ namespace libpqmxx {
         case PGRES_NONFATAL_ERROR:
         case PGRES_TUPLES_OK: {
           PGresult *pgres = PQgetResult(*conn);
-          assert(pgres == nullptr);
+          if (pgres) {
+            assert(pgres == nullptr);
+            PQclear(pgres);
+          }
           break;
         }
 
