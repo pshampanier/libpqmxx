@@ -196,6 +196,28 @@ TEST(result, arrays) {
   EXPECT_EQ(expected.time, actual.value.time);
   EXPECT_EQ(expected.offset, actual.value.offset);
   TEST_VECTOR_END;
+  
+  {
+    auto array = cnx.execute("SELECT ARRAY['2017-01-01T20:00:00Z'::timestamptz, '2018-01-01T20:00:00Z'::timestamptz]").asArray<timestamptz_t>(0);
+    EXPECT_EQ(1483300800000000, array[0].value);
+    EXPECT_EQ(1514836800000000, array[1].value);
+  }
+  
+  {
+    auto array = cnx.execute("SELECT ARRAY['2017-01-01T20:00:00Z'::timestamp, '2018-01-01T20:00:00Z'::timestamp]").asArray<timestamp_t>(0);
+    EXPECT_EQ(1483300800000000, array[0].value);
+    EXPECT_EQ(1514836800000000, array[1].value);
+  }
+  
+  {
+    auto array = cnx.execute("SELECT ARRAY['3 months 7 days 2:03:04'::interval, '1 year'::interval]").asArray<interval_t>(0);
+    EXPECT_EQ(7384000000, array[0].value.time);
+    EXPECT_EQ(7, array[0].value.days);
+    EXPECT_EQ(3, array[0].value.months);
+    EXPECT_EQ(0, array[1].value.time);
+    EXPECT_EQ(0, array[1].value.days);
+    EXPECT_EQ(12, array[1].value.months);
+  }
 
   {
     auto array = cnx.execute("SELECT ARRAY['hello', 'world']").asArray<std::string>(0);
@@ -222,6 +244,8 @@ TEST(result, null_values) {
 
   EXPECT_TRUE(cnx.execute("SELECT NULL::bigint").isNull(0));
   EXPECT_FALSE(cnx.execute("SELECT NULL::bool").as<bool>(0));
+  EXPECT_STREQ("", cnx.execute("SELECT null::varchar").as<std::string>(0).c_str());
+  EXPECT_EQ('\0', cnx.execute("SELECT null::char").as<char>(0));
   EXPECT_EQ(0, cnx.execute("SELECT NULL::smallint").as<int16_t>(0));
   EXPECT_EQ(0, cnx.execute("SELECT NULL::integer").as<int32_t>(0));
   EXPECT_EQ(0., cnx.execute("SELECT NULL::float4").as<float>(0));
