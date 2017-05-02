@@ -138,6 +138,14 @@ namespace libpqmxx {
      * @return The connection itself.
      **/
     Connection &connect(const char *connInfo = nullptr, handler_t handler = nullptr);
+    
+
+    /**
+     * Connection status.
+     * 
+     * @return true of the connection to the server is established.
+     **/
+    bool isConnected() const noexcept;
 
     /**
      * Close the database connection.
@@ -257,6 +265,8 @@ namespace libpqmxx {
        )SQL"_x);
 
      * \code
+     * 
+     * > IMPORTANT: SELECT STATEMENTS ARE NOT SUPPORTED.
      *
      * To produce a BatchStatement from a string literal, use the user defined
      * string literal `_x`.

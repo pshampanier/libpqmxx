@@ -31,21 +31,12 @@ TEST(statement, serie) {
 
   Connection cnx;
   cnx.connect();
-  cnx.notice(nullptr);
-
-  cnx.execute(R"SQL(
-
-    DROP TABLE IF EXISTS titles;
-    DROP TABLE IF EXISTS employees;
-    DROP TYPE IF EXISTS GENDER;
-
-  )SQL"_x);
 
   cnx.execute(R"SQL(
 
     CREATE TYPE GENDER AS ENUM ('M', 'F');
 
-    CREATE TABLE employees (
+    CREATE TEMPORARY TABLE employees (
       emp_no      INTEGER         NOT NULL,
       birth_date  DATE            NOT NULL,
       first_name  VARCHAR(14)     NOT NULL,
@@ -55,7 +46,7 @@ TEST(statement, serie) {
       PRIMARY KEY (emp_no)
     );
 
-    CREATE TABLE titles (
+    CREATE TEMPORARY TABLE titles (
         emp_no      INT             NOT NULL,
         title       VARCHAR(50)     NOT NULL,
         from_date   DATE            NOT NULL,

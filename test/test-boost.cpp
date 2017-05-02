@@ -25,6 +25,7 @@
 #include <gtest/gtest.h>
 
 using namespace libpqmxx;
+using namespace libpqmxx::literals;
 namespace async = libpqmxx::async_boost;
 
 TEST(boost, connect) {
@@ -182,6 +183,52 @@ TEST(boost, empty_result) {
 
 }
 
+TEST(boost, execute_error) {
+  
+  ::boost::asio::io_service ioService;
+  bool done = false, error = false, always = false;
+  auto cnx = std::make_shared<async::Connection>(ioService);
+  cnx->connect(nullptr, [&done, &error, &always, cnx](std::exception_ptr &) {
+    cnx->execute("SELECT 42/0").done([&done](Result &) {
+      done = true;
+    }).error([&error](std::exception_ptr &) {
+      error = true;
+    }).always([&always, cnx](Connection &) {
+      always = true;
+      cnx->close();
+    });
+  });
+  
+  ioService.run();
+  EXPECT_FALSE(done);
+  EXPECT_TRUE(error);
+  EXPECT_TRUE(always);
+  
+}
+
+TEST(boost, synchronous_execute_error) {
+
+  ::boost::asio::io_service ioService;
+  bool done = false, error = false, always = false;
+  auto cnx = std::make_shared<async::Connection>(ioService);
+  cnx->connect(nullptr, [&done, &error, &always, cnx](std::exception_ptr &) {
+    cnx->execute(nullptr).done([&done](Result &) {
+      done = true;
+    }).error([&error](std::exception_ptr &) {
+      error = true;
+    }).always([&always, cnx](Connection &) {
+      always = true;
+      cnx->close();
+    });
+  });
+
+  ioService.run();
+  EXPECT_FALSE(done);
+  EXPECT_TRUE(error);
+  EXPECT_TRUE(always);
+
+}
+
 TEST(boost, client_encoding) {
 
   ::boost::asio::io_service ioService;
@@ -204,3 +251,35 @@ TEST(boost, client_encoding) {
 
 }
 
+TEST(boost, statement) {
+  
+  ::boost::asio::io_service ioService;
+  int64_t inserts = 0, deletes = 0;
+  auto cnx = std::make_shared<async::Connection>(ioService);
+  cnx->connect(nullptr, [cnx, &inserts, &deletes](std::exception_ptr &) {
+    cnx->execute(R"SQL(
+                 
+      CREATE TEMPORARY TABLE boost_statement (id INTEGER NOT NULL);
+      INSERT INTO boost_statement VALUES (10001), (10002), (10003);
+      DELETE FROM boost_statement WHERE id > 10001;
+                 
+    )SQL"_x).done([cnx, &inserts, &deletes](Result &result) {
+    
+      result.done([cnx, &inserts, &deletes](Result &result) {
+        
+        inserts = result.count();
+        result.done([cnx, &deletes](Result &result) {
+          deletes = result.count();
+          cnx->close();
+        });
+        
+      });
+    
+    });
+  });
+  
+  ioService.run();
+  EXPECT_EQ(3, inserts);
+  EXPECT_EQ(2, deletes);
+
+}

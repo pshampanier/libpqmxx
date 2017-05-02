@@ -249,10 +249,10 @@ namespace libpqmxx {
      * });
      * ```
      *
-     * @param done  A function to execute at the time the event is triggered.
+     * @param handler  A function to execute at the time the event is triggered.
      * @return The result itself to eventually chain another event handler.
      **/
-    Result &done(std::function<void (Result &result)> callback);
+    Result &done(std::function<void (Result &result)> handler);
 
     /**
      * Attach an event handler on the command execution throws an error (asynchronous api).
@@ -284,7 +284,9 @@ namespace libpqmxx {
      * @param error  A function to execute at the time the event is triggered.
      * @return The result itself to eventually chain another event handler.
      **/
-    Result &error(std::function<void (std::exception_ptr &reason)> error);
+    Result &error(std::function<void (std::exception_ptr &reason) noexcept> handler);
+    
+    Result &always(std::function<void (Connection &conn) noexcept> handler);
 
     /**
      * Support of the range-based for loops.

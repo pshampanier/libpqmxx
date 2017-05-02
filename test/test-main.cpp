@@ -43,7 +43,7 @@ const char *init(const char *name, const char *defValue) {
 }
 
 int main(int argc, char** argv) {
-
+  
   const char *pghost = init("PGHOST", DEFAULT_PGHOST);
   const char *pguser = init("PGUSER", DEFAULT_PGUSER);
   const char *pgdatabase = init("PGDATABASE", DEFAULT_PGDATABASE);
@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
 
   int rc = RUN_ALL_TESTS();
 
-  // Prevents false positive valgrand's warning
+  // Prevents false positive valgrind's warning
   fclose(stdin);
   fclose(stdout);
   fclose(stderr);

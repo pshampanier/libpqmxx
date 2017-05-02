@@ -314,6 +314,11 @@ namespace libpqmxx {
     std::shared_ptr<ResultHandle> handle;             /**< Keep the object alive until the callback exec. **/
     std::function<void (T &arg)>  callback = nullptr; /**< The registred callback. **/
     
+    void reset() noexcept {
+      handle = nullptr;
+      callback = nullptr;
+    }
+    
   };
 
   /**************************************************************************
@@ -334,12 +339,19 @@ namespace libpqmxx {
     ResultHandler<Row>                 each;
     ResultHandler<Result>              done;
     ResultHandler<std::exception_ptr>  error;
+    ResultHandler<Connection>          always;
 
+    // -------------------------------------------------------------------------
+    // Constructor
+    // -------------------------------------------------------------------------
     ResultHandle(Connection &conn)
     : conn(conn) {
       singleRowMode = conn.singleRowMode_;
     }
 
+    // -------------------------------------------------------------------------
+    // Desctuctor
+    // -------------------------------------------------------------------------
     ~ResultHandle() {
       if (pgresult) {
         PQclear(pgresult);
@@ -347,10 +359,28 @@ namespace libpqmxx {
         assert(pgresult == nullptr);
       }
     }
+    
+    // -------------------------------------------------------------------------
+    // Free all resources owned by this result.
+    // -------------------------------------------------------------------------
+    void clear() {
+      each.reset();
+      done.reset();
+      error.reset();
+      if (pgresult) {
+        PQclear(pgresult);
+        pgresult = PQgetResult(*conn);
+        assert(pgresult == nullptr);
+      }
+      if (always.callback) {
+        always.callback((*conn));
+        always.reset();
+      }
+    }
 
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Check if the result may have more rows.
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     bool hasNext() const noexcept {
       if (singleRowMode) {
         return status == PGRES_SINGLE_TUPLE;
@@ -360,7 +390,7 @@ namespace libpqmxx {
       }
     }
 
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Position of the iteration in pgresult
     // -----------------------------------------------------------------------
     int offset() const noexcept {
@@ -378,18 +408,23 @@ namespace libpqmxx {
         }
       }
 
-      std::string lastError = (*conn).lastPostgresError();
-      switch (code) {
-        case error_code::connection_does_not_exist:                         /** 08003 **/
-        case error_code::connection_failure:                                /** 08006 **/
-        case error_code::sqlclient_unable_to_establish_sqlconnection:       /** 08001 **/
-        case error_code::sqlserver_rejected_establishment_of_sqlconnection: /** 08004 **/
-        case error_code::transaction_resolution_unknown:                    /** 08007 **/
-        case error_code::protocol_violation:                                /** 08P01 **/
-          return std::make_exception_ptr(connection_error(lastError, code));
+      std::string lastError = (*conn).lastPostgresError();      
+      if (!(*conn).isConnected()) {
+        return std::make_exception_ptr(connection_error(lastError, code));
+      }
+      else {
+        switch (code) {
+          case error_code::connection_does_not_exist:                         /** 08003 **/
+          case error_code::connection_failure:                                /** 08006 **/
+          case error_code::sqlclient_unable_to_establish_sqlconnection:       /** 08001 **/
+          case error_code::sqlserver_rejected_establishment_of_sqlconnection: /** 08004 **/
+          case error_code::transaction_resolution_unknown:                    /** 08007 **/
+          case error_code::protocol_violation:                                /** 08P01 **/
+            return std::make_exception_ptr(connection_error(lastError, code));
 
-        default:
-          return std::make_exception_ptr(libpqmxx::error(lastError, code));
+          default:
+            return std::make_exception_ptr(libpqmxx::error(lastError, code));
+        }
       }
 
     }
@@ -399,8 +434,7 @@ namespace libpqmxx {
         lastException = eptr;
         if (error.callback) {
           error.callback(eptr);
-          error.handle = nullptr;
-          error.callback = nullptr;
+          clear();
         }
       }
       else {
@@ -441,12 +475,13 @@ namespace libpqmxx {
             break;
 
           case PGRES_BAD_RESPONSE:
-          case PGRES_FATAL_ERROR:
+          case PGRES_FATAL_ERROR: {
             if (!(*conn).async_) {
               releaseConnection();
             }
             setLastError(lastError());
             break;
+          }
 
           case PGRES_COMMAND_OK:
             if (!(*conn).async_) {
@@ -488,7 +523,6 @@ namespace libpqmxx {
     }
 
     void consumeInput() {
-      // assert(done.callback);
       int success = PQconsumeInput(*conn);
       if (!success) {
         setLastError(lastError());
@@ -513,9 +547,10 @@ namespace libpqmxx {
               handler.callback(result);
               if (!done.callback) {
                 // No more result expected. If more result were expected the
-                // handler callback should have called done() to register an
+                // handler callback should have called done() to register a
                 // handler for the next result.
                 releaseConnection();
+                clear();
               }
             }
           }
@@ -526,18 +561,20 @@ namespace libpqmxx {
       }
     }
 
-    void releaseConnection() {
+    void releaseConnection() const noexcept {
       switch (status) {
-        case PGRES_COMMAND_OK:
-        case PGRES_BAD_RESPONSE:
-        case PGRES_NONFATAL_ERROR:
         case PGRES_FATAL_ERROR:
+        case PGRES_BAD_RESPONSE: {
+          PGresult *pgres = PQgetResult(*conn);
+          assert(pgres == nullptr || !(*conn).isConnected());
+          break;
+        }
+          
+        case PGRES_COMMAND_OK:
+        case PGRES_NONFATAL_ERROR:
         case PGRES_TUPLES_OK: {
           PGresult *pgres = PQgetResult(*conn);
-          if (pgres) {
-            auto status = PQresultStatus(pgres);
-            assert(pgres == nullptr);
-          }
+          assert(pgres == nullptr);
           break;
         }
 
@@ -1018,7 +1055,7 @@ namespace libpqmxx {
   }
 
   // -------------------------------------------------------------------------
-  // Asynchronous completion.
+  // Asynchronous successful completion.
   // -------------------------------------------------------------------------
   Result &Result::done(std::function<void (Result &)> callback) {
 
@@ -1027,22 +1064,42 @@ namespace libpqmxx {
     handle_->done.callback = callback;
 
     return *this;
+    
   }
 
-  // -------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // Asynchronous error.
-  // -------------------------------------------------------------------------
-  Result &Result::error(std::function<void (std::exception_ptr &)> callback) {
+  // ---------------------------------------------------------------------------
+  Result &Result::error(std::function<void (std::exception_ptr &)> handler) {
 
     assert((*handle_->conn).async_);
     if (handle_->lastException) {
-      callback(handle_->lastException);
+      handler(handle_->lastException);
+      handle_->clear();
     }
     else {
       handle_->error.handle = handle_;
-      handle_->error.callback = callback;
+      handle_->error.callback = handler;
     }
     return *this;
+  }
+        
+        
+  // ---------------------------------------------------------------------------
+  // Asynchronous completion.
+  // ---------------------------------------------------------------------------
+  Result &Result::always(std::function<void (Connection &conn) noexcept> handler) {
+    
+    assert((*handle_->conn).async_);
+    if (handle_->lastException) {
+      handler(*handle_->conn);
+    }
+    else {
+      handle_->always.handle = handle_;
+      handle_->always.callback = handler;
+    }
+    return *this;
+    
   }
 
 } // namespace libpqmxx

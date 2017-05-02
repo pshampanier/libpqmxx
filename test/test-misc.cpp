@@ -54,6 +54,9 @@ TEST(misc, client_encoding) {
 }
 
 TEST(misc, notice) {
+  
+  // This test may fail depending on the posgresql server configuration,
+  // typically when client_min_messages is set to ERROR or above.
 
   std::string notice;
   Connection cnx;
@@ -80,3 +83,10 @@ TEST(misc, notice) {
   EXPECT_EQ(0, notice.find(u8"WARNING:  Hej världen!"));
 
 }
+
+TEST(misc, connection_closed) {
+  
+  EXPECT_THROW(Connection().connect().execute("SELECT pg_terminate_backend(pg_backend_pid())"), connection_error);
+  
+}
+

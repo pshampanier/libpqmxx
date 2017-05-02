@@ -130,6 +130,22 @@ namespace libpqmxx {
 
     return *this;
   }
+  
+  // -------------------------------------------------------------------------
+  // Connection status.
+  // -------------------------------------------------------------------------
+  bool Connection::isConnected() const noexcept {
+    
+    if (pgconn_) {
+      auto status = PQstatus(pgconn_);
+      if (status == CONNECTION_OK) {
+        return true;
+      }
+    }
+    
+    return false;
+    
+  }
 
   // -------------------------------------------------------------------------
   // Close the database connection.
@@ -273,17 +289,22 @@ namespace libpqmxx {
 
     if (pgconn_) {
       auto lastResult = lastResult_.lock();
-      asyncAction(action::read, [this, lastResult](std::exception_ptr eptr) {
-        if (eptr && lastResult) {
-          setLastError(lastResult.get(), eptr);
-        }
-        else if (pgconn_) {
-          if (lastResult) {
+      if (PQisBusy(pgconn_)) {
+        auto lastResult = lastResult_.lock();
+        asyncAction(action::read, [this, lastResult](std::exception_ptr eptr) {
+          if (eptr && lastResult) {
+            setLastError(lastResult.get(), eptr);
+          }
+          else if (pgconn_ && lastResult) {
             ::libpqmxx::consumeInput(lastResult.get());
           }
           consumeInput();
-        }
-      });
+        });
+      }
+      else if (lastResult) {
+        ::libpqmxx::consumeInput(lastResult.get());
+      }
+      
     }
 
   }
@@ -359,8 +380,8 @@ namespace libpqmxx {
           break;
 
         default:
-          assert(false);  // LCOV_EXCL
-          break;          // LCOV_EXCL
+          assert(false);  // LCOV_EXCL_LINE
+          break;          // LCOV_EXCL_LINE
       }
     }
     catch(...) {
