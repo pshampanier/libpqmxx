@@ -1,0 +1,16 @@
+{
+   <libnss>
+   Memcheck:Leak
+   fun:malloc
+   fun:nss_parse_service_list
+   fun:__nss_database_lookup
+   obj:*
+   fun:getpwuid_r@@GLIBC_2.2.5
+   obj:/usr/lib/x86_64-linux-gnu/libpq.so.5.9
+   obj:/usr/lib/x86_64-linux-gnu/libpq.so.5.9
+   obj:/usr/lib/x86_64-linux-gnu/libpq.so.5.9
+   obj:/usr/lib/x86_64-linux-gnu/libpq.so.5.9
+   fun:PQconnectStart
+   fun:_ZN8libpqmxx10Connection7connectEPKcSt8functionIFvRNSt15__exception_ptr13exception_ptrEEE
+   fun:_ZN18boost_connect_Test8TestBodyEv
+}
