@@ -21,6 +21,7 @@ before_build:
   - git checkout tags/release-%GTEST_VERSION%
   - cmake -G "Visual Studio 14 2015 Win64" -DBUILD_SHARED_LIBS=ON -Dgtest_force_shared_crt=ON .
   - msbuild gtest.sln
+  - move Debug lib
 
 services:
   - postgresql
