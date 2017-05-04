@@ -1,3 +1,9 @@
+init:
+  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
 image:
 - Visual Studio 2015
 
@@ -9,6 +15,7 @@ configuration:
 - Release
 
 environment:
+  APPVEYOR_RDP_PASSWORD: eyJJV4MXNmZ
   BOOST_FILENAME_VERSION: 1_63_0
   BOOST_VERSION: 1.63.0
   BOOST_ROOT: "C:\\Libraries\\boost_1_63_0"
