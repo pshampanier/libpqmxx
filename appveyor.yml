@@ -17,8 +17,8 @@ environment:
 
 before_build:
   - git clone https://github.com/google/googletest.git
-  - git checkout tags/release-1.7.0
   - cd googletest
+  - git checkout tags/release-1.7.0
   - cmake -DBUILD_SHARED_LIBS=ON -Dgtest_force_shared_crt=ON .
   - dir
 
@@ -26,6 +26,7 @@ services:
   - postgresql
 
 build_script:
+  - cd  C:\projects\libpqmxx
   - mkdir build
   - cd build
   - cmake -G "Visual Studio 14 2015 Win64" ..
