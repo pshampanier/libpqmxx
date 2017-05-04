@@ -18,7 +18,7 @@ environment:
 before_build:
   - git clone https://github.com/google/googletest.git
   - cd googletest
-  - git checkout tags/release-$(GTEST_VERSION)
+  - git checkout tags/release-%GTEST_VERSION%
   - cmake -G "Visual Studio 14 2015 Win64" -DBUILD_SHARED_LIBS=ON -Dgtest_force_shared_crt=ON .
   - msbuild gtest.sln
 
@@ -29,4 +29,4 @@ build_script:
   - cd  C:\projects\libpqmxx
   - mkdir build
   - cd build
-  - cmake -G "Visual Studio 14 2015 Win64" ..
+  - cmake -G "Visual Studio 14 2015 Win64" -D GTEST_ROOT=C:\projects\libpqmxx\googletest ..
