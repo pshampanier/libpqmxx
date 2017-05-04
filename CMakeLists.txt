@@ -41,7 +41,7 @@ set(Boost_NO_SYSTEM_PATHS        ON)
 set(Boost_USE_STATIC_LIBS        ON) # only find static libs
 set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME     OFF)
-find_package(Boost REQUIRED COMPONENTS system date_time)
+find_package(Boost REQUIRED COMPONENTS system date_time regex)
 
 # Add boost to the include path.
 include_directories(${Boost_INCLUDE_DIRS})
@@ -72,7 +72,7 @@ macro(postgres_test target)
   file(GLOB TEST_FILES ${CMAKE_CURRENT_LIST_DIR}/test/*.cpp)
   add_executable(${target} ${TEST_FILES} ${INCLUDE_FILES} ${SOURCE_FILES})
   target_link_libraries(${target} ${GTEST_LIBRARIES} ${LIBPQMXX_LIBRARIES} ${PostgreSQL_LIBRARIES})
-  target_link_libraries(${target} ${Boost_SYSTEM_LIBRARY} ${Boost_DATE_TIME_LIBRARY})
+  target_link_libraries(${target} ${Boost_SYSTEM_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_REGEX_LIBRARY})
 endmacro(postgres_test)
 
 #
