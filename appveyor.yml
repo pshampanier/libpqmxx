@@ -13,14 +13,14 @@ environment:
   BOOST_VERSION: 1.63.0
   BOOST_ROOT: "C:\\Libraries\\boost_1_63_0"
   BOOST_LIBRARYDIR: "C:\\Libraries\\boost_1_63_0\\lib64-msvc-14.0"
-  LIB_GTEST_VERSION: 1.7.0
+  GTEST_VERSION: 1.7.0
 
 before_build:
   - git clone https://github.com/google/googletest.git
   - cd googletest
-  - git checkout tags/release-1.7.0
-  - cmake -DBUILD_SHARED_LIBS=ON -Dgtest_force_shared_crt=ON .
-  - dir
+  - git checkout tags/release-$(GTEST_VERSION)
+  - cmake -G "Visual Studio 14 2015 Win64" -DBUILD_SHARED_LIBS=ON -Dgtest_force_shared_crt=ON .
+  - msbuild gtest.sln
 
 services:
   - postgresql
