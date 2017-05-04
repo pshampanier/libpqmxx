@@ -33,8 +33,9 @@ build_script:
   - cmake -G "Visual Studio 14 2015 Win64" -D GTEST_ROOT=C:\projects\libpqmxx\googletest ..
   - msbuild postgres-test.sln
   - echo %PATH%
-  - set PATH=%GTEST_ROOT%\lib;%PATH%
+  - set PATH=C:\projects\libpqmxx\googletest\lib;%PATH%
   - echo %PATH%
+  - dir C:\Libraries\boost_1_63_0\
   - C:\projects\libpqmxx\build\%CONFIGURATION%\postgres-test.exe
 
 # before_test:
