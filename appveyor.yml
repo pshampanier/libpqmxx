@@ -32,6 +32,11 @@ build_script:
   - cd build
   - cmake -G "Visual Studio 14 2015 Win64" -D GTEST_ROOT=C:\projects\libpqmxx\googletest ..
   - msbuild postgres-test.sln
-
-test_script:
+  - dir C:\projects\libpqmxx\build\%CONFIGURATION%\postgres-test.exe
   - C:\projects\libpqmxx\build\%CONFIGURATION%\postgres-test.exe
+
+# before_test:
+#  - psql -c 'create user "ci-test";'
+#  - psql -c 'create database "ci-test" OWNER "ci-test" ENCODING '"'"'UTF8'"'"';'
+
+# test_script:
