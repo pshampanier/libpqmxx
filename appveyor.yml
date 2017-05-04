@@ -34,8 +34,9 @@ build_script:
   - msbuild postgres-test.sln
   - echo %PATH%
   - set PATH=C:\projects\libpqmxx\googletest\lib;%PATH%
+  - set PATH=C:\Libraries\boost_1_63_0\lib64-msvc-14.0;%PATH%
   - echo %PATH%
-  - dir C:\Libraries\boost_1_63_0\
+  - dir C:\Libraries\boost_1_63_0\lib64-msvc-14.0
   - C:\projects\libpqmxx\build\%CONFIGURATION%\postgres-test.exe
 
 # before_test:
