@@ -29,6 +29,18 @@ before_build:
   - cmake -G "Visual Studio 14 2015 Win64" -DBUILD_SHARED_LIBS=ON -Dgtest_force_shared_crt=ON .
   - msbuild gtest.sln
   - move %CONFIGURATION% lib
+  - cd ..
+  - curl -L -o postgresql-9.5.3.tar.gz https://ftp.postgresql.org/pub/source/v9.5.3/postgresql-9.5.3.tar.gz
+  - cmake -E tar -zxf postgresql-9.5.3.tar.gz
+  - cd postgresql-9.5.3\src\interfaces\libpq
+  - nmake /f win32.mak CPU=AMD64
+  - mkdir C:\projects\libpq\include\internal
+  - mkdir C:\projects\libpq\lib
+  - copy libpq-int.h C:\projects\libpq\include\internal
+  - copy pqexpbuffer.h C:\projects\libpq\include\internal
+  - copy libpq-events.h C:\projects\libpq\include
+  - copy libpq-fe.h C:\projects\libpq\include
+  - copy Release\*.lib C:\projects\libpq\lib
 
 services:
   - postgresql
@@ -37,13 +49,13 @@ build_script:
   - cd  C:\projects\libpqmxx
   - mkdir build
   - cd build
-  - cmake -G "Visual Studio 14 2015 Win64" -D GTEST_ROOT=C:\projects\libpqmxx\googletest ..
+  - cmake -G "Visual Studio 14 2015 Win64" -DGTEST_ROOT=C:\projects\libpqmxx\googletest -DPostgreSQL_ROOT=C:\projects\libpq ..
   - msbuild postgres-test.sln
   - echo %PATH%
   - set PATH=C:\projects\libpqmxx\googletest\lib;%PATH%
   - set PATH=C:\Libraries\boost_1_63_0\lib64-msvc-14.0;%PATH%
-  - echo %PATH%
-  - dir C:\Libraries\boost_1_63_0\lib64-msvc-14.0
+#  - set PATH=C:\Program Files\PostgreSQL\9.6\lib;%PATH%
+#  - curl -L -o C:\projects\libpqmxx\build\%CONFIGURATION%\libintl-8.dll https://github.com/maxwell-k/libintl-appveyor/releases/download/gettext-0.19.7%2B1/libintl-8.dll
   - C:\projects\libpqmxx\build\%CONFIGURATION%\postgres-test.exe
 
 # before_test:
