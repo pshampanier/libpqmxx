@@ -34,8 +34,7 @@ before_build:
   - cmake -E tar -zxf postgresql-9.5.3.tar.gz
   - cd postgresql-9.5.3\src\interfaces\libpq
   - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
-  - echo nmake /f win32.mak CPU=AMD64 > build.bat
-  - echo exit 0 >> built.bat
+  - echo nmake /f win32.mak CPU=AMD64 ^& exit 0 > build.bat
   - cmd /C build.bat
   - mkdir C:\projects\libpq\include\internal
   - mkdir C:\projects\libpq\lib
