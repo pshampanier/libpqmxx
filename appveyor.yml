@@ -21,7 +21,6 @@ environment:
   BOOST_ROOT: "C:\\Libraries\\boost_1_63_0"
   BOOST_LIBRARYDIR: "C:\\Libraries\\boost_1_63_0\\lib64-msvc-14.0"
   GTEST_VERSION: 1.7.0
-  VS140_ROOT: 'C:\\Program\ Files (x86)\\Microsoft Visual Studio 14.0'
 
 before_build:
   - git clone https://github.com/google/googletest.git
@@ -34,7 +33,7 @@ before_build:
   - curl -L -o postgresql-9.5.3.tar.gz https://ftp.postgresql.org/pub/source/v9.5.3/postgresql-9.5.3.tar.gz
   - cmake -E tar -zxf postgresql-9.5.3.tar.gz
   - cd postgresql-9.5.3\src\interfaces\libpq
-  - call %VS140_ROOT%\VC\vcvarsall.bat x64
+  - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
   - nmake /f win32.mak CPU=AMD64
   - mkdir C:\projects\libpq\include\internal
   - mkdir C:\projects\libpq\lib
