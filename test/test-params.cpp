@@ -172,8 +172,52 @@ TEST(params, array_types) {
       EXPECT_TRUE(false);
     }
   }
+  
+  {
+    array_timestamp_t expected({libpqmxx::timestamp_t({1483300800000000}), nullptr, libpqmxx::timestamp_t({0})});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<libpqmxx::timestamp_t>(0);
+    EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+  }
+  
+  {
+    array_timestamptz_t expected({libpqmxx::timestamptz_t({1483300800000000}), nullptr, libpqmxx::timestamptz_t({0})});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<libpqmxx::timestamptz_t>(0);
+    EXPECT_TRUE(expected.size() == actual.size() && std::equal(actual.begin(), actual.end(), expected.begin()));
+  }
+  
+  {
+    array_interval_t expected({libpqmxx::interval_t({7384000000, 7, 3}), nullptr, libpqmxx::interval_t({0, 0, 0})});
+    auto actual = cnx.execute("SELECT $1", expected).asArray<libpqmxx::interval_t>(0);
+    EXPECT_TRUE(expected.size() == actual.size());
+    EXPECT_EQ(expected[0].value.time, actual[0].value.time);
+    EXPECT_EQ(expected[0].value.days, actual[0].value.days);
+    EXPECT_EQ(expected[0].value.months, actual[0].value.months);
+    EXPECT_TRUE(actual[1].isNull);
+    EXPECT_EQ(expected[2].value.time, actual[2].value.time);
+    EXPECT_EQ(expected[2].value.days, actual[2].value.days);
+    EXPECT_EQ(expected[2].value.months, actual[2].value.months);
+  }
 
+}
 
+TEST(params, empty_strings) {
+  
+  { // Default behavior, an empty string is considered as a null value.
+    Connection cnx;
+    cnx.connect();
+    EXPECT_TRUE(cnx.execute("SELECT $1::varchar", "").isNull(0));
+    EXPECT_TRUE(cnx.execute("SELECT $1::varchar", std::string("")).isNull(0));
+  }
+  
+  {
+    Settings settings;
+    settings.emptyStringAsNull = false;
+    Connection cnx(settings);
+    cnx.connect();
+    EXPECT_FALSE(cnx.execute("SELECT $1::varchar", "").isNull(0));
+    EXPECT_FALSE(cnx.execute("SELECT $1::varchar", std::string("")).isNull(0));
+  }
+  
 }
 
 TEST(params, multi) {

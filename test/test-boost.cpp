@@ -283,3 +283,38 @@ TEST(boost, statement) {
   EXPECT_EQ(2, deletes);
 
 }
+
+TEST(boost, string_param) {
+  
+  // using a very large text to make sure the query cannot be sent in one single
+  // packet to the server.
+  ::boost::asio::io_service ioService;
+  std::vector<char> text(10000000);
+  std::memset(text.data(), 'X', text.size()-1);
+  text.back() = '\0';
+  auto cnx = std::make_shared<async::Connection>(ioService);
+  cnx->connect(nullptr, [cnx, &text](std::exception_ptr &) {
+    cnx->execute("SELECT $1", (const char *)text.data()).done([cnx, &text](Result &result) {
+      
+      const char *actual = result.as<const char *>(0);
+      EXPECT_EQ(std::strlen(text.data()), result.length(0));
+      EXPECT_TRUE(std::memcmp(text.data(), actual, result.length(0)) == 0);
+      
+      // Testing asynchronous version of bind for std::string.
+      cnx->execute("SELECT $1", std::string("hello")).done([cnx](Result &result) {
+        EXPECT_STREQ("hello", result.as<const char *>(0));
+        cnx->close();
+      }).error([cnx](std::exception_ptr &eptr) {
+        FAIL();
+        cnx->close();
+      });
+      
+    }).error([cnx](std::exception_ptr &eptr) {
+      FAIL();
+      cnx->close();
+    });
+  });
+  
+  ioService.run();
+
+}

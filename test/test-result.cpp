@@ -69,13 +69,12 @@ TEST(result, serial_types) {
   Connection cnx;
   cnx.connect();
 
-  cnx.execute("CREATE TABLE tmp(id16 smallserial, id32 serial, id64 bigserial, val integer)");
+  cnx.execute("CREATE TEMPORARY TABLE tmp(id16 smallserial, id32 serial, id64 bigserial, val integer)");
   cnx.execute("INSERT INTO tmp(val) SELECT 0");
   Result result = cnx.execute("SELECT id16, id32, id64 FROM tmp");
   EXPECT_EQ(result.as<int16_t>(0), 1);
   EXPECT_EQ(result.as<int32_t>(1), 1);
   EXPECT_EQ(result.as<int64_t>(2), 1);
-  cnx.execute("DROP TABLE tmp");
 
 }
 
@@ -244,8 +243,9 @@ TEST(result, null_values) {
 
   EXPECT_TRUE(cnx.execute("SELECT NULL::bigint").isNull(0));
   EXPECT_FALSE(cnx.execute("SELECT NULL::bool").as<bool>(0));
-  EXPECT_STREQ("", cnx.execute("SELECT null::varchar").as<std::string>(0).c_str());
-  EXPECT_EQ('\0', cnx.execute("SELECT null::char").as<char>(0));
+  EXPECT_STREQ("", cnx.execute("SELECT NULL::varchar").as<std::string>(0).c_str());
+  EXPECT_EQ(nullptr, cnx.execute("SELECT NULL::varchar").as<const char *>(0));
+  EXPECT_EQ('\0', cnx.execute("SELECT NULL::char").as<char>(0));
   EXPECT_EQ(0, cnx.execute("SELECT NULL::smallint").as<int16_t>(0));
   EXPECT_EQ(0, cnx.execute("SELECT NULL::integer").as<int32_t>(0));
   EXPECT_EQ(0., cnx.execute("SELECT NULL::float4").as<float>(0));

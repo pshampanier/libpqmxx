@@ -76,12 +76,13 @@ namespace libpqmxx {
        double precision            | double                      | 0.
        character                   | std::string                 | *empty string*
        character varying           | std::string                 | *empty string*
-       date                        | libpqmxx::date_t        | { 0 }
-       time without time zone      | libpqmxx::time_t        | { 0 }
-       timestamp without time zone | libpqmxx::timestamp_t   | { 0 }
-       timestamp with time zone    | libpqmxx::timestamptz_t | { 0 }
-       interval                    | libpqmxx::interval_t    | { 0, 0 }
-       time with time zone         | libpqmxx::timetz_t      | { 0, 0, 0 }
+       character varying           | const char *                | nullptr
+       date                        | libpqmxx::date_t            | { 0 }
+       time without time zone      | libpqmxx::time_t            | { 0 }
+       timestamp without time zone | libpqmxx::timestamp_t       | { 0 }
+       timestamp with time zone    | libpqmxx::timestamptz_t     | { 0 }
+       interval                    | libpqmxx::interval_t        | { 0, 0 }
+       time with time zone         | libpqmxx::timetz_t          | { 0, 0, 0 }
        smallserial                 | int16_t                     | 0
        serial                      | int32_t                     | 0
        bigserial                   | int64_t                     | 0
@@ -100,6 +101,14 @@ namespace libpqmxx {
      **/
     template<typename T>
     T as(int column) const;
+    
+    /**
+     * Length of a column value.
+     * 
+     * @param column Column number. Column numbers start at 0.
+     * @return The size in bytes of the column value.
+     **/
+    size_t length(int column) const;
 
     /**
      * Get a column values for arrays.
@@ -147,16 +156,6 @@ namespace libpqmxx {
      *         selected has a num() of 1, the second has 2, and so on.
      **/
     int num() const noexcept;
-
-    /**
-     * Get a column value.
-     *
-     * @deprecated use Row::as(int column) for replacement.
-     **/
-    template<typename T>
-    T get(int column) const {
-      return as<T>(column);
-    }
 
   private:
     Result &result_;  /**< The result set by the constructor **/

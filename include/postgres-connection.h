@@ -238,7 +238,7 @@ namespace libpqmxx {
      **/
     template<typename... Args>
     Result execute(const char *sql, Args... args) {
-      Params params(settings_, sizeof...(args));
+      Params params(settings_, async_, sizeof...(args));
       std::make_tuple((params.bind(std::forward<Args>(args)), 0)...);
       return execute(sql, params);
     }

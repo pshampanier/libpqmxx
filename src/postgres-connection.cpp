@@ -288,10 +288,10 @@ namespace libpqmxx {
   void Connection::consumeInput() {
 
     if (pgconn_) {
-      auto lastResult = lastResult_.lock();
       if (PQisBusy(pgconn_)) {
-        auto lastResult = lastResult_.lock();
-        asyncAction(action::read, [this, lastResult](std::exception_ptr eptr) {
+        auto self = shared_from_this();
+        asyncAction(action::read, [this, self](std::exception_ptr eptr) {
+          auto lastResult = lastResult_.lock();
           if (eptr && lastResult) {
             setLastError(lastResult.get(), eptr);
           }
@@ -301,8 +301,8 @@ namespace libpqmxx {
           consumeInput();
         });
       }
-      else if (lastResult) {
-        ::libpqmxx::consumeInput(lastResult.get());
+      else {
+        ::libpqmxx::consumeInput(lastResult_.lock().get());
       }
       
     }
@@ -416,7 +416,7 @@ namespace libpqmxx {
     try {
       h(eptr);
     }
-    catch (...) {
+    catch (...) {   // LCOV_EXCL_LINE
       // The handler is not supposed to throw any exception.
       assert(true); // LCOV_EXCL_LINE
     }

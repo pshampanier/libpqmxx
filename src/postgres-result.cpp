@@ -355,8 +355,10 @@ namespace libpqmxx {
     ~ResultHandle() {
       if (pgresult) {
         PQclear(pgresult);
-        pgresult = PQgetResult(*conn);
-        assert(pgresult == nullptr);
+        if (!(*conn).async_) {
+          pgresult = PQgetResult(*conn);
+          assert(pgresult == nullptr);
+        }
       }
     }
     
@@ -369,8 +371,13 @@ namespace libpqmxx {
       error.reset();
       if (pgresult) {
         PQclear(pgresult);
-        pgresult = PQgetResult(*conn);
-        assert(pgresult == nullptr);
+        if (!(*conn).async_) {
+          pgresult = PQgetResult(*conn);
+          assert(pgresult == nullptr);
+        }
+        else {
+          pgresult = nullptr;
+        }
       }
       if (always.callback) {
         always.callback((*conn));
@@ -562,42 +569,46 @@ namespace libpqmxx {
     }
 
     void releaseConnection() const noexcept {
-      switch (status) {
-        case PGRES_FATAL_ERROR:
-        case PGRES_BAD_RESPONSE: {
-          PGresult *pgres = PQgetResult(*conn);
-          if (pgres) {
-            // After a connection broken, this is expected to get an error here.
-            assert(!(*conn).isConnected());
-            PQclear(pgres);
+      
+      auto lastResult = (*conn).lastResult_.lock();
+      if (!(*conn).async_ || lastResult.get() == this) {
+        switch (status) {
+          case PGRES_FATAL_ERROR:
+          case PGRES_BAD_RESPONSE: {
+            PGresult *pgres = PQgetResult(*conn);
+            if (pgres) {
+              // After a connection broken, this is expected to get an error here.
+              assert(!(*conn).isConnected());
+              PQclear(pgres);
+            }
+            break;
           }
-          break;
-        }
-          
-        case PGRES_COMMAND_OK:
-        case PGRES_NONFATAL_ERROR:
-        case PGRES_TUPLES_OK: {
-          PGresult *pgres = PQgetResult(*conn);
-          if (pgres) {
-            assert(pgres == nullptr);
-            PQclear(pgres);
+            
+          case PGRES_COMMAND_OK:
+          case PGRES_NONFATAL_ERROR:
+          case PGRES_TUPLES_OK: {
+            PGresult *pgres = PQgetResult(*conn);
+            if (pgres) {
+              assert(pgres == nullptr);
+              PQclear(pgres);
+            }
+            break;
           }
-          break;
+
+          case PGRES_EMPTY_QUERY:
+          case PGRES_SINGLE_TUPLE:
+            // Not expected.
+            assert(true); // LCOV_EXCL_LINE
+            break;        // LCOV_EXCL_LINE
+
+          case PGRES_COPY_OUT:			/* Copy Out data transfer in progress */
+          case PGRES_COPY_IN:				/* Copy In data transfer in progress */
+          case PGRES_COPY_BOTH:			/* Copy In/Out data transfer in progress */
+            // Not yet supported.
+            assert(true); // LCOV_EXCL_LINE
+            break;        // LCOV_EXCL_LINE
+
         }
-
-        case PGRES_EMPTY_QUERY:
-        case PGRES_SINGLE_TUPLE:
-          // Not expected.
-          assert(true); // LCOV_EXCL_LINE
-          break;        // LCOV_EXCL_LINE
-
-        case PGRES_COPY_OUT:			/* Copy Out data transfer in progress */
-        case PGRES_COPY_IN:				/* Copy In data transfer in progress */
-        case PGRES_COPY_BOTH:			/* Copy In/Out data transfer in progress */
-          // Not yet supported.
-          assert(true); // LCOV_EXCL_LINE
-          break;        // LCOV_EXCL_LINE
-
       }
     }
     
@@ -617,6 +628,7 @@ namespace libpqmxx {
   };
 
   void consumeInput(ResultHandle *rh) {
+    assert(rh);
     rh->consumeInput();
   }
 
@@ -767,6 +779,14 @@ namespace libpqmxx {
     assert(*result_.handle_ != nullptr);
     return PQgetisnull(result_, offset(), column) == 1;
   }
+        
+  // -------------------------------------------------------------------------
+  // Length of a column value.
+  // -------------------------------------------------------------------------
+  size_t Row::length(int column) const {
+    assert(*result_.handle_ != nullptr);
+    return PQgetlength(result_, offset(), column);
+  }
 
   // -------------------------------------------------------------------------
   // Get a column name.
@@ -817,6 +837,15 @@ namespace libpqmxx {
     int length = PQgetlength(result_, offset(), column);
     char *buf  = PQgetvalue(result_, offset(), column);
     return read<std::string>(&buf, length);
+  }
+        
+  template<>
+  const char *Row::as<const char *>(int column) const {
+    assert(*result_.handle_);
+    if (PQgetisnull(result_, offset(), column)) {
+      return nullptr;
+    }
+    return PQgetvalue(result_, offset(), column);
   }
 
   // -------------------------------------------------------------------------

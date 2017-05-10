@@ -45,8 +45,10 @@ namespace libpqmxx {
     std::vector<int>      formats_;
     std::vector<buffer>   buffers_;
     const struct Settings &settings_;
+    const bool            async_;
 
-    Params(const Settings &settings, int size);
+    Params(const Settings &settings, bool async, int size);
+    virtual ~Params() = default;
 
     char *bind(Oid type, size_t length);
 

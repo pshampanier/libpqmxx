@@ -31,8 +31,8 @@ namespace libpqmxx {
   //--------------------------------------------------------------------------
   // Constructor
   //--------------------------------------------------------------------------
-  Params::Params(const Settings &settings, int size)
-  : settings_(settings) {
+  Params::Params(const Settings &settings, bool async, int size)
+  : settings_(settings), async_(async) {
     types_.reserve(size);
     values_.reserve(size);
     lengths_.reserve(size);
@@ -134,11 +134,17 @@ namespace libpqmxx {
 
   //--------------------------------------------------------------------------
   // varchar
+  //
+  // zero copy in blocking mode, otherwise we copy the value to nake sure its
+  // scope goes beyond the call that has initiated the query.
   //--------------------------------------------------------------------------
   template<>
   void Params::bind(const char *sz) {
     if (sz[0] == '\0' && settings_.emptyStringAsNull) {
       bind(nullptr);
+    }
+    else if (async_) {
+      write(sz, bind(VARCHAROID, std::strlen(sz)));
     }
     else {
       bind(VARCHAROID, (char *)sz, std::strlen(sz));
@@ -148,6 +154,9 @@ namespace libpqmxx {
   void Params::bind(const std::string &s) {
     if (s.length() == 0 && settings_.emptyStringAsNull) {
       bind(nullptr);
+    }
+    else if (async_) {
+      write(s.c_str(), bind(VARCHAROID, s.length()));
     }
     else {
       bind(VARCHAROID, (char *)s.c_str(), s.length());
