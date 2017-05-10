@@ -11,6 +11,8 @@ The aim of this library is to provide an API very simple to use without any
 compromise on performances. Modern C++ features such as variadic templates are 
 used to make the programing interface slick, very easy to use and the code to read.
 
+Both blocking and nonblocking operations are supported. Nonblocking mode is truly asynchronous and does not involve any working blocking thread, allowing a single process to deal with hundreds of concurent connections to multiple servers. 
+
 * **Automatic detection of the PostgresSQL datatype from C++ parameter's type**:
 
     ```cpp
@@ -37,7 +39,7 @@ used to make the programing interface slick, very easy to use and the code to re
 * **Use of the range-based for statement to iterate through the result.**
 
     ```cpp
-    auto &employees = cnx.execute("SELECT emp_no, first_name || ' ' || last_name FROM employees");
+    auto employees = cnx.execute("SELECT emp_no, first_name || ' ' || last_name FROM employees");
     for (auto &employee: employees) {
       std::cout << employee.as<int32_t>(0) << employee.as<std::string>(1) << std::endl;
     }
@@ -45,7 +47,7 @@ used to make the programing interface slick, very easy to use and the code to re
 * **Results with only one row can be accessed directly without using the iterator**:
 
     ```cpp
-    auto &employee = cnx.execute("SELECT last_name FROM employees WHERE emp_no=$1", 10001);
+    auto employee = cnx.execute("SELECT last_name FROM employees WHERE emp_no=$1", 10001);
     std::cout << employee.as<std::string>(0) << std::endl;
     ```
     
@@ -60,6 +62,8 @@ The online API documentation is available on [gitbook](https://pshampanier.gitbo
 If you are looking for the official C++ client library fro PostgreSQL, please visit [pqxx.org](http://pqxx.org).
 
 ## Example
+
+### Blocking
 
 ```cpp
 #include "postgres-connection.h"
@@ -89,7 +93,7 @@ int main() {
         PRIMARY KEY (emp_no)
       );
 
-    )SQL");
+    )SQL"_x);
 
     std::cout << "Table created." << std::endl;
 
@@ -206,6 +210,10 @@ file(GLOB PROJECT_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
 add_executable(myproject ${PROJECT_FILES})
 target_link_libraries(myproject ${LIBPQMXX_LIBRARIES} ${PostgreSQL_LIBRARIES})
 ```
+
+By default, only the blocking mode is included in the project, if you want to perform non blocking operations would must choose one of the supported libraries: boost or libpq.
+
+
 
 ## Compatibility
 
