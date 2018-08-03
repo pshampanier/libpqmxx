@@ -271,9 +271,10 @@ namespace db {
       pgconn_ = PQconnectdb(connInfo == nullptr ? "" : connInfo);
       
       if( PQstatus(pgconn_) != CONNECTION_OK ) {
+        std::string errorMessage { PQerrorMessage(pgconn_) };
         PQfinish(pgconn_);
         pgconn_ = nullptr;
-        throw ConnectionException(std::string(PQerrorMessage(pgconn_)));
+        throw ConnectionException(errorMessage);
       }
 
       return *this;
