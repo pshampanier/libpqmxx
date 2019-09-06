@@ -379,11 +379,20 @@ namespace db {
     // -------------------------------------------------------------------------
     // Number of rows affected by the SQL command
     // -------------------------------------------------------------------------
-    uint64_t Result::count() const noexcept {
+    uint64_t Result::numRowsAffected() const noexcept {
       assert(pgresult_);
       const char *count = PQcmdTuples(pgresult_);
       char *end;
       return std::strtoull(count, &end, 10);
+    }
+
+    // -------------------------------------------------------------------------
+    // Number of rows that matched the query
+    // -------------------------------------------------------------------------
+    uint64_t Result::numRows() const noexcept {
+      assert(pgresult_);
+      const uint64_t n = PQntuples(pgresult_);
+      return n;
     }
 
     // -------------------------------------------------------------------------
