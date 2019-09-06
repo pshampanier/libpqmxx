@@ -389,7 +389,7 @@ namespace db {
     // -------------------------------------------------------------------------
     // Number of rows that matched the query
     // -------------------------------------------------------------------------
-    uint64_t numRows() const noexcept {
+    uint64_t Result::numRows() const noexcept {
       assert(pgresult_);
       const uint64_t n = PQntuples(pgresult_);
       return n;
