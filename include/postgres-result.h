@@ -197,7 +197,12 @@ namespace db {
        *
        * @return The number of rows affected by the SQL statement.
        **/
-      uint64_t count() const noexcept;
+      uint64_t numRowsAffected() const noexcept;
+
+      /**
+       * Number of rows that matched the query
+      **/
+      uint64_t numRows() const noexcept;
       
       /**
        * Support of the range-based for loops.
